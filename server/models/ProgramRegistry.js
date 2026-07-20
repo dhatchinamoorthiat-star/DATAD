@@ -20,6 +20,10 @@ const programSchema = new mongoose.Schema({
     resources:     { type: Boolean }
   },
 
+  // Populated by the program sync. Career paths have no model of their own —
+  // the registry entry is the single source of truth for them.
+  careerPaths: { type: [String], default: [] },
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

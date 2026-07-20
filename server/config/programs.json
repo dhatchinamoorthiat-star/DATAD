@@ -1,4 +1,9 @@
 {
+  "_comment": "Preset programs. newsCategories/companySectors MUST use values that exist in the NewsItem.category and Company.sector enums — the sync tags existing rows by these, so an invented value silently syncs zero items.",
+  "defaults": {
+    "newsCategories": ["placements", "corporate"],
+    "companySectors": ["other"]
+  },
   "programs": [
     {
       "id": "mba",
@@ -7,8 +12,8 @@
       "icon": "📊",
       "description": "Master of Business Administration",
       "specializations": ["Finance", "Marketing", "Strategy", "Operations", "Consulting"],
-      "relevantSources": ["Business Insider", "McKinsey", "HBR", "Forbes"],
-      "hiringCompanies": ["McKinsey", "BCG", "Goldman Sachs", "Deloitte", "Accenture"],
+      "newsCategories": ["banking-finance", "corporate", "economy", "marketing", "placements", "stock-market"],
+      "companySectors": ["banking", "consulting", "fmcg", "auto", "manufacturing"],
       "careerPaths": ["Management Consultant", "Finance Analyst", "Product Manager", "Entrepreneur", "Corporate Leader"]
     },
     {
@@ -18,8 +23,8 @@
       "icon": "💻",
       "description": "Bachelor of Technology in Computer Science",
       "specializations": ["AI/ML", "Cloud Computing", "Cybersecurity", "Full-Stack", "Blockchain"],
-      "relevantSources": ["TechCrunch", "HackerNews", "Wired", "Dev.to", "Medium"],
-      "hiringCompanies": ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Goldman Sachs"],
+      "newsCategories": ["ai-tech", "corporate", "placements"],
+      "companySectors": ["it_services", "startup"],
       "careerPaths": ["Software Engineer", "ML Engineer", "DevOps Engineer", "Security Researcher", "Startup Founder"]
     },
     {
@@ -29,8 +34,8 @@
       "icon": "🧠",
       "description": "Bachelor of Science in Psychology",
       "specializations": ["Clinical", "Organizational", "Child Development", "Cognitive", "Social"],
-      "relevantSources": ["PsychToday", "ResearchGate", "Nature", "APA Monitor"],
-      "hiringCompanies": ["Tech HR", "Healthcare", "NGOs", "Research Institutes", "Counseling Centers"],
+      "newsCategories": ["corporate", "marketing", "placements"],
+      "companySectors": ["fmcg", "other"],
       "careerPaths": ["Clinical Psychologist", "HR Specialist", "Researcher", "Counselor", "UX Designer"]
     },
     {
@@ -40,8 +45,8 @@
       "icon": "📈",
       "description": "Master of Science in Data Science",
       "specializations": ["ML Engineering", "Analytics", "Big Data", "Business Intelligence"],
-      "relevantSources": ["Towards Data Science", "KDnuggets", "ArXiv", "Analytics Vidhya"],
-      "hiringCompanies": ["Google", "Amazon", "Microsoft", "Goldman Sachs", "JP Morgan"],
+      "newsCategories": ["ai-tech", "banking-finance", "corporate", "placements"],
+      "companySectors": ["it_services", "startup", "banking"],
       "careerPaths": ["Data Scientist", "ML Engineer", "Analytics Engineer", "AI Researcher"]
     },
     {
@@ -51,8 +56,8 @@
       "icon": "🐾",
       "description": "Bachelor of Veterinary Science",
       "specializations": ["Small Animal", "Large Animal", "Wildlife", "Pathology"],
-      "relevantSources": ["VetMag", "Vet Times", "AVMA", "Veterinary Forum"],
-      "hiringCompanies": ["Veterinary Hospitals", "Research Labs", "Pharma", "Wildlife Organizations"],
+      "newsCategories": ["placements"],
+      "companySectors": ["other"],
       "careerPaths": ["Veterinarian", "Veterinary Surgeon", "Research Scientist", "Pharmaceutical Specialist"]
     },
     {
@@ -62,9 +67,9 @@
       "icon": "⚖️",
       "description": "Bachelor of Laws",
       "specializations": ["Corporate", "Criminal", "Constitutional", "Intellectual Property", "International"],
-      "relevantSources": ["Law.com", "LexisNexis", "Bar Association", "Legal News"],
-      "hiringCompanies": ["Law Firms", "Corporate Legal", "Government", "NGOs"],
-      "careerPaths": ["Lawyer", "Legal Consultant", "Judge", "Corporate Counsel", "In-house Counsel"]
+      "newsCategories": ["corporate", "economy", "placements"],
+      "companySectors": ["banking", "consulting", "other"],
+      "careerPaths": ["Lawyer", "Legal Consultant", "Corporate Counsel", "Policy Advisor"]
     },
     {
       "id": "bdes-fashion",
@@ -73,8 +78,8 @@
       "icon": "👗",
       "description": "Bachelor of Design in Fashion",
       "specializations": ["Fashion Design", "Textile", "Fashion Management", "Sustainable Fashion"],
-      "relevantSources": ["Vogue", "WWD", "Fashion United", "Dezeen"],
-      "hiringCompanies": ["Fashion Brands", "Design Studios", "Retail", "Luxury Brands"],
+      "newsCategories": ["marketing", "corporate", "placements"],
+      "companySectors": ["fmcg", "startup", "other"],
       "careerPaths": ["Fashion Designer", "Brand Designer", "Fashion Consultant", "Creative Director"]
     },
     {
@@ -84,8 +89,8 @@
       "icon": "🖥️",
       "description": "Master of Science in Computer Science",
       "specializations": ["Algorithms", "Systems", "AI/ML", "Distributed Systems"],
-      "relevantSources": ["ACM", "IEEE", "ArXiv", "Research Papers"],
-      "hiringCompanies": ["Google", "Facebook", "Apple", "MIT Labs", "Bell Labs"],
+      "newsCategories": ["ai-tech", "corporate", "placements"],
+      "companySectors": ["it_services", "startup"],
       "careerPaths": ["Research Scientist", "Systems Engineer", "ML Researcher", "Software Architect"]
     },
     {
@@ -95,8 +100,8 @@
       "icon": "💹",
       "description": "Bachelor of Arts in Economics",
       "specializations": ["Macroeconomics", "Microeconomics", "Development", "International Trade"],
-      "relevantSources": ["The Economist", "NBER", "IMF", "World Bank"],
-      "hiringCompanies": ["Finance", "Central Banks", "Consulting", "International Organizations"],
+      "newsCategories": ["economy", "banking-finance", "stock-market", "corporate", "placements"],
+      "companySectors": ["banking", "consulting"],
       "careerPaths": ["Economist", "Policy Analyst", "Finance Analyst", "Researcher"]
     },
     {
@@ -106,8 +111,8 @@
       "icon": "⚙️",
       "description": "Bachelor of Engineering in Mechanical Engineering",
       "specializations": ["Automotive", "Thermal", "Manufacturing", "Robotics"],
-      "relevantSources": ["Engineering Today", "Mechanical Engineering Magazine", "Tech News"],
-      "hiringCompanies": ["Automotive", "Aerospace", "Manufacturing", "FMCG"],
+      "newsCategories": ["corporate", "economy", "placements"],
+      "companySectors": ["auto", "manufacturing", "it_services"],
       "careerPaths": ["Mechanical Engineer", "Design Engineer", "Manufacturing Engineer", "Roboticist"]
     }
   ]

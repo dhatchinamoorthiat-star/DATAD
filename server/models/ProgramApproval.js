@@ -23,9 +23,11 @@ const programApprovalSchema = new mongoose.Schema(
     syncCompletedAt: { type: Date, default: null },
     syncLog: [
       {
+        // Must stay in step with STEPS in services/programSyncService.js —
+        // a step missing from this enum fails the whole sync on save.
         component: {
           type: String,
-          enum: ['news', 'companies', 'career', 'community', 'study', 'finance', 'error'],
+          enum: ['registry', 'news', 'companies', 'career', 'community', 'study'],
         },
         status: { type: String, enum: ['pending', 'in_progress', 'completed', 'failed'] },
         count: { type: Number, default: 0 },

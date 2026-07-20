@@ -15,6 +15,8 @@ const resourceSchema = new mongoose.Schema(
     fileSize: { type: String, trim: true },
     tags: [{ type: String, trim: true }],
     uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Program personalization; empty means "shown to everyone".
+    programs: { type: [{ type: String }], default: [], index: true },
     downloads: { type: Number, default: 0 },
     contentItem: { type: mongoose.Schema.Types.ObjectId, ref: 'ContentItem' },
   },

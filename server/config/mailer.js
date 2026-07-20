@@ -74,6 +74,27 @@ exports.sendAccountApprovedEmail = (user) =>
     ),
   }).catch((err) => logger.error('Approval email failed:', { error: err.message }));
 
+// Sent only after a program's data sync finishes cleanly — see
+// programSyncService. Reaching a student before their content exists is worse
+// than reaching them a minute later.
+exports.sendProgramReadyEmail = (user, programLabel) =>
+  send({
+    to: [{ email: user.email, name: user.name }],
+    subject: `Your ${programLabel} workspace is ready 🎓`,
+    html: wrap(
+      `Your ${programLabel} workspace is ready`,
+      `<p>Hi ${user.name},</p>
+       <p>An admin approved <strong>${programLabel}</strong> and we've finished setting
+       everything up for it.</p>
+       <p>News, companies, career paths, study resources and your community feed are all
+       scoped to your program now — you'll only see what's relevant to you.</p>
+       <p><a href="${process.env.CLIENT_URL || 'https://datad.app'}/dashboard"
+         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+         Open DATAD
+       </a></p>`
+    ),
+  });
+
 exports.sendPasswordResetEmail = (user, link) =>
   send({
     to: [{ email: user.email, name: user.name }],

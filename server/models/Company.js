@@ -34,6 +34,10 @@ const companySchema = new mongoose.Schema(
     },
     prepTips: { type: [{ type: String, maxlength: 400 }], default: [] },
 
+    // Program personalization: which programs this company recruits from.
+    // Populated by the program sync; empty means "shown to everyone".
+    programs: { type: [{ type: String }], default: [], index: true },
+
     views: { type: Number, default: 0 },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     contentItem: { type: mongoose.Schema.Types.ObjectId, ref: 'ContentItem' },
