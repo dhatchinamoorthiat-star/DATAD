@@ -39,5 +39,10 @@
   "devDependencies": {
     "jest": "^30.4.2",
     "nodemon": "^3.1.14"
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^uuid$": "<rootDir>/tests/__mocks__/uuid.js"
+    }
   }
 }

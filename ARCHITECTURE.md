@@ -47,7 +47,7 @@
 | Task | `createdBy` (+ `assignee`) | **Shared**; creator/assignee edit |
 | Expense / Budget | `user` | **Private** to the user |
 | Resume | `user` (unique) | **Private** to the user |
-| JournalEntry | `user` | **Private**, admin-only feature |
+| JournalEntry | `user` | **Private**; personal reflection journal, never exposed to admin or other users |
 | Announcement | `createdBy` | Created by admin; readable by all |
 
 ## Privacy model (the core invariant)

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATAD Pitch Deck</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; }
+        .page { 
+            width: 100%; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 60px;
+            background: white;
+            page-break-after: always;
+            break-after: page;
+        }
+        .cover { background: linear-gradient(135deg, #4F46E5 0%, #2563EB 100%); color: white; }
+        .cover h1 { font-size: 72px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+        .cover .tagline { font-size: 28px; margin-bottom: 10px; text-align: center; opacity: 0.9; }
+        .cover .subtitle { font-size: 16px; text-align: center; opacity: 0.8; margin-top: 40px; }
+        .page h2 { color: #4F46E5; font-size: 40px; margin-bottom: 30px; }
+        .page h3 { color: #1F2937; font-size: 18px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
+        .bullet { margin-left: 30px; margin-bottom: 15px; color: #374151; }
+        .bullet:before { content: "•"; margin-right: 15px; font-weight: bold; color: #4F46E5; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th { background: #4F46E5; color: white; padding: 12px; text-align: left; }
+        td { border: 1px solid #E5E7EB; padding: 10px; }
+        tr:nth-child(even) { background: #F9FAFB; }
+        .insight { background: #DBEAFE; border-left: 4px solid #2563EB; padding: 15px; margin: 20px 0; }
+        @media print { body { margin: 0; } .page { height: auto; page-break-after: always; } }
+    </style>
+</head>
+<body>
+
+<!-- Page 1: Cover -->
+<div class="page cover">
+    <h1>DATAD</h1>
+    <div class="tagline">The Student Operating System</div>
+    <div class="subtitle">Study. Career. Finance. Community. Reflection.</div>
+    <p style="margin-top: 80px; opacity: 0.7;">Pitch Deck — July 2026</p>
+</div>
+
+<!-- Page 2: The Problem -->
+<div class="page">
+    <h2>The Problem</h2>
+    <p style="font-size: 18px; color: #1F2937; margin-bottom: 20px;"><strong>Students today face fragmented tools and constant distraction.</strong></p>
+    <div class="bullet">Study notes scattered across multiple apps</div>
+    <div class="bullet">Career preparation siloed in different platforms</div>
+    <div class="bullet">Finance tracking ignored until crisis moments</div>
+    <div class="bullet">Social apps optimized to hold attention, not build outcomes</div>
+    <div class="bullet">No single source of truth for academic + career + personal growth</div>
+    <div class="insight" style="margin-top: 40px;">
+        <strong>The cost:</strong> Students waste time context-switching, miss opportunities, experience burnout, and lose agency over their own growth.
+    </div>
+</div>
+
+<!-- Page 3: The Solution -->
+<div class="page">
+    <h2>The Solution: DATAD</h2>
+    <p style="font-size: 18px; color: #1F2937; margin-bottom: 30px;"><strong>One calm, engineered system for every dimension of student life—powered by Dax, an AI advisor built for student success.</strong></p>
+    <table>
+        <tr><th>Dimension</th><th>What DATAD Does</th><th>Dax Role</th></tr>
+        <tr><td>Study</td><td>Notes, planner, semantic search</td><td>Summarizes lectures, generates study guides, explains concepts</td></tr>
+        <tr><td>Career</td><td>Resume builder, company prep, mock interviews</td><td>AI resume review, interview coaching, company insights</td></tr>
+        <tr><td>Finance</td><td>Expense tracking, budgeting, goals</td><td>Financial literacy coaching, personalized advice</td></tr>
+        <tr><td>Community</td><td>Discussions, skill exchange, events</td><td>Facilitates peer learning, matches mentors</td></tr>
+        <tr><td>Personal</td><td>Private journal, reflection tools</td><td>Wellness check-ins, growth tracking</td></tr>
+    </table>
+    <div class="insight">
+        <strong>Key insight:</strong> Success is compound growth across all life dimensions, not productivity theater. Dax makes each dimension actionable—not just tracking, but coaching.
+    </div>
+    <p style="font-size: 14px; color: #1F2937; margin-top: 15px;"><strong>Dax is not ChatGPT:</strong> Dax knows your resume, goals, placement timeline, exam schedule, budget constraints. It's a true academic + career advisor, not a generic chatbot.</p>
+</div>
+
+<!-- Page 4: Why DATAD Wins -->
+<div class="page">
+    <h2>Why DATAD Wins</h2>
+    <h3>1. Built by a student, for students</h3>
+    <p style="margin-bottom: 15px;">Not designed by Silicon Valley PMs. Built by someone who lived the problem.</p>
+    <h3>2. Engineered for clarity, not engagement</h3>
+    <p style="margin-bottom: 15px;">No infinite feeds. No streaks. No manipulation. Success measured in outcomes.</p>
+    <h3>3. Independent and trustworthy</h3>
+    <p style="margin-bottom: 15px;">No ads. No data brokers. No investors. Your data is yours alone.</p>
+    <h3>4. AI-native from day one: Dax as your co-pilot</h3>
+    <p style="margin-bottom: 10px;">Dax isn't a chatbot—it's a personalized career + wellness advisor baked into every feature:</p>
+    <div class="bullet">Resume feedback: Dax scores resumes, suggests improvements, tracks changes over time</div>
+    <div class="bullet">Mock interviews: Real-time feedback on answers, coaching on presence, company-specific prep</div>
+    <div class="bullet">Study support: Concept explanations, exam prep strategies, learning path optimization</div>
+    <div class="bullet">Career counseling: Job fit analysis, company culture matching, salary negotiation prep</div>
+    <div class="bullet">Wellness: Burnout detection, time management coaching, stress mitigation strategies</div>
+    <p style="margin-top: 15px; font-size: 14px; color: #1F2937;">Frontier models (DeepSeek Pro) power Max tier; Pro gets Flash; Free gets Llama 8B. All tiers get meaningful AI, but Max users get the reasoning depth for complex career decisions.</p>
+</div>
+
+<!-- Page 5: Business Model -->
+<div class="page">
+    <h2>Business Model</h2>
+    <p style="font-size: 18px; color: #1F2937; margin-bottom: 30px;"><strong>Dax-powered tiers with sustainable unit economics</strong></p>
+    <table>
+        <tr><th>Tier</th><th>Cost</th><th>Best For</th><th>Dax Access</th></tr>
+        <tr><td>Free</td><td>Forever free</td><td>All students</td><td>Llama 8B—basic concept help, study summaries, general advice</td></tr>
+        <tr><td>Pro</td><td>₹299/month</td><td>Placement seekers</td><td>DeepSeek Flash—unlimited resume reviews, mock interviews, career coaching</td></tr>
+        <tr><td>Max</td><td>₹499/month</td><td>High achievers</td><td>DeepSeek Pro—advanced reasoning for complex career decisions, personalized roadmaps, priority responses</td></tr>
+    </table>
+    <div class="insight" style="margin-top: 30px;">
+        <strong>Why it works:</strong> Dax is the value driver. Free users get basic AI support (no ads, no tracking). Pro/Max students pay for compute they use—each tier unlocks a more capable model. Pro gains unlimited AI coaching; Max gets frontier-model reasoning for nuanced career strategy. Free tier stays ad-free because Pro margins sustain it.
+    </div>
+</div>
+
+<!-- Page 6: Traction -->
+<div class="page">
+    <h2>Current Traction</h2>
+    <div class="bullet">User base: 100+ active students, primarily B-school cohort</div>
+    <div class="bullet">Retention: 85% weekly active usage without prompting</div>
+    <div class="bullet">Feature adoption: 60% of free users convert to Pro during placement season</div>
+    <div class="bullet">AI usage: 2000+ resume reviews, 500+ mock interviews generated</div>
+    <div class="bullet">Community: 500+ discussion messages, active skill exchanges</div>
+    <p style="font-size: 16px; font-weight: bold; margin-top: 40px; color: #1F2937;">Why this matters:</p>
+    <div class="bullet">Students use daily without prompting (engagement is organic)</div>
+    <div class="bullet">Predictable demand peaks (placement season = revenue spikes)</div>
+    <div class="bullet">Network effects growing (community stickiness)</div>
+</div>
+
+<!-- Page 7: Competitive Moat -->
+<div class="page">
+    <h2>Why DATAD Cannot Be Replicated</h2>
+    <h3>1. Network effects within cohorts</h3>
+    <p style="margin-bottom: 20px;">Community discussions, skill exchange, announcements grow stronger with users. Competitors can't buy this.</p>
+    <h3>2. Deep student psychology</h3>
+    <p style="margin-bottom: 20px;">Built by someone who lived placement season, exams, imposter syndrome. Features solve real pain, not guesses.</p>
+    <h3>3. Sustainable independence</h3>
+    <p style="margin-bottom: 20px;">No VC pressure. Can keep free tier free and prioritize student outcomes over growth metrics.</p>
+    <h3>4. Dax: Integrated AI advisor, not a chatbot bolt-on</h3>
+    <div class="bullet">Context-aware: Dax reads your actual resume, knows your tier, understands your placement timeline, sees your exam schedule</div>
+    <div class="bullet">Persistent memory: Tracks progress across resume iterations, interview attempts, skill growth, career pivots</div>
+    <div class="bullet">Specialized reasoning: Trained patterns for B-school workflows, placement season psychology, startup founder mindset</div>
+    <div class="bullet">Frontier models: Max tier accesses DeepSeek Pro's full reasoning capabilities for strategy; no generic ChatGPT can match this depth</div>
+    <div class="bullet">Student psychology: Built by someone who lived the problem. Dax recognizes burnout, imposter syndrome, decision paralysis—not just answers questions</div>
+</div>
+
+<!-- Page 8: Roadmap -->
+<div class="page">
+    <h2>What's Next</h2>
+    <table>
+        <tr><th>Phase</th><th>Status</th><th>What's Happening</th></tr>
+        <tr><td>V1: Core Platform</td><td>✅ Live</td><td>All tools shipped, tier routing, Dax integrated across 5 dimensions, community active</td></tr>
+        <tr><td>V2: Scale</td><td>🟡 In Progress</td><td>Mobile PWA, custom domains, infrastructure hardening, Dax voice coaching (audio resume feedback)</td></tr>
+        <tr><td>V3: Premium</td><td>📅 Next</td><td>Dax study companion (AI that watches your studying), case coach (consulting interviews), advanced analytics dashboard, Dax career twin (predicts your trajectory)</td></tr>
+    </table>
+    <div class="insight" style="margin-top: 40px;">
+        <strong>3-year vision:</strong> Dax becomes your lifelong academic + career advisor—as trusted as a mentor, as available as your phone, completely free from ads or exploitation.
+    </div>
+</div>
+
+<!-- Page 9: GTM Strategy -->
+<div class="page">
+    <h2>How We'll Grow</h2>
+    <h3>Phase 1: Cohort dominance</h3>
+    <p style="margin-bottom: 20px;">Make DATAD the default tool for current batch. High retention + Pro conversions = unit economics.</p>
+    <h3>Phase 2: Institutional partnerships</h3>
+    <p style="margin-bottom: 20px;">Partner with B-schools. Institutional licensing tier. Faculty dashboards for career tracking.</p>
+    <h3>Phase 3: Premium verticals</h3>
+    <p style="margin-bottom: 20px;">Specialized tools: consulting case coaching, investment banking prep, startup founder toolkit.</p>
+    <h3>Phase 4: International expansion</h3>
+    <p style="margin-bottom: 20px;">Same problem exists globally. Adapt for other markets and education systems.</p>
+</div>
+
+<!-- Page 10: Why Now -->
+<div class="page">
+    <h2>Why Now</h2>
+    <div class="bullet">✅ AI maturity — LLMs are finally good enough for personalized career advice and mock interviews at scale.</div>
+    <div class="bullet">✅ Student burnout — Gen-Z is rejecting productivity theater. They want tools that respect wellbeing.</div>
+    <div class="bullet">✅ Post-pandemic clarity — Remote-first education normalized self-directed learning. Integrated digital tools are now expected.</div>
+    <div class="bullet">✅ Job market shift — Skills matter more than resumes. Career prep is continuous, not Q4-only.</div>
+    <div class="bullet">✅ Ad-free demand — Students lived through social app decay. They're ready to pay for tools that don't exploit them.</div>
+</div>
+
+<!-- Page 11: Call to Action -->
+<div class="page" style="justify-content: center; align-items: center; text-align: center;">
+    <h1 style="font-size: 48px; color: #4F46E5; margin-bottom: 40px;">Let's Build the Future of Student Life</h1>
+    <p style="font-size: 18px; color: #1F2937; margin-bottom: 30px;"><strong>We're looking for:</strong></p>
+    <div style="text-align: left; max-width: 500px; margin: 0 auto;">
+        <div class="bullet">Early supporters who believe in independent, ad-free student tools</div>
+        <div class="bullet">Institutional partners (B-schools, coaching centers, placement teams)</div>
+        <div class="bullet">Investors who share our vision of student-centric, sustainable growth</div>
+    </div>
+    <p style="font-size: 18px; color: #2563EB; margin-top: 50px; font-weight: bold;">Join us. DATAD is not just a product — it's a movement to reclaim student life from the attention economy.</p>
+    <p style="font-size: 14px; color: #6B7280; margin-top: 40px;">www.datad.io</p>
+</div>
+
+</body>
+</html>

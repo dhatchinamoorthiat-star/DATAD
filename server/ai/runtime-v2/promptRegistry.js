@@ -270,6 +270,38 @@ function buildTypedPrompt(promptId, variables) {
   registerPrompt(promptId, { system: withDaxIdentity(specialisation), user: '', tags: (PROMPT_TASK_MAP[promptId]?.tags) || [] });
 });
 
+// Initialize registry by loading all v1 prompts
+function init() {
+  let count = 0;
+  let errors = 0;
+
+  Object.entries(V1_PROMPT_TASK_MAP).forEach(([kebabKey, camelKey]) => {
+    if (!camelKey) return; // Skip entries with null mappings
+
+    try {
+      if (v1Prompts[camelKey]) {
+        const promptFn = v1Prompts[camelKey];
+        const v1Prompt = promptFn({});
+
+        registerPrompt(kebabKey, {
+          name: kebabKey,
+          system: v1Prompt.system || '',
+          user: v1Prompt.user || '',
+          tags: (PROMPT_TASK_MAP[kebabKey]?.tags) || ['v1-imported'],
+          metadata: { source: 'v1Prompts', originalKey: camelKey, importedAt: new Date().toISOString() },
+        });
+        count++;
+      }
+    } catch (err) {
+      console.warn(`[promptRegistry] Failed to load prompt "${camelKey}" for task "${kebabKey}":`, err.message);
+      errors++;
+    }
+  });
+
+  console.log(`[promptRegistry.init()] Loaded ${count} v1 prompts (${errors} errors)`);
+  return { count, errors };
+}
+
 module.exports = {
   registerPrompt,
   getPrompt,
@@ -283,4 +315,5 @@ module.exports = {
   getPromptForTask,
   getPromptForIntent,
   buildTypedPrompt,
+  init,
 };

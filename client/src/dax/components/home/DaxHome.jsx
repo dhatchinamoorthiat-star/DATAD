@@ -6,7 +6,6 @@ import {
   Lightbulb, CalendarDays, FileText, MessageCircle,
 } from 'lucide-react';
 import DaxOrb from '../common/DaxOrb';
-import ModelIndicator from '../composer/ModelIndicator';
 
 // Dax home — Claude-style landing: a centered greeting with the orb, one
 // big prompt box front and center (typing here starts the chat directly),
@@ -51,9 +50,6 @@ export default function DaxHome({
   onNewChat,
   onPickSuggestion,
   introActive = false,
-  models = [],
-  selectedModelId,
-  onModelSelect,
 }) {
   const reduce = useReducedMotion();
   const [prompt, setPrompt] = useState('');
@@ -106,16 +102,7 @@ export default function DaxHome({
               placeholder="How can Dax help you today?"
               className="w-full resize-none bg-transparent px-1.5 pt-1 text-[15px] leading-relaxed text-[var(--dax-text)] placeholder-[var(--dax-text-faint)] focus:outline-none"
             />
-            <div className="flex items-center justify-between gap-2 pt-1">
-              {/* Same picker as the chat composer — the model has to be
-                  choosable before the first message, not only after. */}
-              <div onClick={(e) => e.stopPropagation()}>
-                <ModelIndicator
-                  models={models}
-                  selectedId={selectedModelId}
-                  onSelect={onModelSelect}
-                />
-              </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 type="button"
                 onClick={submit}

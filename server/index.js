@@ -2,6 +2,10 @@ require('dotenv').config();
 
 const logger = require('./utils/logger');
 
+// Initialize prompt registry on startup
+const promptRegistry = require('./ai/runtime-v2/promptRegistry');
+promptRegistry.init();
+
 const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'CLIENT_URL'];
 const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missing.length) {

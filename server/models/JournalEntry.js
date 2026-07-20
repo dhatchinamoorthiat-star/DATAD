@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-// The admin's private diary — never exposed to members.
+// Personal reflection journal — each user's private space for processing emotions,
+// tracking mood, and recording personal thoughts. Never exposed to admin, Dax, or other users.
 const journalEntrySchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },

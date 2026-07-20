@@ -145,7 +145,7 @@ Return ONLY valid JSON:
   }),
 
   // ── News Enhancement ──────────────────────────────────────────────────────────
-  newsEnhance: ({ articles }) => ({
+  newsEnhance: ({ articles = [] }) => ({
     system: withDaxIdentity(`You are framing business news the way a good professor would. Be concise and insight-dense.`),
     user: `Enhance these news articles for students. For each article, provide relevant framing.
 

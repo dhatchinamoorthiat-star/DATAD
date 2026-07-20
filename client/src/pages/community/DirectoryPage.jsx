@@ -139,7 +139,6 @@ export default function DirectoryPage() {
                 <Avatar name={p.user?.name} avatar={p.user?.avatar} />
                 <div>
                   <p className="font-semibold">{p.user?.name}</p>
-                  {p.user?.rollNumber && <p className="text-[11px] font-mono text-indigo-500 dark:text-indigo-400">{p.user.rollNumber}</p>}
                   {p.specialization && <p className="text-xs text-gray-500">{p.specialization}</p>}
                   {p.priorDomain && <p className="text-[11px] text-amber-600 dark:text-amber-400">{p.priorDomain}</p>}
                 </div>
@@ -162,7 +161,6 @@ export default function DirectoryPage() {
               <Avatar name={view.user?.name} avatar={view.user?.avatar} size="lg" />
               <div>
                 <p className="text-lg font-bold">{view.user?.name}</p>
-                {view.user?.rollNumber && <p className="text-xs font-mono text-indigo-500 dark:text-indigo-400">{view.user.rollNumber}</p>}
                 {view.specialization && <p className="text-sm text-gray-500">{view.specialization}</p>}
                 {view.batch && <p className="text-xs text-gray-400">Batch {view.batch}</p>}
               </div>

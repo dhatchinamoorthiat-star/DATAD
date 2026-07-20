@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Zap, Check } from 'lucide-react';
-import { getAvailableModels, getModelPreference, setModelPreference } from '../../api/dax';
+import { getAvailableModels, getModelPreference, setModelPreference } from '../../../api/dax.js';
 import { useSubscription } from '../../../context/SubscriptionContext';
 
 export default function ModelSelector() {
