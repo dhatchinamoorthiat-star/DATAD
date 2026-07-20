@@ -20,6 +20,7 @@ import { Skeleton } from '../common/Skeleton';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import UsageSummary from '../dashboard/UsageSummary';
+import { ProgramHeader } from '../program/ProgramHeader';
 
 // ── 1. Arrival — a personalised morning briefing, not a chat window ────────
 
@@ -412,6 +413,8 @@ export default function LivingSurface() {
   return (
     <Page>
       <div className="mx-auto max-w-4xl space-y-12 pb-16">
+        {/* ⭐ Program Header */}
+        <ProgramHeader />
         <Arrival firstName={firstName} brief={brief} briefLoading={briefLoading} />
         <UsageSummary />
         <TodaysFocus tasks={tasks} loading={tasksLoading} />

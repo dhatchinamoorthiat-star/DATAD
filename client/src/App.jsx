@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PWAProvider } from './context/PWAContext';
+import { ProgramProvider } from './context/ProgramContext';
 import InstallPrompt from './components/pwa/InstallPrompt';
 import OfflineBanner from './components/pwa/OfflineBanner';
 import UpdateBanner from './components/pwa/UpdateBanner';
@@ -68,6 +69,7 @@ const WellbeingStudyPage    = lazy(() => import('./pages/me/WellbeingStudyPage')
 const WellbeingMemoryPage   = lazy(() => import('./pages/me/WellbeingMemoryPage'));
 const WellbeingRoutinesPage = lazy(() => import('./pages/me/WellbeingRoutinesPage'));
 const WellbeingSupportPage  = lazy(() => import('./pages/me/WellbeingSupportPage'));
+const ProgramSettingsPage   = lazy(() => import('./pages/me/ProgramSettingsPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const WorkPage = lazy(() => import('./pages/study/WorkPage'));
 const CareerHubPage = lazy(() => import('./pages/career/CareerHubPage'));
@@ -100,15 +102,19 @@ function AdminRoute({ children }) {
 }
 
 function AppLayout() {
+  const { user } = useAuth();
+
   return (
     <ProtectedRoute>
-      <SubscriptionProvider>
-      <AppShell>
-        <ErrorBoundary>
-          <Outlet />
-        </ErrorBoundary>
-      </AppShell>
-      </SubscriptionProvider>
+      <ProgramProvider program={user?.program}>
+        <SubscriptionProvider>
+          <AppShell>
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
+          </AppShell>
+        </SubscriptionProvider>
+      </ProgramProvider>
     </ProtectedRoute>
   );
 }
@@ -232,6 +238,7 @@ export default function App() {
                   <Route index element={<MeHubPage />} />
                   <Route path="planner" element={<PlannerPage />} />
                   <Route path="settings" element={<SettingsPage />} />
+                  <Route path="program" element={<ProgramSettingsPage />} />
                   <Route path="journal" element={<JournalPage />} />
                   <Route path="reflection" element={<ReflectionPage />} />
                   <Route path="calendar" element={<CalendarPage />} />
