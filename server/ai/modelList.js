@@ -62,6 +62,12 @@ function getAvailableModels() {
         });
       }
     } else if (name === 'ollama') {
+      // Ollama's key is a hardcoded placeholder, so it always looks
+      // "available" — on a deployed host with no local daemon it would appear
+      // in the picker and fail for anyone who chose it. Only offer it as a
+      // choice when a base URL was set deliberately. It stays in the failover
+      // chain regardless; this only controls whether users can select it.
+      if (!process.env.OLLAMA_BASE_URL) continue;
       models.push({
         id: 'ollama:default',
         provider: 'ollama',
