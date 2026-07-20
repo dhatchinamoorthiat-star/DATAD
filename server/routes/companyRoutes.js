@@ -16,10 +16,10 @@ const { getCompanyNews } = require('../controllers/companyNewsController');
 router.use(verifyToken);
 router.use(refreshTier);
 
-router.get('/', listCompanies);
+router.get('/', requireFeature(FEATURE.COMPANY_PREMIUM), listCompanies);
 router.get('/questions/bank', requireFeature(FEATURE.INTERVIEW_QUESTIONS), listQuestions);
-router.get('/news/feed', getCompanyNews);
-router.get('/:slug', getCompanyBySlug);
+router.get('/news/feed', requireFeature(FEATURE.COMPANY_PREMIUM), getCompanyNews);
+router.get('/:slug', requireFeature(FEATURE.COMPANY_PREMIUM), getCompanyBySlug);
 
 router.post('/', checkRole('admin'), createCompany);
 router.put('/:id', checkRole('admin'), updateCompany);
