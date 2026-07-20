@@ -55,17 +55,6 @@ export default function CareerHubPage() {
         <p className="text-sm text-gray-500 mt-0.5">Your placement journey</p>
       </div>
 
-      {/* ── AI ENHANCEMENT: Career roadmap ── */}
-      <div className="mb-6">
-        <TierGate required="max">
-          <AIEnhancement page="career" action="roadmap" variant="card" dismissKey="career-roadmap" />
-        </TierGate>
-      </div>
-
-      {/* ── AI ENHANCEMENT: Next-step recommendation ── */}
-      <div className="mb-8">
-        <AIEnhancement page="recommend" action="next" variant="minimal" />
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         <div className="lg:col-span-1 space-y-6">

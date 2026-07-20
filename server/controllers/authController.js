@@ -13,6 +13,7 @@ const JournalEntry = require('../models/JournalEntry');
 const Announcement = require('../models/Announcement');
 const UserProfile = require('../models/UserProfile');
 const StudentIdentity = require('../models/StudentIdentity');
+const ProgramApproval = require('../models/ProgramApproval');
 const { upsertFromRegistration, updateIdentity } = require('../services/studentIdentityService');
 const { inferNewsInterests } = require('../utils/domainClassifier');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../config/mailer');
@@ -81,6 +82,8 @@ exports.register = async (req, res, next) => {
       password,
       referralCode,
       rollNumber,
+      // ⭐ Program Personalization
+      program,
       // New profile fields
       college,
       course,
@@ -112,6 +115,14 @@ exports.register = async (req, res, next) => {
     const pwdProblem = passwordProblem(password);
     if (pwdProblem) return res.status(400).json({ message: pwdProblem });
 
+    // Program validation
+    if (!program || !program.id || !program.label) {
+      return res.status(400).json({ message: 'Program selection is required' });
+    }
+    if (!['preset', 'custom'].includes(program.type)) {
+      return res.status(400).json({ message: 'Invalid program type' });
+    }
+
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       return res.status(409).json({ message: 'An account with this email already exists' });
@@ -137,9 +148,17 @@ exports.register = async (req, res, next) => {
         });
       }
     }
-    const approved = isAdminEmail(email) || Boolean(referrer);
+
+    // Program determines approval status:
+    // - Preset programs: auto-approve (or pending if no referral and not admin)
+    // - Custom programs: always pending (needs admin approval + data sync)
+    const isPresetProgram = program.type === 'preset';
+    const isCustomProgram = program.type === 'custom';
+    const autoApproved = isAdminEmail(email) || (Boolean(referrer) && isPresetProgram);
+    const approvalStatus = autoApproved ? 'approved' : 'pending';
 
     let user;
+    let programApproval;
     try {
       const hashed = await bcrypt.hash(password, 10);
       user = await User.create({
@@ -148,14 +167,41 @@ exports.register = async (req, res, next) => {
         email,
         password: hashed,
         role: isAdminEmail(email) ? 'admin' : 'member',
-        status: approved ? 'approved' : 'pending',
+        status: approvalStatus,
         rollNumber: rollNumber ? String(rollNumber).trim() : '',
         referralCode: await uniqueReferralCode(name),
         referredBy: referrer ? referrer._id : null,
+        // ⭐ Program Personalization
+        program: {
+          id: program.id,
+          label: program.label,
+          type: program.type,
+          customName: program.customName || null,
+          category: program.category || null,
+          specialization: program.specialization || null,
+          cohort: program.cohort || null,
+          institution: program.institution || null,
+        },
         // We will set studentType and workExYears after we have experience data
         studentType: 'fresher', // temporary, will update below
         workExYears: null, // temporary
       });
+
+      // Create ProgramApproval record for tracking
+      programApproval = await ProgramApproval.create({
+        programId: program.id,
+        programLabel: program.label,
+        programType: program.type,
+        requestedBy: newUserId,
+        status: isPresetProgram ? 'approved' : 'pending',
+        approvedBy: isPresetProgram ? newUserId : null,
+        approvedAt: isPresetProgram ? new Date() : null,
+        syncStatus: isPresetProgram ? 'pending' : 'pending',
+      });
+
+      // Link approval ID to user
+      user.program.approvalId = programApproval._id;
+      await user.save();
     } catch (err) {
       // Release the claimed code if account creation failed for any reason.
       if (referrer) {
@@ -299,10 +345,40 @@ exports.register = async (req, res, next) => {
     // above regardless of approval status — this gate only controls the
     // response/token/email, so a pending signup's registration data isn't
     // silently discarded while they wait for an admin to approve them.
-    if (!approved) {
+
+    if (approvalStatus === 'pending') {
+      const message = isCustomProgram
+        ? `Account created for ${program.label}! Admin will verify your program and sync all data shortly.`
+        : 'Account created — an admin will review and approve it shortly.';
+
+      logActivity(
+        'register_program_pending',
+        `${user.name} registered with ${isCustomProgram ? 'custom' : 'preset'} program: ${program.label}`,
+        user,
+        { programId: program.id, programType: program.type, approvalId: programApproval._id }
+      );
+
       return res.status(201).json({
         pending: true,
-        message: 'Account created — an admin will review and approve it shortly.',
+        message,
+        programAwaitingApproval: isCustomProgram,
+      });
+    }
+
+    // Auto-approved: Preset program + referral
+    if (isPresetProgram && referrer) {
+      logActivity(
+        'register_program_auto_approved',
+        `${user.name} registered with preset program ${program.label} via referral`,
+        user,
+        { programId: program.id, referrerName: referrer.name }
+      );
+
+      // Fire-and-forget: registration must not fail if the mail service is down.
+      sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', { error: err.message }));
+      return res.status(201).json({
+        token: signToken(user),
+        programReady: true,
       });
     }
 

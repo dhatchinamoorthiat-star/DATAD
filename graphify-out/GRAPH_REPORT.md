@@ -1,16 +1,16 @@
-# Graph Report - DATAD  (2026-07-20)
+# Graph Report - DATAD  (2026-07-21)
 
 ## Corpus Check
-- 623 files · ~301,207 words
+- 632 files · ~307,097 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4319 nodes · 7394 edges · 264 communities (222 shown, 42 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 360 edges (avg confidence: 0.52)
+- 4350 nodes · 7394 edges · 270 communities (226 shown, 44 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 361 edges (avg confidence: 0.52)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0becd618`
+- Built from commit: `511fb591`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -71,7 +71,6 @@
 - shared.jsx / AdminShell()
 - CareerHubPage.jsx / ReadinessPage.jsx
 - DaxApp.jsx / DaxApp()
-- react / ConversationList.jsx
 - vectorStore.js / embed.js
 - index.js / profileFactory.js
 - Recommendation.js / lifecycleManager.js
@@ -168,7 +167,6 @@
 - Calculators.jsx / formatINR()
 - newsFetcher.js / refreshNews()
 - PlacementCountdown.jsx / meta.js
-- NotificationBell.jsx / notifications.js
 - PremiumPanel.jsx / fmtDate()
 - AdminAutomationPage.jsx / timeAgo()
 - AnthropicProvider / anthropicProvider.js
@@ -232,7 +230,6 @@
 - multer
 - node-cron
 - nodemailer
-- openai
 - pdf-parse
 - defaults.js / DEFAULT_CTX
 - uuid
@@ -243,13 +240,11 @@
 - plannerCollector.js
 - companies.js
 - SkillExchangePage.jsx
-- AdminStudioPage.jsx
 - DATAD Landing Page Audit
 - pivotController.js
 - Dax — naming rules
 - DAX_PRODUCT_AUDIT.md
 - Part 10 — Missed Opportunities
-- lifecycleManager.js
 - ResumeTip.js
 - Appendix — Work completed against this audit
 - Recommendations
@@ -257,6 +252,7 @@
 - Console Errors
 - Part 5 — UI / UX Audit
 - goalAligner.js
+- activityCollector.js
 - Part 9 — Weaknesses
 - Part 8 — Competitive Advantages
 - Network Errors
@@ -269,14 +265,22 @@
 - memoryCollector.js
 - CLAUDE.md
 - AdminAutomationPage.jsx
+- conversations.test.js
 - useRegisterForm.js
+- ModelIndicator.jsx
+- CreatorPage.jsx
 - mongoose
+- Part 4 — AI Capabilities
+- main.jsx
+- cloudinary
+- rss-parser
+- uuid.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `react` - 139 edges
-2. `useDocumentTitle()` - 59 edges
+1. `react` - 143 edges
+2. `useDocumentTitle()` - 61 edges
 3. `useAuth()` - 47 edges
-4. `Page()` - 40 edges
+4. `Page()` - 41 edges
 5. `api` - 39 edges
 6. `formatDate()` - 36 edges
 7. `notify()` - 36 edges
@@ -285,40 +289,40 @@
 10. `createRecommendation()` - 24 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `PWAProvider()` --indirect_call--> `clearCache()`  [INFERRED]
-  client/src/context/PWAContext.jsx → server/ai/providers/index.js
 - `EntertainmentDetailPage()` --indirect_call--> `draft()`  [INFERRED]
   client/src/pages/EntertainmentDetailPage.jsx → server/controllers/studioController.js
+- `PWAProvider()` --indirect_call--> `clearCache()`  [INFERRED]
+  client/src/context/PWAContext.jsx → server/ai/providers/index.js
 - `SubscribePage()` --indirect_call--> `plan()`  [INFERRED]
   client/src/pages/SubscribePage.jsx → server/ai/recommendation-engine/recommendationPlanner.js
-- `ChatBot()` --indirect_call--> `chip()`  [INFERRED]
-  client/src/components/chat/ChatBot.jsx → client/src/pages/IntelligencePage.jsx
-- `SectionTransition()` --indirect_call--> `wait()`  [INFERRED]
-  client/src/components/common/SectionTransition.jsx → client/src/dax/lib/streaming.js
+- `AdminRoute()` --calls--> `useAuth()`  [EXTRACTED]
+  client/src/App.jsx → client/src/context/AuthContext.jsx
+- `HomeGate()` --calls--> `useAuth()`  [EXTRACTED]
+  client/src/App.jsx → client/src/context/AuthContext.jsx
 
 ## Import Cycles
 - None detected.
 
-## Communities (264 total, 42 thin omitted)
+## Communities (270 total, 44 thin omitted)
 
 ### Community 0 - "daxService.js / Conversation"
 Cohesion: 0.04
-Nodes (65): aiGateway, assertConversationId(), buildChatTurn(), _buildEnrichedSystemV2(), {
+Nodes (61): aiGateway, assertConversationId(), _buildEnrichedSystemV2(), {
   buildResumeRAGContext,
   buildPlannerRAGContext,
   buildCareerHubRAGContext,
-}, cacheLayer, cfg, { CHAT_QUOTAS } (+57 more)
+}, cacheLayer, cfg, { CHAT_QUOTAS }, ChatMessage (+53 more)
 
 ### Community 1 - "App.jsx / AboutPage"
 Cohesion: 0.03
-Nodes (73): AboutPage, AdminAICenterPage, AdminAIDashboardPage, AdminAnnouncementsPage, AdminArchivePage, AdminAutomationPage, AdminCasesPage, AdminCompaniesPage (+65 more)
+Nodes (75): AboutPage, AdminAICenterPage, AdminAIDashboardPage, AdminAnnouncementsPage, AdminArchivePage, AdminAutomationPage, AdminCasesPage, AdminCompaniesPage (+67 more)
 
 ### Community 2 - "aiGateway.js / telemetryEngine.js"
-Cohesion: 0.05
-Nodes (40): _buildProfile(), cfg, _detectIntent(), _enrichWithProfile(), _execV1(), _execV2(), _formatGatewayResult(), HYBRID_V2_INTENTS (+32 more)
+Cohesion: 0.13
+Nodes (23): _buildProfile(), cfg, _detectIntent(), _enrichWithProfile(), _execV1(), _execV2(), _formatGatewayResult(), HYBRID_V2_INTENTS (+15 more)
 
 ### Community 3 - "LivingSurface.jsx / axios.js"
-Cohesion: 0.07
+Cohesion: 0.11
 Nodes (13): dashboardInsights(), getReadiness(), getTodayReflection(), getMyResume(), Card(), PADDING, Arrival(), ASK_SUGGESTIONS (+5 more)
 
 ### Community 4 - "providerHealthEngine.js / observabilityR"
@@ -326,20 +330,20 @@ Cohesion: 0.05
 Nodes (40): cfg, getAllHealth(), getHealth(), _getOrCreateMetrics(), getProviderPriority(), _getWindow(), isProviderHealthy(), metrics (+32 more)
 
 ### Community 5 - "permissionEngine.js / enhanceRoutes.js"
-Cohesion: 0.06
-Nodes (43): aiQuota(), { canAccessFeature }, { FEATURE }, { todayKey, DAILY_AI_LIMITS }, usageMeter, { canAccessFeature, requireFeature }, checkTier(), { FEATURE } (+35 more)
+Cohesion: 0.08
+Nodes (35): aiQuota(), { canAccessFeature }, { FEATURE }, { todayKey, DAILY_AI_LIMITS }, usageMeter, { canAccessFeature, requireFeature }, checkTier(), { FEATURE } (+27 more)
 
 ### Community 6 - "subscriptionService.js / usageMeter.js"
-Cohesion: 0.06
-Nodes (36): AiUsage, ChatMessage, AiUsage, AiUsageEvent, chargeCredits(), checkCredits(), CREDIT_LIMITS, { getCreditCost } (+28 more)
+Cohesion: 0.10
+Nodes (23): { getEffectiveTier }, { getSubscriptionStatus, getRemainingAiQuota }, { heavyLimiter }, { notify }, PRICES, router, SubscriptionRequest, User (+15 more)
 
 ### Community 7 - "AdminStudioReviewPage.jsx / CompanyDetai"
-Cohesion: 0.17
-Nodes (18): createCompany(), deleteCompany(), getCompany(), getCompanyNews(), listCompanies(), AdminCompaniesPage(), lines(), parseQuestions() (+10 more)
+Cohesion: 0.15
+Nodes (20): createCompany(), deleteCompany(), getCompany(), getCompanyNews(), getQuestionBank(), listCompanies(), AdminCompaniesPage(), lines() (+12 more)
 
 ### Community 8 - "run() / runJob()"
 Cohesion: 0.05
-Nodes (52): withDaxIdentity(), extractJSON(), parseJSON(), stripFences(), PROMPTS, { withDaxIdentity }, cfg, { estimateCost } (+44 more)
+Nodes (51): withDaxIdentity(), extractJSON(), parseJSON(), stripFences(), PROMPTS, { withDaxIdentity }, getProviderChain(), cfg (+43 more)
 
 ### Community 9 - "properties"
 Cohesion: 0.04
@@ -355,11 +359,11 @@ Nodes (39): ActivityLog, Announcement, AutomationLog, createAnnouncement(), dele
 
 ### Community 12 - "EntertainmentDetailPage.jsx / entertainm"
 Cohesion: 0.13
-Nodes (20): addMemory(), createItem(), deleteItem(), getItem(), listItems(), toggleBookmark(), toggleLike(), MemoryStream() (+12 more)
+Nodes (19): addMemory(), createItem(), deleteItem(), getItem(), listItems(), toggleBookmark(), toggleLike(), MemoryStream() (+11 more)
 
 ### Community 13 - "index.js / register()"
-Cohesion: 0.05
-Nodes (41): { notify }, sendPlannerReminders(), Task, CalendarEvent, { notify }, { send }, sendCalendarEventReminders(), User (+33 more)
+Cohesion: 0.06
+Nodes (36): { notify }, sendPlannerReminders(), Task, CalendarEvent, { notify }, { send }, sendCalendarEventReminders(), User (+28 more)
 
 ### Community 14 - "authController.js / authRoutes.js"
 Cohesion: 0.08
@@ -367,99 +371,99 @@ Nodes (40): Album, Announcement, bcrypt, Budget, changePassword(), checkEmail(),
 
 ### Community 15 - "verifyToken.js / daxRoutes.js"
 Cohesion: 0.09
-Nodes (22): { buildProvider }, cfg, getAvailableModels(), getDefaultModelId(), HUMAN_LABELS, NVIDIA_MODELS_DISPLAY, parseModelId(), mongoose (+14 more)
+Nodes (23): { buildProvider }, cfg, getAvailableModels(), getDefaultModelId(), HUMAN_LABELS, NVIDIA_MODELS_DISPLAY, parseModelId(), buildProvider() (+15 more)
 
 ### Community 16 - "aiRoutes.js / retriever.js"
-Cohesion: 0.05
-Nodes (37): Note, buildCareerHubRAGContext(), buildPlannerRAGContext(), buildResumeRAGContext(), Company, DailyCase, getCompanyContext(), getRecentNotes() (+29 more)
+Cohesion: 0.14
+Nodes (15): buildCareerHubRAGContext(), buildPlannerRAGContext(), buildResumeRAGContext(), Company, DailyCase, getCompanyContext(), getRecentNotes(), getResumeContext() (+7 more)
 
 ### Community 17 - "Skeleton.jsx / PlannerPage.jsx"
-Cohesion: 0.10
-Nodes (37): createJournalEntry(), deleteJournalEntry(), listJournal(), updateJournalEntry(), listNotes(), createTask(), deleteTask(), listTasks() (+29 more)
+Cohesion: 0.08
+Nodes (37): createNote(), deleteNote(), getNote(), listNotes(), updateNote(), createTask(), deleteTask(), listTasks() (+29 more)
 
 ### Community 18 - "chatRoutes.js / memory.js"
-Cohesion: 0.06
-Nodes (34): getMemory(), bootstrapMemory(), formatMemoryContext(), getUserMemory(), Note, Resume, _resumeCompletionPct(), StudentIdentity (+26 more)
+Cohesion: 0.12
+Nodes (15): getMemory(), bootstrapMemory(), formatMemoryContext(), getUserMemory(), Note, Resume, _resumeCompletionPct(), StudentIdentity (+7 more)
 
 ### Community 19 - "createRecommendation() / recommendationF"
 Cohesion: 0.08
 Nodes (26): { createRecommendation }, generate(), { createRecommendation }, generate(), { createRecommendation }, generate(), placementPrepDescription(), { createRecommendation } (+18 more)
 
 ### Community 20 - "useDocumentTitle() / useDocumentTitle.js"
-Cohesion: 0.25
-Nodes (11): createResource(), deleteResource(), downloadResource(), listResources(), uploadResourceFile(), FOLDER_COLORS, groupBySubject(), ResourcesPage() (+3 more)
+Cohesion: 0.10
+Nodes (26): createDaxChatAdapter(), createListing(), deleteListing(), listListings(), markSold(), createResource(), deleteResource(), downloadResource() (+18 more)
 
 ### Community 21 - "index.js / semanticSearch.js"
-Cohesion: 0.07
-Nodes (17): Company, EXECUTORS, isWriteTool(), MIN_WRITE_REASONING, Note, Resume, { search }, Task (+9 more)
+Cohesion: 0.05
+Nodes (33): COLLECTIONS, Company, DailyCase, NewsItem, Note, Post, ResumeTip, search() (+25 more)
 
 ### Community 22 - "proposalService.js / writes.js"
 Cohesion: 0.08
 Nodes (32): assertId(), confirm(), get(), listPending(), mongoose, NotFoundError, propose(), ProposedAction (+24 more)
 
 ### Community 23 - "useAuth() / AuthContext.jsx"
-Cohesion: 0.44
-Nodes (5): createSkill(), deleteSkill(), listSkills(), rateSkill(), SkillExchangePage()
+Cohesion: 0.08
+Nodes (24): 1. Built by a student, for students, 1. Network effects within cohorts, 2. Deep student psychology, 2. Engineered for clarity, not engagement, 3. Independent and trustworthy, 3. Sustainable independence, 4. AI-native from day one: Dax as your co-pilot, 4. Dax: Integrated AI advisor, not a chatbot bolt-on (+16 more)
 
 ### Community 24 - "motion.jsx / Page()"
-Cohesion: 0.09
-Nodes (12): getStats(), AnimatedNumber(), Page(), Stagger(), StaggerItem(), Skeleton(), AdminPage(), LESSONS (+4 more)
+Cohesion: 0.13
+Nodes (10): jwt, c, router, verifyToken, c, router, verifyToken, c (+2 more)
 
 ### Community 25 - "promptRegistry.js / knowledgeGraphAdapte"
 Cohesion: 0.08
-Nodes (18): buildPrompt(), { getPromptForTask }, buildTypedPrompt(), getPrompt(), getPromptForIntent(), getPromptForTask(), PROMPT_REGISTRY, PROMPT_TASK_MAP (+10 more)
+Nodes (20): buildPrompt(), { getPromptForTask }, buildTypedPrompt(), getPrompt(), getPromptForIntent(), getPromptForTask(), init(), PROMPT_REGISTRY (+12 more)
 
 ### Community 26 - "RegisterPage.jsx / index.js"
-Cohesion: 0.07
-Nodes (23): RegisterBackground(), AcademicStep(), PROGRAM_OPTIONS, SPEC_MAP, YEARS, ChallengesStep(), GOALS, DOMAINS (+15 more)
+Cohesion: 0.06
+Nodes (20): AcademicStep(), PROGRAM_OPTIONS, SPEC_MAP, YEARS, ChallengesStep(), GOALS, DOMAINS, ExperienceStep() (+12 more)
 
 ### Community 27 - "index.js / goalAligner.js"
 Cohesion: 0.08
 Nodes (20): aiActionGen, { alignAll }, { computeV2Scores }, deadlineGen, focusGen, { generateDailyMission }, GENERATORS, interviewGen (+12 more)
 
 ### Community 28 - "admin.js / AdminSubscriptionsPage.jsx"
-Cohesion: 0.07
-Nodes (33): approveStudent(), createAnnouncement(), deleteAnnouncement(), getActivityLogs(), getReferralMap(), listAnnouncements(), listStudents(), listSubscriptionRequests() (+25 more)
+Cohesion: 0.12
+Nodes (22): approveStudent(), createAnnouncement(), deleteAnnouncement(), getActivityLogs(), getReferralMap(), listAnnouncements(), listStudents(), rejectStudent() (+14 more)
 
 ### Community 29 - "dax.js / AIToolsPage.jsx"
 Cohesion: 0.10
-Nodes (19): askCareerAdvice(), careerAdvice(), compareCompanies(), daxTask(), plannerSuggest(), reviewResume(), semanticSearch(), setModelPreference() (+11 more)
+Nodes (20): askCareerAdvice(), careerAdvice(), compareCompanies(), confirmProposal(), daxTask(), plannerSuggest(), rejectProposal(), semanticSearch() (+12 more)
 
 ### Community 30 - "dailyCaseController.js / learningCollect"
-Cohesion: 0.10
-Nodes (25): collect(), { computeDailyCaseStreak }, DailyCaseSolve, HabitLog, Task, UserMemory, { computeDailyCaseStreak }, createCase() (+17 more)
+Cohesion: 0.09
+Nodes (26): buildChatTurn(), collect(), { computeDailyCaseStreak }, DailyCaseSolve, HabitLog, Task, UserMemory, { computeDailyCaseStreak } (+18 more)
 
 ### Community 31 - "modelRouterV2.js / modelRegistry.js"
-Cohesion: 0.13
-Nodes (21): CAPABILITY_TO_MODEL_FIELD, { INTENT_REQUIREMENTS }, { MODELS, computeCapabilityScore, INTENT_TO_CAPABILITY }, scoreModelFit(), _val(), autoSelectModel(), CAPABILITY_CATEGORIES, CAPABILITY_SCORE_DIMENSIONS (+13 more)
+Cohesion: 0.19
+Nodes (15): autoSelectModel(), CAPABILITY_CATEGORIES, CAPABILITY_SCORE_DIMENSIONS, CAPABILITY_WEIGHTS, cfg, computeCapabilityScore(), findBestModelForCapability(), findBestModelForIntent() (+7 more)
 
 ### Community 32 - "notificationController.js / eventControl"
 Cohesion: 0.08
-Nodes (23): createEvent(), Event, EVENT_UPDATABLE_FIELDS, EventRSVP, { notify, notifyBulk }, rsvpEvent(), updateEvent(), User (+15 more)
+Nodes (23): Event, EventRSVP, { notify }, sendRsvpReminders(), createEvent(), Event, EVENT_UPDATABLE_FIELDS, EventRSVP (+15 more)
 
 ### Community 33 - "companyRoutes.js / companyController.js"
 Cohesion: 0.10
 Nodes (26): { canAccessFeature }, Company, CompanyRead, createCompany(), deleteCompany(), { FEATURE }, getCompanyBySlug(), listCompanies() (+18 more)
 
 ### Community 34 - "EmptyState.jsx / EmptyState()"
-Cohesion: 0.19
-Nodes (13): createAlbum(), deleteAlbum(), listAlbums(), api, createNote(), deleteNote(), getNote(), updateNote() (+5 more)
+Cohesion: 0.10
+Nodes (11): getStats(), AnimatedNumber(), Page(), Stagger(), StaggerItem(), AdminPage(), CATEGORY_META, LESSONS (+3 more)
 
 ### Community 35 - "FinanceHubPage.jsx / FinanceOverviewPage"
 Cohesion: 0.09
-Nodes (43): createExpense(), deleteExpense(), getSummary(), listExpenses(), setBudget(), Modal(), BudgetBar(), formatINR() (+35 more)
+Nodes (43): createExpense(), deleteExpense(), getSummary(), listExpenses(), setBudget(), DateInput, BudgetBar(), formatINR() (+35 more)
 
 ### Community 36 - "PlacementsPage.jsx / InternshipsPage.jsx"
-Cohesion: 0.14
-Nodes (19): createInternship(), deleteInternship(), listInternships(), applyToDrive(), createDrive(), deleteDrive(), listDrives(), listMyApplications() (+11 more)
+Cohesion: 0.11
+Nodes (23): createInternship(), deleteInternship(), listInternships(), applyToDrive(), createDrive(), deleteDrive(), listDrives(), listMyApplications() (+15 more)
 
 ### Community 37 - "automation.js / pipeline.js"
 Cohesion: 0.10
 Nodes (22): aiGateway, _buildEnrichedSystem(), { routeTask, estimateCost }, runPipeline(), { validate }, cfg, estimateCost(), { rankModelsForIntent, findBestModelForCapability, scoreModelForIntent } (+14 more)
 
 ### Community 38 - "StudentIdentity.js / migrateStudentIdent"
-Cohesion: 0.12
-Nodes (14): GOAL_MAP, LEARNING_STYLE_MAP, mongoose, normalizeLearningStyle(), studentIdentitySchema, VALID_LEARNING_STYLES, { bootstrapFromLegacy }, migrate() (+6 more)
+Cohesion: 0.14
+Nodes (10): SiteMeta, StudentIdentity, User, UserProfile, GOAL_MAP, LEARNING_STYLE_MAP, mongoose, normalizeLearningStyle() (+2 more)
 
 ### Community 39 - "properties / subject.schema.json"
 Cohesion: 0.07
@@ -470,16 +474,16 @@ Cohesion: 0.08
 Nodes (24): background_color, categories, description, dir, display, display_override, icons, id (+16 more)
 
 ### Community 41 - "IntelligencePage.jsx / dateUtils.js"
-Cohesion: 0.19
-Nodes (15): getMarket(), listArticles(), listBookmarked(), refreshNews(), setInterests(), toggleBookmark(), IntelligenceCard(), isDown() (+7 more)
+Cohesion: 0.10
+Nodes (30): changePassword(), deleteAccount(), getMe(), updateProfile(), uploadAvatar(), getMarket(), listArticles(), listBookmarked() (+22 more)
 
 ### Community 42 - "StudyToolsPage.jsx / StarStoriesPage.jsx"
-Cohesion: 0.15
-Nodes (12): getStreak(), getTodayLog(), getWeekStats(), updateLog(), RowSkeleton(), AdminAICenterPage(), API(), JOB_LABELS (+4 more)
+Cohesion: 0.28
+Nodes (4): AdminAICenterPage(), API(), JOB_LABELS, AdminShell()
 
 ### Community 43 - "costOptimizer.js / latencyOptimizer.js"
-Cohesion: 0.08
-Nodes (31): computeRequiredCapabilities(), findBestModels(), { computeRequiredCapabilities, findBestModels }, { getAvailableModels }, getCostProfile(), getCreditCost(), MODEL_COST_PROFILES, selectCheapestModels() (+23 more)
+Cohesion: 0.09
+Nodes (29): computeRequiredCapabilities(), findBestModels(), { computeRequiredCapabilities, findBestModels }, { getAvailableModels }, MODEL_COST_PROFILES, selectCheapestModels(), { computeRequiredCapabilities, findBestModels }, { getAvailableModels, MODELS } (+21 more)
 
 ### Community 44 - "studentIntelligenceEngine.js / enhance()"
 Cohesion: 0.09
@@ -498,40 +502,32 @@ Cohesion: 0.09
 Nodes (17): cloudinary, crypto, docUpload, publishService, Resource, RESOURCE_UPDATABLE_FIELDS, studioUpload, update() (+9 more)
 
 ### Community 48 - "index.js / aiTelemetry"
-Cohesion: 0.08
-Nodes (23): aiTelemetry, allowedOrigins, app, clientDist, connectDB, cors, entertainmentRoutes, errorHandler (+15 more)
-
-### Community 49 - "SettingsPage.jsx / auth.js"
-Cohesion: 0.18
-Nodes (18): changePassword(), checkEmail(), deleteAccount(), getMe(), login(), updateProfile(), uploadAvatar(), InviteCard() (+10 more)
+Cohesion: 0.07
+Nodes (30): aiTelemetry, allowedOrigins, app, clientDist, connectDB, cors, entertainmentRoutes, errorHandler (+22 more)
 
 ### Community 50 - "ResumePage.jsx / AIEnhancement.jsx"
-Cohesion: 0.13
-Nodes (14): enhance(), saveResume(), AIBadge(), AIEnhancement(), CONFIDENCE_COLOR, CONFIDENCE_LABEL, VARIANTS, AIInsight() (+6 more)
+Cohesion: 0.28
+Nodes (5): reviewResume(), saveResume(), AIReviewPanel(), ResumePage(), ResumeReviewer()
 
 ### Community 51 - "AssistantMessage.jsx / MessageList.jsx"
-Cohesion: 0.14
-Nodes (15): Avatar(), AttachmentChip(), formatSize(), ICONS, AssistantMessage(), Citation(), ConversationView(), Message() (+7 more)
+Cohesion: 0.15
+Nodes (14): Avatar(), AttachmentChip(), formatSize(), ICONS, AssistantMessage(), Citation(), Message(), MessageList() (+6 more)
 
 ### Community 52 - "internshipController.js / domainClassifi"
-Cohesion: 0.11
-Nodes (21): { classifyDomain }, create(), domainTagsFor(), { getIdentity }, Internship, INTERNSHIP_UPDATABLE_FIELDS, update(), internshipSchema (+13 more)
+Cohesion: 0.15
+Nodes (12): { classifyDomain }, create(), domainTagsFor(), { getIdentity }, Internship, INTERNSHIP_UPDATABLE_FIELDS, update(), internshipSchema (+4 more)
 
 ### Community 53 - "shared.jsx / AdminShell()"
 Cohesion: 0.05
 Nodes (38): Auth, Data model, DATAD — Architecture, Folder map, Privacy model (the core invariant), Request lifecycle, System overview, 0. One-time production setup (do before first deploy) (+30 more)
 
 ### Community 54 - "CareerHubPage.jsx / ReadinessPage.jsx"
-Cohesion: 0.24
-Nodes (9): getReadiness(), barColor(), COMPONENT_LINKS, ReadinessCard(), RING_COLOR(), ScoreRing(), COMPONENT_LINKS, HOW_TO_IMPROVE (+1 more)
+Cohesion: 0.20
+Nodes (11): getSubscriptionStatus(), CrownBadge(), DEFAULT_DESCRIPTIONS, TierGate(), UsageSummary(), SubscriptionContext, SubscriptionProvider(), TIER_RANK (+3 more)
 
 ### Community 55 - "DaxApp.jsx / DaxApp()"
 Cohesion: 0.31
 Nodes (7): importConversations(), flagKey(), migrateLocalConversationsToServer(), migrate(), safeGet(), safeSet(), storage
-
-### Community 56 - "react / ConversationList.jsx"
-Cohesion: 0.11
-Nodes (5): ConversationListItem(), useClickOutside(), Reveal(), useReveal(), react
 
 ### Community 57 - "vectorStore.js / embed.js"
 Cohesion: 0.14
@@ -546,12 +542,12 @@ Cohesion: 0.11
 Nodes (10): Recommendation, TYPE_DEPENDENCIES, TYPE_PREREQUISITES, FEEDBACK_WEIGHTS, Recommendation, feedbackSchema, lifecycleSchema, mongoose (+2 more)
 
 ### Community 61 - "contextBuilder.js / SiteMeta.js"
-Cohesion: 0.05
-Nodes (25): UserMemory, buildContext(), buildSummary(), ChatMessage, Company, { computeDailyCaseStreak }, CONTEXT_KEY_LOADERS, Expense (+17 more)
+Cohesion: 0.09
+Nodes (9): UserMemory, UserMemory, chatMessageSchema, mongoose, NOTE: a 30-day TTL index used to live here:, mongoose, userMemorySchema, ChatMessage (+1 more)
 
 ### Community 62 - "studentIdentityService.js / directoryCon"
-Cohesion: 0.13
-Nodes (15): { updateIdentity }, upsertMyProfile(), User, UserProfile, c, router, verifyToken, { classifyDomain } (+7 more)
+Cohesion: 0.09
+Nodes (24): { updateIdentity }, upsertMyProfile(), User, UserProfile, mongoose, userProfileSchema, { bootstrapFromLegacy }, migrate() (+16 more)
 
 ### Community 63 - "devDependencies / autoprefixer"
 Cohesion: 0.11
@@ -562,44 +558,44 @@ Cohesion: 0.16
 Nodes (11): clearChat(), getChatHistory(), sendMessage(), clearChat(), daxChat(), getChatHistory(), ChatBot(), PROMPT_CHIPS (+3 more)
 
 ### Community 65 - "DaxHome.jsx / DaxTransition.jsx"
-Cohesion: 0.18
-Nodes (12): DaxOrb(), GROUP_ORDER, groupModels(), ModelIndicator(), DaxTransition(), timeGreeting(), DaxHome(), EASE (+4 more)
+Cohesion: 0.20
+Nodes (10): DaxOrb(), ConversationView(), DaxTransition(), timeGreeting(), DaxHome(), EASE, preview(), QUICK_ACTIONS (+2 more)
 
 ### Community 66 - "UserMemory.js / memoryAdapter.js"
-Cohesion: 0.17
-Nodes (14): forgotPassword(), register(), resetPassword(), BinaryRainBackground(), randomBits(), Button, ICON_SIZE, SIZE_CLASS (+6 more)
+Cohesion: 0.12
+Nodes (14): checkStreakMilestones(), computeStreak(), DailyCaseSolve, MILESTONES, { notify }, User, { notify }, PAID_TIERS (+6 more)
 
 ### Community 67 - "index.js / modelList.js"
-Cohesion: 0.23
-Nodes (11): AnthropicProvider, buildProvider(), _candidateOrder(), cfg, getProvider(), getProviderChain(), NvidiaProvider, OpenAICompatibleProvider (+3 more)
+Cohesion: 0.13
+Nodes (11): Anthropic, AnthropicProvider, AnthropicProvider, _candidateOrder(), cfg, getProvider(), NvidiaProvider, OpenAICompatibleProvider (+3 more)
 
 ### Community 68 - "livingSurface.js / generateDailyMission("
 Cohesion: 0.17
 Nodes (16): buildReasoning(), _estimateReadinessGain(), generateDailyMission(), attachDailyMission(), engine, { generateDailyMission }, getDailyMission(), _getProfileFor() (+8 more)
 
 ### Community 69 - "photoController.js / photoRoutes.js"
-Cohesion: 0.12
-Nodes (16): Album, cloudinary, crypto, deletePhoto(), listRecentPhotos(), Photo, publishService, uploadPhoto() (+8 more)
+Cohesion: 0.13
+Nodes (15): Album, cloudinary, crypto, deletePhoto(), listRecentPhotos(), Photo, publishService, uploadPhoto() (+7 more)
 
 ### Community 70 - "Button / LoginPage.jsx"
 Cohesion: 0.05
 Nodes (42): 10.1 CrownBadge (Existing, Clean), 10.2 TierGate (Existing, Needs Refactor), 10. Tier System Components, 11. Motion Components, 12. Component Consolidation Plan, 13. Component File Organization, 14. Design System Audit Checklist, 1. Component Hierarchy (+34 more)
 
 ### Community 71 - "runner.js / newsEnhancer.js"
-Cohesion: 0.19
-Nodes (12): getDirectory(), getMyProfile(), upsertMyProfile(), getPivot(), updateGap(), upsertPivot(), SmartSelect(), DOMAINS (+4 more)
+Cohesion: 0.11
+Nodes (13): getDirectory(), getMyProfile(), upsertMyProfile(), getPivot(), updateGap(), upsertPivot(), SmartSelect(), DOMAINS (+5 more)
 
 ### Community 72 - "NvidiaProvider / nvidiaProvider.js"
 Cohesion: 0.21
 Nodes (7): _currentKeyIndex(), getKeyPoolStatus(), NVIDIA_MODELS, nvidiaKeys(), NvidiaProvider, OpenAI, _shouldTryNextKey()
 
 ### Community 73 - "feedController.js / Post.js"
-Cohesion: 0.15
-Nodes (10): getFeed(), { notify }, Post, PostReaction, reactToPost(), mongoose, postReactionSchema, c (+2 more)
+Cohesion: 0.08
+Nodes (17): getFeed(), { notify }, Post, PostReaction, reactToPost(), eventSchema, mongoose, mongoose (+9 more)
 
 ### Community 74 - "studioController.js / draft()"
 Cohesion: 0.12
-Nodes (9): analysisService, cloudinary, ContentItem, get(), ingestService, POPULATE_DUP, publishService, registry (+1 more)
+Nodes (10): analysisService, cloudinary, ContentItem, draft(), get(), ingestService, POPULATE_DUP, publishService (+2 more)
 
 ### Community 75 - "Task.js / taskController.js"
 Cohesion: 0.26
@@ -618,16 +614,16 @@ Cohesion: 0.12
 Nodes (16): jsx, env, browser, es2021, extends, parserOptions, ecmaFeatures, ecmaVersion (+8 more)
 
 ### Community 79 - "AdminCasesPage.jsx / dailyCase.js"
-Cohesion: 0.21
-Nodes (14): createCase(), deleteCase(), getTodayCase(), listCases(), solveCase(), updateCase(), generateFramework(), CATEGORY_COLOR (+6 more)
+Cohesion: 0.40
+Nodes (8): createCase(), deleteCase(), listCases(), updateCase(), generateFramework(), AdminCasesPage(), CATEGORIES, emptyForm
 
 ### Community 80 - "ProjectsPage.jsx / projects.js"
 Cohesion: 0.11
-Nodes (17): createProject(), createProjectTask(), deleteProjectTask(), getProject(), listProjects(), updateProjectTask(), InteractiveTimeline(), useViewSwitch() (+9 more)
+Nodes (19): api, createProject(), createProjectTask(), deleteProjectTask(), getProject(), listProjects(), updateProjectTask(), getStreak() (+11 more)
 
 ### Community 81 - "ComposerToolbar.jsx / IconButton.jsx"
-Cohesion: 0.22
-Nodes (7): ICON_SIZE, IconButton, SIZE_CLASS, Tooltip(), ConversationList(), SidebarFooter(), SidebarHeader()
+Cohesion: 0.20
+Nodes (7): ConversationList(), ConversationListItem(), DaxShell(), Sidebar(), SidebarFooter(), SidebarHeader(), useClickOutside()
 
 ### Community 82 - "recommendationRoutes.js / workspace.js"
 Cohesion: 0.12
@@ -638,8 +634,8 @@ Cohesion: 0.09
 Nodes (23): addMemory(), createItem(), deleteItem(), EntertainmentItem, getItemBySlug(), Memory, searchArchive(), slugify() (+15 more)
 
 ### Community 84 - "intelligenceController.js / intelligence"
-Cohesion: 0.15
-Nodes (15): Bookmark, getMarket(), listArticles(), listBookmarked(), MarketSnapshot, NewsItem, { refreshMarket }, { refreshNews } (+7 more)
+Cohesion: 0.07
+Nodes (33): Bookmark, getMarket(), listArticles(), listBookmarked(), MarketSnapshot, NewsItem, refresh(), { refreshMarket } (+25 more)
 
 ### Community 85 - "noteController.js / noteRoutes.js"
 Cohesion: 0.17
@@ -650,44 +646,44 @@ Cohesion: 0.12
 Nodes (13): mongoose, photoSchema, mongoose, resourceSchema, Announcement, ContentItem, DRY_RUN, mongoose (+5 more)
 
 ### Community 87 - "AboutPage.jsx / Logo.jsx"
-Cohesion: 0.15
-Nodes (9): DatadMark(), LegalLayout(), LegalSection(), dataFacts, letters, milestones, pillars, Reveal() (+1 more)
+Cohesion: 0.14
+Nodes (10): DatadMark(), Logo(), LegalLayout(), LegalSection(), dataFacts, letters, milestones, pillars (+2 more)
 
 ### Community 88 - "capabilityEngine.js / intentEngine.js"
-Cohesion: 0.28
-Nodes (7): classifyByKeywords(), classifyByTask(), classifyTask(), INTENT_KEYWORDS, INTENT_REQUIREMENTS, INTENTS, TASK_TO_INTENT
+Cohesion: 0.16
+Nodes (13): CAPABILITY_TO_MODEL_FIELD, { INTENT_REQUIREMENTS }, { MODELS, computeCapabilityScore, INTENT_TO_CAPABILITY }, scoreModelFit(), _val(), classifyByKeywords(), classifyByTask(), classifyTask() (+5 more)
 
 ### Community 89 - "generateWeeklyNewsletter.js / generateWe"
 Cohesion: 0.14
 Nodes (14): Company, DailyBriefing, generateWeeklyNewsletter(), getMondayKey(), NewsletterDraft, { notifyBulk }, Post, PROMPTS (+6 more)
 
 ### Community 90 - "User.js / calendarEventReminder.js"
-Cohesion: 0.22
-Nodes (8): checkStreakMilestones(), computeStreak(), DailyCaseSolve, MILESTONES, { notify }, User, mongoose, userSchema
+Cohesion: 0.12
+Nodes (12): automationLogSchema, mongoose, mongoose, runtimeComparisonSchema, AutomationLog, checkRole, express, guard (+4 more)
 
 ### Community 91 - "rsvpEventReminder.js / communityProvider"
-Cohesion: 0.11
-Nodes (13): Event, EventRSVP, { notify }, sendRsvpReminders(), eventSchema, mongoose, eventRSVPSchema, mongoose (+5 more)
+Cohesion: 0.23
+Nodes (11): listSubscriptionRequests(), listSubscriptionUsers(), reviewSubscriptionRequest(), updateUserTier(), AdminSubscriptionsPage(), expiryFor(), fmtDate(), RequestCard() (+3 more)
 
 ### Community 92 - "CalendarPage.jsx / calendar.js"
-Cohesion: 0.21
-Nodes (11): createEvent(), deleteEvent(), getEvents(), getHolidays(), buildCalendarDays(), CalendarPage(), MONTHS, sameDay() (+3 more)
+Cohesion: 0.09
+Nodes (33): createAlbum(), deleteAlbum(), listAlbums(), checkEmail(), forgotPassword(), login(), register(), resetPassword() (+25 more)
 
 ### Community 93 - "DiscussionsPage.jsx / posts.js"
-Cohesion: 0.15
-Nodes (20): getQuestionBank(), createPost(), createReply(), deletePost(), deleteReply(), getPost(), likePost(), likeReply() (+12 more)
+Cohesion: 0.12
+Nodes (23): createPost(), createReply(), deletePost(), deleteReply(), getPost(), likePost(), likeReply(), listPosts() (+15 more)
 
 ### Community 94 - "useSearch.js / useSearch()"
 Cohesion: 0.17
 Nodes (16): getFrequentSearches(), getPinned(), getRecentSearches(), parseIntent(), recordClick(), searchAll(), togglePin(), CATEGORY_ORDER (+8 more)
 
 ### Community 95 - "SectionTransition.jsx / SectionTransitio"
-Cohesion: 0.14
-Nodes (19): settle(), DATADLoader(), RouteBeacon(), sectionOf(), SECTIONS, SectionTransition(), BACKGROUND, beginRequest() (+11 more)
+Cohesion: 0.24
+Nodes (11): DATADLoader(), RouteBeacon(), sectionOf(), SECTIONS, SectionTransition(), getInflight(), subscribeInflight(), getMountedPath() (+3 more)
 
 ### Community 96 - "AppShell.jsx / tiers.js"
-Cohesion: 0.16
-Nodes (13): AvatarMenu(), Footer(), mailto(), ThemeContext, ThemeProvider(), useTheme(), TIER_BADGE_STYLE, TIER_COLOR_MAP (+5 more)
+Cohesion: 0.17
+Nodes (12): AppShell(), AvatarMenu(), Footer(), mailto(), useTheme(), TIER_BADGE_STYLE, TIER_COLOR_MAP, TIER_COLORS (+4 more)
 
 ### Community 97 - "FinancePage.jsx / FinancePage()"
 Cohesion: 0.05
@@ -738,16 +734,16 @@ Cohesion: 0.16
 Nodes (13): Event, Internship, MarketListing, mongoose, PlacementDrive, Post, Program, Project (+5 more)
 
 ### Community 109 - "dependencies / adm-zip"
-Cohesion: 0.15
-Nodes (13): adm-zip, @anthropic-ai/sdk, cloudinary, helmet, rss-parser, dependencies, adm-zip, @anthropic-ai/sdk (+5 more)
+Cohesion: 0.13
+Nodes (15): adm-zip, bcryptjs, dotenv, express-mongo-sanitize, openai, dependencies, adm-zip, bcryptjs (+7 more)
 
 ### Community 110 - "EventsPage.jsx / events.js"
 Cohesion: 0.06
 Nodes (30): 10. Dark Mode, 11. The `.gradient-text` Rename, 12. Consistency Checklist, 1. Architecture Philosophy, 2. Color Tokens, 3. Typography, 4. Spacing Scale, 5. Border Radius (+22 more)
 
 ### Community 111 - "Button.jsx / JournalPage.jsx"
-Cohesion: 0.48
-Nodes (6): confirmProposal(), rejectProposal(), undoProposal(), ProposalCard(), STATUS_LABEL, SUCCEEDED
+Cohesion: 0.18
+Nodes (5): AiUsage, AutomationLog, getRecentCalls(), recordCall(), SESSION_LOGS
 
 ### Community 112 - "PWAContext.jsx / usePWA()"
 Cohesion: 0.26
@@ -762,8 +758,8 @@ Cohesion: 0.18
 Nodes (9): _buildReflection(), generate(), getWeekBoundary(), Recommendation, Task, UserMemory, WeeklyReview, mongoose (+1 more)
 
 ### Community 115 - "generateDailyCase.js / generateDailyCase"
-Cohesion: 0.15
-Nodes (14): CATEGORIES, DailyCase, DIFFICULTIES, generateDailyCase(), { notifyBulk }, pickCategory(), pickDifficulty(), PROMPTS (+6 more)
+Cohesion: 0.19
+Nodes (12): CATEGORIES, DailyCase, DIFFICULTIES, generateDailyCase(), { notifyBulk }, pickCategory(), pickDifficulty(), PROMPTS (+4 more)
 
 ### Community 116 - "albumRoutes.js / albumController.js"
 Cohesion: 0.21
@@ -782,8 +778,8 @@ Cohesion: 0.15
 Nodes (6): StarStory, mongoose, starStorySchema, c, router, verifyToken
 
 ### Community 120 - "Resume.js / careerProvider.js"
-Cohesion: 0.29
-Nodes (5): companies, Company, dotenv, mongoose, path
+Cohesion: 0.07
+Nodes (14): companySchema, mongoose, mongoose, resumeSchema, companies, Company, dotenv, mongoose (+6 more)
 
 ### Community 121 - "analysisService.js / analyze()"
 Cohesion: 0.22
@@ -798,8 +794,8 @@ Cohesion: 0.24
 Nodes (9): CACHE_TTL, CONTENT_TYPE_TTL, crypto, get(), hasCache(), invalidate(), _makeKey(), set() (+1 more)
 
 ### Community 124 - "package.json / scripts"
-Cohesion: 0.17
-Nodes (11): author, description, keywords, license, name, scripts, dev, start (+3 more)
+Cohesion: 0.13
+Nodes (14): author, description, jest, moduleNameMapper, keywords, license, ^uuid$, name (+6 more)
 
 ### Community 125 - "destinationRegistry.js / createTarget()"
 Cohesion: 0.18
@@ -810,8 +806,8 @@ Cohesion: 0.24
 Nodes (5): deleteItem(), flushOfflineQueue(), getAllItems(), openDB(), PRECACHE_URLS
 
 ### Community 127 - "SubscribePage.jsx / subscription.js"
-Cohesion: 0.13
-Nodes (19): createDaxChatAdapter(), activateTrial(), getSubscriptionStatus(), submitPaymentRef(), AdminRoute(), HomeGate(), ProtectedRoute(), AppShell() (+11 more)
+Cohesion: 0.09
+Nodes (34): activateTrial(), submitPaymentRef(), BillingToggle(), SPARKLES, CheckoutSummary(), fmtDate(), PaymentPanel(), PriceSummary() (+26 more)
 
 ### Community 128 - "TierGate.jsx / SubscriptionContext.jsx"
 Cohesion: 0.08
@@ -895,44 +891,40 @@ Cohesion: 0.22
 Nodes (8): name, private, scripts, build, dev, preview, type, version
 
 ### Community 148 - "inflight.js / endRequest()"
-Cohesion: 0.17
-Nodes (8): SiteMeta, StudentIdentity, User, UserProfile, mongoose, siteMetaSchema, mongoose, userProfileSchema
+Cohesion: 0.11
+Nodes (18): buildContext(), buildSummary(), ChatMessage, Company, { computeDailyCaseStreak }, CONTEXT_KEY_LOADERS, Expense, formatContextAsText() (+10 more)
 
 ### Community 149 - "DaxMemoryPanel.jsx / DaxMemoryPanel()"
-Cohesion: 0.36
-Nodes (7): forgetDaxMemory(), getDaxMemory(), updateDaxMemory(), asList(), DaxMemoryPanel(), EXPLANATION_STYLES, toList()
+Cohesion: 0.21
+Nodes (11): getCostProfile(), getCreditCost(), AiUsage, AiUsageEvent, chargeCredits(), checkCredits(), CREDIT_LIMITS, { getCreditCost } (+3 more)
 
 ### Community 150 - "Calculators.jsx / formatINR()"
 Cohesion: 0.31
 Nodes (4): EMICalculator(), formatINR(), SavingsForecast(), SIPCalculator()
 
 ### Community 151 - "newsFetcher.js / refreshNews()"
-Cohesion: 0.31
-Nodes (7): clean(), FEEDS, fetchFeed(), NewsItem, Parser, refreshNews(), startNewsRefresh()
+Cohesion: 0.24
+Nodes (7): PlacementJourney(), STEPS, band(), COMPONENT_LINKS, HOW_TO_IMPROVE, ReadinessBreakdown(), SOURCE_DOT
 
 ### Community 152 - "PlacementCountdown.jsx / meta.js"
 Cohesion: 0.43
 Nodes (6): getMeta(), updateMeta(), PlacementCountdown(), urgencyClass(), urgencyText(), PlacementDateForm()
 
-### Community 153 - "NotificationBell.jsx / notifications.js"
-Cohesion: 0.57
-Nodes (6): deleteNotification(), listNotifications(), markAllRead(), markRead(), NotificationBell(), timeAgo()
-
 ### Community 154 - "PremiumPanel.jsx / fmtDate()"
-Cohesion: 0.36
-Nodes (6): AI_TOOLS_PRO, fmtDate(), MaxPanel(), PremiumPanel(), ProPanel(), TrialBanner()
+Cohesion: 0.05
+Nodes (42): createEvent(), deleteEvent(), getEvents(), getHolidays(), createSkill(), deleteSkill(), listSkills(), rateSkill() (+34 more)
 
 ### Community 155 - "AdminAutomationPage.jsx / timeAgo()"
 Cohesion: 0.11
 Nodes (18): Admin, Career, Community, Cross-cutting, Dashboard (`LivingSurface`), DATAD — Product & UX Review, Dax Chat, Finance (+10 more)
 
 ### Community 156 - "AnthropicProvider / anthropicProvider.js"
-Cohesion: 0.19
-Nodes (14): deleteConversationRemote(), getAvailableModels(), getModelPreference(), updateConversationRemote(), AIPresencePanel(), SUGGESTIONS, DaxShell(), Sidebar() (+6 more)
+Cohesion: 0.11
+Nodes (28): deleteConversationRemote(), getAvailableModels(), getModelPreference(), setModelPreference(), updateConversationRemote(), AIPresencePanel(), SUGGESTIONS, SearchPalette() (+20 more)
 
 ### Community 157 - "marketFetcher.js / refreshMarket()"
-Cohesion: 0.36
-Nodes (7): refresh(), fetchOne(), MarketSnapshot, pctChange(), refreshMarket(), startMarketRefresh(), SYMBOLS
+Cohesion: 0.29
+Nodes (8): getTodayCase(), solveCase(), AIBadge(), CATEGORY_COLOR, CATEGORY_LABEL, DailyCaseCard(), THINK_TIPS, daxAttribution()
 
 ### Community 158 - "resumeRoutes.js / resumeController.js"
 Cohesion: 0.32
@@ -955,8 +947,8 @@ Cohesion: 0.11
 Nodes (17): 0. Superseding the existing `runtime-v2/MIGRATION_REPORT.md`, 1. Target Architecture, 2. File-by-file disposition, 3. Dependency-break analysis, 4. Migration Phases, 5. Risks specific to this migration (beyond what `AI_ARCHITECTURE_REPORT.md` already covers), Backend — routes, Backend — `server/ai/` core (V1 / Dax's current runtime) (+9 more)
 
 ### Community 163 - "ExperienceStep.jsx / SmartSelect.jsx"
-Cohesion: 0.06
-Nodes (41): createPost(), getFeed(), reactToPost(), votePoll(), createListing(), deleteListing(), listListings(), markSold() (+33 more)
+Cohesion: 0.18
+Nodes (16): settle(), createPost(), getFeed(), reactToPost(), votePoll(), EMOJIS, FeedPage(), PostCard() (+8 more)
 
 ### Community 164 - "LegalLayout.jsx / PrivacyPage.jsx"
 Cohesion: 0.11
@@ -970,25 +962,29 @@ Nodes (4): WorkspaceLayout(), LEGACY_REDIRECTS, WORKSPACE_TABS, WORKSPACES
 Cohesion: 0.29
 Nodes (4): PlacementApplication, Task, mongoose, placementApplicationSchema
 
+### Community 167 - "dependencyGraph.js / getDependencyChain("
+Cohesion: 0.36
+Nodes (7): forgetDaxMemory(), getDaxMemory(), updateDaxMemory(), asList(), DaxMemoryPanel(), EXPLANATION_STYLES, toList()
+
 ### Community 168 - "goalProgress.js / compute()"
-Cohesion: 0.33
-Nodes (4): SettingsPanel(), CAPABILITY_CHIPS, MESSAGE_STATUS, STORAGE_KEYS
+Cohesion: 0.28
+Nodes (7): listItems(), uploadFiles(), AdminStudioPage(), STATUS_LABEL, STATUS_STYLE, TABS, TYPE_ICON
 
 ### Community 169 - "NewsItem.js / newsProvider.js"
-Cohesion: 0.29
-Nodes (4): mongoose, newsItemSchema, Company, NewsItem
+Cohesion: 0.57
+Nodes (6): deleteNotification(), listNotifications(), markAllRead(), markRead(), NotificationBell(), timeAgo()
 
 ### Community 170 - "seedCompanies.js / companies"
 Cohesion: 0.12
 Nodes (15): API Endpoints (V2 additions), dailyMission.js, dependencyGraph.js, Directory Structure, feedbackEngine.js, goalAligner.js, lifecycleManager.js, Migration Notes (+7 more)
 
 ### Community 171 - "index.js / registerAll()"
-Cohesion: 0.22
-Nodes (7): fs, path, PROVIDERS_DIR, registerAll(), registry, searchRouter, registry
+Cohesion: 0.36
+Nodes (6): AI_TOOLS_PRO, fmtDate(), MaxPanel(), PremiumPanel(), ProPanel(), TrialBanner()
 
 ### Community 172 - "ReadinessBreakdown.jsx / RowSkeleton()"
-Cohesion: 0.17
-Nodes (14): PlacementJourney(), STEPS, band(), COMPONENT_LINKS, HOW_TO_IMPROVE, ReadinessBreakdown(), CrownBadge(), DEFAULT_DESCRIPTIONS (+6 more)
+Cohesion: 0.24
+Nodes (9): getReadiness(), barColor(), COMPONENT_LINKS, ReadinessCard(), RING_COLOR(), ScoreRing(), COMPONENT_LINKS, HOW_TO_IMPROVE (+1 more)
 
 ### Community 174 - "JournalEntry.js / wellbeingProvider.js"
 Cohesion: 0.33
@@ -1038,29 +1034,29 @@ Nodes (13): 10. Testing checklist, 1. Architecture, 2. Database changes, 3. Uplo
 Cohesion: 0.14
 Nodes (13): API functions still used (from `experience.js`), Components Removed from LivingSurface Imports, Design Rule Compliance, Files Modified, LivingSurface V2 — Migration Report, Narrative Structure Mapping, Priority: High, Priority: Low (+5 more)
 
-### Community 188 - "Internship.js / internshipSchema"
-Cohesion: 0.29
-Nodes (4): activityLogSchema, mongoose, ActivityLog, logger
-
 ### Community 189 - "MarketSnapshot.js / marketSnapshotSchema"
-Cohesion: 0.09
-Nodes (17): authLimiter, generalLimiter, make(), rateLimit, jwt, c, checkRole, express (+9 more)
+Cohesion: 0.12
+Nodes (17): authLimiter, generalLimiter, heavyLimiter, make(), rateLimit, c, checkRole, express (+9 more)
 
 ### Community 190 - "Memory.js / MemorySchema"
-Cohesion: 0.18
-Nodes (17): draftItem(), getItem(), listDestinations(), listItems(), publishItem(), reanalyzeItem(), removeItem(), scheduleItem() (+9 more)
+Cohesion: 0.36
+Nodes (10): draftItem(), getItem(), listDestinations(), publishItem(), reanalyzeItem(), removeItem(), scheduleItem(), updateItem() (+2 more)
 
 ### Community 192 - "ProgramRegistry.js / mongoose"
-Cohesion: 0.29
-Nodes (10): makeMessage(), useDaxChat(), newConversation(), toIndexEntry(), useDaxConversations(), generateId(), isAsyncIterable(), randomDelay() (+2 more)
+Cohesion: 0.36
+Nodes (7): DOMAIN_KEYWORDS, DOMAIN_TAGS, escapeRegex(), inferNewsInterests(), keywordMatches(), NEWS_TOPIC_KEYWORDS, normalize()
 
 ### Community 193 - "SkillListing.js / mongoose"
-Cohesion: 0.40
-Nodes (4): alignAll(), alignRecommendation(), GENERIC_GOAL, TYPE_TO_GOAL_MAP
+Cohesion: 0.29
+Nodes (4): activityLogSchema, mongoose, ActivityLog, logger
 
 ### Community 194 - "SubjectRegistry.js / mongoose"
 Cohesion: 0.15
 Nodes (12): Admin Endpoints, AI Runtime V2 Migration Report, Backward Compatibility, Default Behavior, Environment Variables, Execution Flow, Files NOT modified, Future Migration Plan (+4 more)
+
+### Community 196 - "bcryptjs"
+Cohesion: 0.40
+Nodes (4): alignAll(), alignRecommendation(), GENERIC_GOAL, TYPE_TO_GOAL_MAP
 
 ### Community 204 - "main.jsx / App()"
 Cohesion: 0.28
@@ -1075,8 +1071,8 @@ Cohesion: 0.18
 Nodes (10): Brutal-honesty cut list, Career — 8 tabs → 4, Community — 9 tabs → 6, Cross-cutting, Dashboard — REDESIGN (highest priority), DATAD Product Audit — Student-First Philosophy, Me — 5 tabs → 6 (the only place that grows), Study — 7 tabs → 4 (+2 more)
 
 ### Community 231 - "rateLimiters.js"
-Cohesion: 0.24
-Nodes (8): AttachmentDropzone(), Composer(), ComposerToolbar(), SendStopButton(), VoiceInputButton(), resize(), useAutosizeTextarea(), useDragAndDrop()
+Cohesion: 0.17
+Nodes (12): ICON_SIZE, IconButton, SIZE_CLASS, Tooltip(), AttachmentDropzone(), Composer(), ComposerToolbar(), SendStopButton() (+4 more)
 
 ### Community 232 - "DATAD — Authenticated Runtime Audit"
 Cohesion: 0.20
@@ -1103,16 +1099,16 @@ Cohesion: 0.25
 Nodes (7): Capability names, Dax — naming rules, Deliberately NOT renamed, Prompts, Source of truth, The rule, Voice
 
 ### Community 240 - "DAX_PRODUCT_AUDIT.md"
-Cohesion: 0.18
-Nodes (10): Dax — Product & Architecture Audit, Executive summary, Implemented, Missing, Part 11 — Originality, Part 13 — Final Verdict, Part 3 — Architecture Review, Part 4 — AI Capabilities (+2 more)
+Cohesion: 0.25
+Nodes (7): Dax — Product & Architecture Audit, Executive summary, Part 11 — Originality, Part 13 — Final Verdict, Part 3 — Architecture Review, Part 6 — Intelligence Audit, The core problem, stated once
 
 ### Community 241 - "Part 10 — Missed Opportunities"
 Cohesion: 0.25
 Nodes (8): 1. Make Dax act — the "Dax can do that" loop, 2. Invert the interaction model — ambient, not destination, 3. Close the learning loop, 4. Real conversational memory, 5. Make the profile visible and editable — "here's what I know about you", 6. Outcome-anchored intelligence, 7. Cohort intelligence, Part 10 — Missed Opportunities
 
 ### Community 243 - "ResumeTip.js"
-Cohesion: 0.11
-Nodes (16): COLLECTIONS, Company, DailyCase, NewsItem, Note, Post, ResumeTip, search() (+8 more)
+Cohesion: 0.25
+Nodes (6): mongoose, resumeTipSchema, express, ResumeTip, router, verifyToken
 
 ### Community 244 - "Appendix — Work completed against this audit"
 Cohesion: 0.29
@@ -1129,6 +1125,10 @@ Nodes (5): `/career/questions` (user account — Interview Questions), `/career/
 ### Community 248 - "Part 5 — UI / UX Audit"
 Cohesion: 0.33
 Nodes (6): Does Dax feel different from ChatGPT?, Mental-model problem, Missed opportunities, Part 5 — UI / UX Audit, Strengths, Weaknesses
+
+### Community 250 - "activityCollector.js"
+Cohesion: 0.29
+Nodes (4): AiUsage, ChatMessage, aiUsageSchema, mongoose
 
 ### Community 251 - "Part 9 — Weaknesses"
 Cohesion: 0.40
@@ -1162,29 +1162,41 @@ Nodes (3): Part 7 — Personalization, Where it genuinely lands, Where the data 
 Cohesion: 0.36
 Nodes (6): AdminAutomationPage(), API(), JOB_META, JobCard(), LogRow(), timeAgo()
 
+### Community 271 - "conversations.test.js"
+Cohesion: 0.40
+Nodes (3): HAS_DB, mongoose, users
+
 ### Community 272 - "useRegisterForm.js"
 Cohesion: 0.53
 Nodes (3): useRegisterForm(), validatePassword(), useValidation()
 
+### Community 273 - "ModelIndicator.jsx"
+Cohesion: 0.67
+Nodes (3): GROUP_ORDER, groupModels(), ModelIndicator()
+
+### Community 279 - "Part 4 — AI Capabilities"
+Cohesion: 0.67
+Nodes (3): Implemented, Missing, Part 4 — AI Capabilities
+
 ## Knowledge Gaps
-- **1933 isolated node(s):** `browser`, `es2021`, `eslint:recommended`, `plugin:react/recommended`, `plugin:jsx-a11y/recommended` (+1928 more)
+- **1922 isolated node(s):** `browser`, `es2021`, `eslint:recommended`, `plugin:react/recommended`, `plugin:jsx-a11y/recommended` (+1917 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **42 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **44 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `react` connect `react / ConversationList.jsx` to `App.jsx / AboutPage`, `MessageContent.jsx / markdown.jsx`, `LivingSurface.jsx / axios.js`, `FinanceCalculatorPage.jsx / inr()`, `AdminStudioReviewPage.jsx / CompanyDetai`, `SupportPage.jsx / SupportPage()`, `EntertainmentDetailPage.jsx / entertainm`, `AdminAutomationPage.jsx`, `useRegisterForm.js`, `Skeleton.jsx / PlannerPage.jsx`, `useDocumentTitle() / useDocumentTitle.js`, `DaxMemoryPanel.jsx / DaxMemoryPanel()`, `Calculators.jsx / formatINR()`, `useAuth() / AuthContext.jsx`, `PlacementCountdown.jsx / meta.js`, `NotificationBell.jsx / notifications.js`, `RegisterPage.jsx / index.js`, `motion.jsx / Page()`, `admin.js / AdminSubscriptionsPage.jsx`, `AnthropicProvider / anthropicProvider.js`, `dax.js / AIToolsPage.jsx`, `EmptyState.jsx / EmptyState()`, `FinanceHubPage.jsx / FinanceOverviewPage`, `ExperienceStep.jsx / SmartSelect.jsx`, `PlacementsPage.jsx / InternshipsPage.jsx`, `IntelligencePage.jsx / dateUtils.js`, `StudyToolsPage.jsx / StarStoriesPage.jsx`, `ReadinessBreakdown.jsx / RowSkeleton()`, `ErrorBoundary / ErrorBoundary.jsx`, `useOfflineQueue.js / addToQueue()`, `SettingsPage.jsx / auth.js`, `ResumePage.jsx / AIEnhancement.jsx`, `AssistantMessage.jsx / MessageList.jsx`, `CareerHubPage.jsx / ReadinessPage.jsx`, `Memory.js / MemorySchema`, `ChatBot.jsx / daxChatAdapter.js`, `DaxHome.jsx / DaxTransition.jsx`, `UserMemory.js / memoryAdapter.js`, `ProgramRegistry.js / mongoose`, `runner.js / newsEnhancer.js`, `main.jsx / App()`, `.eslintrc.json / extends`, `AdminCasesPage.jsx / dailyCase.js`, `ProjectsPage.jsx / projects.js`, `ComposerToolbar.jsx / IconButton.jsx`, `AboutPage.jsx / Logo.jsx`, `CalendarPage.jsx / calendar.js`, `DiscussionsPage.jsx / posts.js`, `useSearch.js / useSearch()`, `SectionTransition.jsx / SectionTransitio`, `AppShell.jsx / tiers.js`, `rateLimiters.js`, `Button.jsx / JournalPage.jsx`, `PWAContext.jsx / usePWA()`, `SubscribePage.jsx / subscription.js`?**
-  _High betweenness centrality (0.287) - this node is a cross-community bridge._
-- **Why does `clearCache()` connect `PWAContext.jsx / usePWA()` to `index.js / modelList.js`?**
-  _High betweenness centrality (0.170) - this node is a cross-community bridge._
+- **Why does `react` connect `runner.js / newsEnhancer.js` to `App.jsx / AboutPage`, `MessageContent.jsx / markdown.jsx`, `LivingSurface.jsx / axios.js`, `FinanceCalculatorPage.jsx / inr()`, `AdminStudioReviewPage.jsx / CompanyDetai`, `SupportPage.jsx / SupportPage()`, `EntertainmentDetailPage.jsx / entertainm`, `AdminAutomationPage.jsx`, `useRegisterForm.js`, `ModelIndicator.jsx`, `Skeleton.jsx / PlannerPage.jsx`, `CreatorPage.jsx`, `useDocumentTitle() / useDocumentTitle.js`, `Calculators.jsx / formatINR()`, `newsFetcher.js / refreshNews()`, `PlacementCountdown.jsx / meta.js`, `RegisterPage.jsx / index.js`, `PremiumPanel.jsx / fmtDate()`, `AnthropicProvider / anthropicProvider.js`, `marketFetcher.js / refreshMarket()`, `dax.js / AIToolsPage.jsx`, `main.jsx`, `admin.js / AdminSubscriptionsPage.jsx`, `EmptyState.jsx / EmptyState()`, `FinanceHubPage.jsx / FinanceOverviewPage`, `PlacementsPage.jsx / InternshipsPage.jsx`, `ExperienceStep.jsx / SmartSelect.jsx`, `dependencyGraph.js / getDependencyChain(`, `goalProgress.js / compute()`, `IntelligencePage.jsx / dateUtils.js`, `NewsItem.js / newsProvider.js`, `StudyToolsPage.jsx / StarStoriesPage.jsx`, `ReadinessBreakdown.jsx / RowSkeleton()`, `ErrorBoundary / ErrorBoundary.jsx`, `useOfflineQueue.js / addToQueue()`, `SettingsPage.jsx / auth.js`, `ResumePage.jsx / AIEnhancement.jsx`, `AssistantMessage.jsx / MessageList.jsx`, `CareerHubPage.jsx / ReadinessPage.jsx`, `react / ConversationList.jsx`, `Memory.js / MemorySchema`, `ChatBot.jsx / daxChatAdapter.js`, `DaxHome.jsx / DaxTransition.jsx`, `main.jsx / App()`, `.eslintrc.json / extends`, `AdminCasesPage.jsx / dailyCase.js`, `ProjectsPage.jsx / projects.js`, `ComposerToolbar.jsx / IconButton.jsx`, `AboutPage.jsx / Logo.jsx`, `rsvpEventReminder.js / communityProvider`, `CalendarPage.jsx / calendar.js`, `DiscussionsPage.jsx / posts.js`, `useSearch.js / useSearch()`, `SectionTransition.jsx / SectionTransitio`, `AppShell.jsx / tiers.js`, `uuid`, `rateLimiters.js`, `PWAContext.jsx / usePWA()`, `SubscribePage.jsx / subscription.js`?**
+  _High betweenness centrality (0.262) - this node is a cross-community bridge._
 - **Why does `PWAProvider()` connect `PWAContext.jsx / usePWA()` to `App.jsx / AboutPage`?**
-  _High betweenness centrality (0.170) - this node is a cross-community bridge._
+  _High betweenness centrality (0.153) - this node is a cross-community bridge._
+- **Why does `clearCache()` connect `PWAContext.jsx / usePWA()` to `index.js / modelList.js`?**
+  _High betweenness centrality (0.153) - this node is a cross-community bridge._
 - **What connects `browser`, `es2021`, `eslint:recommended` to the rest of the system?**
-  _1933 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1922 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `daxService.js / Conversation` be split into smaller, more focused modules?**
-  _Cohesion score 0.03983903420523139 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.040253279059249206 - nodes in this community are weakly interconnected._
 - **Should `App.jsx / AboutPage` be split into smaller, more focused modules?**
-  _Cohesion score 0.02631578947368421 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.02564102564102564 - nodes in this community are weakly interconnected._
 - **Should `aiGateway.js / telemetryEngine.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.052597402597402594 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13227513227513227 - nodes in this community are weakly interconnected._

@@ -129,17 +129,6 @@ export default function PlannerPage() {
         <Button onClick={openCreate} variant="primary" size="sm" icon={Plus}>Add</Button>
       </div>
 
-      {/* ── AI Enhancement: Schedule optimisation ── */}
-      <div className="mb-6">
-        <TierGate required="trial">
-          <AIEnhancement
-            page="planner"
-            action="optimize"
-            variant="card"
-            dismissKey="planner-optimize"
-          />
-        </TierGate>
-      </div>
 
       {loading ? <FeedSkeleton count={4} />
       : tasks.length === 0 ? (

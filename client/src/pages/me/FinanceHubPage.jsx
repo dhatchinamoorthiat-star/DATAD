@@ -124,12 +124,6 @@ export default function FinanceHubPage() {
         </div>
       </div>
 
-      {/* ── AI ENHANCEMENT: Budgeting advice ── */}
-      <div className="mb-6">
-        <TierGate required="pro">
-          <AIEnhancement page="finance" action="advise" variant="card" dismissKey="finance-advise" />
-        </TierGate>
-      </div>
 
       <div className="mb-6">
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800" />

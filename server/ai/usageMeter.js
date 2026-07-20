@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
 // (DAILY_AI_LIMITS = 0/10/75/250) scaled by an average model weight of ~3,
 // so a student who only ever uses cheap models gets MORE actions than
 // before, and one who leans on premium models gets fewer.
-const CREDIT_LIMITS = { free: 0, trial: 30, pro: 250, max: 800 };
+const CREDIT_LIMITS = { free: 0, trial: 500, pro: 500, max: 2000 };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 

@@ -175,23 +175,6 @@ function StudentSnapshot({ readiness, tasks, resume, streak, loading }) {
   );
 }
 
-// ── 4. Dax Intelligence — ambient, continuous observations ─────────────────
-// Reuses AIEnhancement/useEnhancement exactly as before: real calls into
-// studentIntelligenceEngine.enhance() (server/ai/runtime-v2), the same path
-// fixed for a missing `await` earlier this session.
-
-function DaxIntelligence() {
-  return (
-    <section>
-      <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Dax noticed</h2>
-      <div className="space-y-3">
-        <AIEnhancement page="dashboard" action="view" variant="card" dismissKey="dax-dashboard-view" />
-        <AIEnhancement page="dashboard" action="detect-problems" variant="banner" dismissKey="dax-dashboard-problems" />
-        <AIEnhancement page="recommend" action="next" variant="minimal" />
-      </div>
-    </section>
-  );
-}
 
 // ── 5. Ask Dax — a spotlight-style input, not a chat window ────────────────
 
@@ -433,7 +416,6 @@ export default function LivingSurface() {
         <UsageSummary />
         <TodaysFocus tasks={tasks} loading={tasksLoading} />
         <StudentSnapshot readiness={readiness} tasks={tasks} resume={resume} streak={streak} loading={readinessLoading || tasksLoading} />
-        <DaxIntelligence />
         <AskDax />
         <ContinueWorking latestNote={notes?.[0]} />
         <Opportunities internships={internships} loading={internshipsLoading} />

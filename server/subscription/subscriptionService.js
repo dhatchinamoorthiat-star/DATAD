@@ -11,9 +11,9 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 
 // Legacy count-based limits — superseded by credit metering (CREDIT_LIMITS
 // in ai/usageMeter.js); kept exported for one release for rollback safety.
-const DAILY_AI_LIMITS = { free: 0, trial: 10, pro: 75, max: 250 };
+const DAILY_AI_LIMITS = { free: 0, trial: 500, pro: 500, max: 2000 };
 
-const CHAT_QUOTAS = { free: 10, trial: 30, pro: 100, max: 1000 };
+const CHAT_QUOTAS = { free: 10, trial: 100, pro: 200, max: 1000 };
 
 // Credit-weighted: a request costs 1–5 credits depending on the model.
 async function getRemainingAiQuota(userId, tier) {

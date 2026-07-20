@@ -39,9 +39,31 @@ const userSchema = new mongoose.Schema(
     tierExpiresAt: { type: Date, default: null },    // null = never expires
     subscriptionRef: { type: String, default: null }, // last verified payment ref
 
-    // Module system: programs this user is enrolled in + active one
-    programs: { type: [{ type: String }], default: ['general'] },
-    activeProgram: { type: String, default: 'general' },
+    // ⭐ Program Personalization System
+    program: {
+      id: { type: String, default: null },              // 'mba', 'btech-cs', 'custom-xyz'
+      label: { type: String, default: null },           // 'MBA', 'BTech Computer Science'
+      type: { type: String, enum: ['preset', 'custom'], default: null },
+      customName: { type: String, default: null },      // User-typed program name (if type='custom')
+      category: { type: String, default: null },        // 'Master', 'Bachelor', 'Diploma'
+      specialization: { type: String, default: null },  // 'Finance', 'AI/ML', etc
+      cohort: { type: Number, default: null },          // Graduation year
+      institution: { type: String, default: null },     // College name
+      approvalId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProgramApproval', default: null },
+    },
+
+    // Program change history (max 1 change allowed)
+    programHistory: [{
+      program: {
+        id: String,
+        label: String,
+      },
+      changedAt: { type: Date, default: Date.now },
+      reason: { type: String, enum: ['graduation_completed', 'transfer_certificate', 'career_change'] },
+      approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      approvedAt: Date,
+    }],
+    canChangeProgramAgain: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

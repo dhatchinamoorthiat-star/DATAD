@@ -1,0 +1,114 @@
+{
+  "programs": [
+    {
+      "id": "mba",
+      "label": "MBA",
+      "category": "Master",
+      "icon": "📊",
+      "description": "Master of Business Administration",
+      "specializations": ["Finance", "Marketing", "Strategy", "Operations", "Consulting"],
+      "relevantSources": ["Business Insider", "McKinsey", "HBR", "Forbes"],
+      "hiringCompanies": ["McKinsey", "BCG", "Goldman Sachs", "Deloitte", "Accenture"],
+      "careerPaths": ["Management Consultant", "Finance Analyst", "Product Manager", "Entrepreneur", "Corporate Leader"]
+    },
+    {
+      "id": "btech-cs",
+      "label": "BTech Computer Science",
+      "category": "Bachelor",
+      "icon": "💻",
+      "description": "Bachelor of Technology in Computer Science",
+      "specializations": ["AI/ML", "Cloud Computing", "Cybersecurity", "Full-Stack", "Blockchain"],
+      "relevantSources": ["TechCrunch", "HackerNews", "Wired", "Dev.to", "Medium"],
+      "hiringCompanies": ["Google", "Microsoft", "Amazon", "Apple", "Meta", "Goldman Sachs"],
+      "careerPaths": ["Software Engineer", "ML Engineer", "DevOps Engineer", "Security Researcher", "Startup Founder"]
+    },
+    {
+      "id": "bsc-psychology",
+      "label": "BSc Psychology",
+      "category": "Bachelor",
+      "icon": "🧠",
+      "description": "Bachelor of Science in Psychology",
+      "specializations": ["Clinical", "Organizational", "Child Development", "Cognitive", "Social"],
+      "relevantSources": ["PsychToday", "ResearchGate", "Nature", "APA Monitor"],
+      "hiringCompanies": ["Tech HR", "Healthcare", "NGOs", "Research Institutes", "Counseling Centers"],
+      "careerPaths": ["Clinical Psychologist", "HR Specialist", "Researcher", "Counselor", "UX Designer"]
+    },
+    {
+      "id": "msc-ds",
+      "label": "MSc Data Science",
+      "category": "Master",
+      "icon": "📈",
+      "description": "Master of Science in Data Science",
+      "specializations": ["ML Engineering", "Analytics", "Big Data", "Business Intelligence"],
+      "relevantSources": ["Towards Data Science", "KDnuggets", "ArXiv", "Analytics Vidhya"],
+      "hiringCompanies": ["Google", "Amazon", "Microsoft", "Goldman Sachs", "JP Morgan"],
+      "careerPaths": ["Data Scientist", "ML Engineer", "Analytics Engineer", "AI Researcher"]
+    },
+    {
+      "id": "bvsc",
+      "label": "BVSc Veterinary Science",
+      "category": "Bachelor",
+      "icon": "🐾",
+      "description": "Bachelor of Veterinary Science",
+      "specializations": ["Small Animal", "Large Animal", "Wildlife", "Pathology"],
+      "relevantSources": ["VetMag", "Vet Times", "AVMA", "Veterinary Forum"],
+      "hiringCompanies": ["Veterinary Hospitals", "Research Labs", "Pharma", "Wildlife Organizations"],
+      "careerPaths": ["Veterinarian", "Veterinary Surgeon", "Research Scientist", "Pharmaceutical Specialist"]
+    },
+    {
+      "id": "llb",
+      "label": "LLB Law",
+      "category": "Bachelor",
+      "icon": "⚖️",
+      "description": "Bachelor of Laws",
+      "specializations": ["Corporate", "Criminal", "Constitutional", "Intellectual Property", "International"],
+      "relevantSources": ["Law.com", "LexisNexis", "Bar Association", "Legal News"],
+      "hiringCompanies": ["Law Firms", "Corporate Legal", "Government", "NGOs"],
+      "careerPaths": ["Lawyer", "Legal Consultant", "Judge", "Corporate Counsel", "In-house Counsel"]
+    },
+    {
+      "id": "bdes-fashion",
+      "label": "BDes Fashion Design",
+      "category": "Bachelor",
+      "icon": "👗",
+      "description": "Bachelor of Design in Fashion",
+      "specializations": ["Fashion Design", "Textile", "Fashion Management", "Sustainable Fashion"],
+      "relevantSources": ["Vogue", "WWD", "Fashion United", "Dezeen"],
+      "hiringCompanies": ["Fashion Brands", "Design Studios", "Retail", "Luxury Brands"],
+      "careerPaths": ["Fashion Designer", "Brand Designer", "Fashion Consultant", "Creative Director"]
+    },
+    {
+      "id": "msc-cs",
+      "label": "MSc Computer Science",
+      "category": "Master",
+      "icon": "🖥️",
+      "description": "Master of Science in Computer Science",
+      "specializations": ["Algorithms", "Systems", "AI/ML", "Distributed Systems"],
+      "relevantSources": ["ACM", "IEEE", "ArXiv", "Research Papers"],
+      "hiringCompanies": ["Google", "Facebook", "Apple", "MIT Labs", "Bell Labs"],
+      "careerPaths": ["Research Scientist", "Systems Engineer", "ML Researcher", "Software Architect"]
+    },
+    {
+      "id": "ba-economics",
+      "label": "BA Economics",
+      "category": "Bachelor",
+      "icon": "💹",
+      "description": "Bachelor of Arts in Economics",
+      "specializations": ["Macroeconomics", "Microeconomics", "Development", "International Trade"],
+      "relevantSources": ["The Economist", "NBER", "IMF", "World Bank"],
+      "hiringCompanies": ["Finance", "Central Banks", "Consulting", "International Organizations"],
+      "careerPaths": ["Economist", "Policy Analyst", "Finance Analyst", "Researcher"]
+    },
+    {
+      "id": "beng-mechanical",
+      "label": "BEng Mechanical Engineering",
+      "category": "Bachelor",
+      "icon": "⚙️",
+      "description": "Bachelor of Engineering in Mechanical Engineering",
+      "specializations": ["Automotive", "Thermal", "Manufacturing", "Robotics"],
+      "relevantSources": ["Engineering Today", "Mechanical Engineering Magazine", "Tech News"],
+      "hiringCompanies": ["Automotive", "Aerospace", "Manufacturing", "FMCG"],
+      "careerPaths": ["Mechanical Engineer", "Design Engineer", "Manufacturing Engineer", "Roboticist"]
+    }
+  ]
+}

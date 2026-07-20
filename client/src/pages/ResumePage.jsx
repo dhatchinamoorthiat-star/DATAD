@@ -158,15 +158,6 @@ export default function ResumePage() {
         </div>
       </div>
 
-      {/* ── AI ENHANCEMENTS ── */}
-      <div className="space-y-4 mb-8">
-        <TierGate required="trial">
-          <AIEnhancement page="resume" action="review" variant="card" dismissKey="resume-review" />
-        </TierGate>
-        <TierGate required="pro">
-          <AIEnhancement page="resume" action="ats" variant="card" dismissKey="resume-ats" />
-        </TierGate>
-      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <Section title="Personal Information">

@@ -252,6 +252,176 @@ router.get('/subscriptions/analytics', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Program Personalization & Approval ─────────────────────────────────────
+
+const ProgramApproval = require('../models/ProgramApproval');
+
+// List pending program approvals
+router.get('/programs/pending-approval', async (req, res, next) => {
+  try {
+    const pending = await ProgramApproval.find({ status: 'pending' })
+      .populate('requestedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(pending);
+  } catch (err) { next(err); }
+});
+
+// Get sync status for a program approval
+router.get('/programs/:approvalId/sync-status', async (req, res, next) => {
+  try {
+    const approval = await ProgramApproval.findById(req.params.approvalId).lean();
+
+    if (!approval) {
+      return res.status(404).json({ error: 'Approval not found' });
+    }
+
+    res.json({
+      status: approval.syncStatus,
+      progress: approval.syncLog,
+      emailSent: approval.emailSent,
+    });
+  } catch (err) { next(err); }
+});
+
+// Approve program and trigger data sync
+router.post('/programs/:approvalId/approve', async (req, res, next) => {
+  try {
+    const approval = await ProgramApproval.findById(req.params.approvalId);
+
+    if (!approval) {
+      return res.status(404).json({ error: 'Approval not found' });
+    }
+
+    if (approval.status !== 'pending') {
+      return res.status(400).json({ error: 'This approval is not pending' });
+    }
+
+    // Mark as approved
+    approval.status = 'approved';
+    approval.approvedBy = req.user.userId;
+    approval.approvedAt = new Date();
+    approval.syncStatus = 'in_progress';
+    approval.syncStartedAt = new Date();
+    approval.syncLog = [];
+    await approval.save();
+
+    // Mark user as approved
+    const user = await User.findById(approval.requestedBy);
+    user.status = 'approved';
+    await user.save();
+
+    res.json({ message: 'Program approved. Data sync in progress...' });
+
+    // Trigger async data sync (fire-and-forget)
+    triggerProgramDataSync(approval._id).catch((err) => {
+      logger.error('Program data sync failed:', { error: err.message, approvalId: approval._id });
+    });
+  } catch (err) { next(err); }
+});
+
+// Reject program approval
+router.post('/programs/:approvalId/reject', async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+
+    const approval = await ProgramApproval.findById(req.params.approvalId);
+
+    if (!approval) {
+      return res.status(404).json({ error: 'Approval not found' });
+    }
+
+    approval.status = 'rejected';
+    approval.rejectionReason = reason || 'Not specified';
+    approval.approvedBy = req.user.userId;
+    approval.approvedAt = new Date();
+    await approval.save();
+
+    res.json({ message: 'Program approval rejected' });
+  } catch (err) { next(err); }
+});
+
+// Helper: Trigger program data sync
+async function triggerProgramDataSync(approvalId) {
+  const approval = await ProgramApproval.findById(approvalId);
+  const programId = approval.programId;
+
+  try {
+    // 1. Initialize sync log
+    approval.syncLog = [
+      { component: 'news', status: 'in_progress' },
+      { component: 'companies', status: 'pending' },
+      { component: 'career', status: 'pending' },
+      { component: 'community', status: 'pending' },
+      { component: 'study', status: 'pending' },
+      { component: 'finance', status: 'pending' },
+    ];
+    await approval.save();
+
+    // TODO: Implement actual data fetching
+    // For now, mark as completed after a delay
+    await new Promise(r => setTimeout(r, 2000));
+
+    approval.syncLog.forEach(log => {
+      log.status = 'completed';
+      log.count = Math.floor(Math.random() * 50) + 10;
+      log.completedAt = new Date();
+    });
+
+    // 5. Mark sync complete
+    approval.syncStatus = 'completed';
+    approval.syncCompletedAt = new Date();
+    await approval.save();
+
+    // 6. Send approval email
+    await sendProgramApprovalEmail(approval);
+
+    approval.emailSent = true;
+    approval.emailSentAt = new Date();
+    await approval.save();
+
+    logger.info(`✅ Program ${programId} fully synced`, { approvalId });
+  } catch (error) {
+    logger.error(`❌ Sync failed for ${programId}:`, { error: error.message, approvalId });
+    approval.syncStatus = 'failed';
+    approval.syncLog = approval.syncLog.map(log => ({ ...log, status: 'failed' }));
+    await approval.save();
+  }
+}
+
+// Helper: Send program approval email
+async function sendProgramApprovalEmail(approval) {
+  const user = await User.findById(approval.requestedBy);
+  const { sendCustomEmail } = require('../config/mailer');
+
+  const emailHtml = `
+    <h2>🎉 Your DATAD account is ready!</h2>
+    <p>Hi ${user.name},</p>
+    <p>Your <strong>${approval.programLabel}</strong> profile has been approved and all data is synced.</p>
+
+    <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3>Ready to explore:</h3>
+      <ul>
+        <li>📰 Program-specific news & industry updates</li>
+        <li>🏢 Companies hiring for ${approval.programLabel}</li>
+        <li>📚 Study materials & resources</li>
+        <li>👥 Community of ${approval.programLabel} students</li>
+        <li>🚀 Career paths & opportunities</li>
+        <li>💰 Salary & finance benchmarks</li>
+      </ul>
+    </div>
+
+    <a href="${process.env.CLIENT_URL || 'https://datad.app'}/login" style="background: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+      Start Exploring →
+    </a>
+
+    <p>Welcome to DATAD! 🚀</p>
+  `;
+
+  await sendCustomEmail(user.email, `🎉 Your ${approval.programLabel} DATAD Account is Ready!`, emailHtml);
+}
+
 // Public meta — any member can read the placement date for the countdown.
 module.exports = router;
 

@@ -17,7 +17,6 @@ export default function NoteDetailPage() {
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
-  const [showEnhancements, setShowEnhancements] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -79,35 +78,6 @@ export default function NoteDetailPage() {
         )}
       </div>
 
-      {/* ── AI ENHANCEMENTS ── */}
-      {hasContent && (
-        <div className="mt-10 border-t border-gray-100 dark:border-gray-800/60 pt-8">
-          <button
-            onClick={() => setShowEnhancements((s) => !s)}
-            className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-          >
-            <Sparkles className="h-4 w-4" />
-            Dax enrichment
-            {showEnhancements ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-
-          {showEnhancements && (
-            <div className="mt-4 space-y-4">
-              <TierGate required="trial">
-                <AIEnhancement page="notes" action="summarize" data={enrichmentData} variant="card" dismissKey={`note-summary-${id}`} />
-              </TierGate>
-
-              <TierGate required="trial">
-                <AIEnhancement page="notes" action="flashcard" data={enrichmentData} variant="card" />
-              </TierGate>
-
-              <TierGate required="trial">
-                <AIEnhancement page="notes" action="quiz" data={enrichmentData} variant="card" />
-              </TierGate>
-            </div>
-          )}
-        </div>
-      )}
 
       <ConfirmModal open={showDelete} onClose={() => setShowDelete(false)} onConfirm={handleDelete} title="Delete note?" message="This cannot be undone." confirmLabel="Delete" />
     </div>

@@ -73,7 +73,7 @@ router.get('/me', verifyToken, async (req, res, next) => {
   }
 });
 
-// POST /api/subscription/trial — self-service 7-day trial activation
+// POST /api/subscription/trial — self-service 14-day trial activation
 router.post('/trial', verifyToken, async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId).select('tier trialStartedAt').lean();
@@ -86,15 +86,15 @@ router.post('/trial', verifyToken, async (req, res, next) => {
       return res.status(400).json({ message: 'Trial is only available on the free plan. Downgrade first if you want to try again.' });
     }
 
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     await User.findByIdAndUpdate(req.user.userId, {
       tier: 'trial',
       trialStartedAt: new Date(),
       tierExpiresAt: trialEnd,
     });
 
-    notify({ user: req.user.userId, type: 'subscription', title: '7-day Pro trial activated!', body: `Full access until ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`, link: '/subscribe' }).catch(() => {});
-    res.json({ message: 'Trial activated! You have 7 days of Pro features.', expiresAt: trialEnd });
+    notify({ user: req.user.userId, type: 'subscription', title: '14-day Pro trial activated!', body: `Full access until ${trialEnd.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`, link: '/subscribe' }).catch(() => {});
+    res.json({ message: 'Trial activated! You have 14 days of Pro features.', expiresAt: trialEnd });
   } catch (err) {
     next(err);
   }
