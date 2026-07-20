@@ -52,9 +52,23 @@ const uniqueReferralCode = async (name) => {
   return `${makeReferralCode(name)}${Date.now().toString(36).slice(-3).toUpperCase()}`;
 };
 
+// `program` drives every content filter (server) and the program UI (client,
+// which decodes this same token) — omitting it silently disables both.
 const signToken = (user) =>
   jwt.sign(
-    { userId: user._id, name: user.name, email: user.email, role: user.role || 'member', tier: user.tier || 'free', studentType: user.studentType || 'fresher', programs: user.programs || ['general'], activeProgram: user.activeProgram || 'general' },
+    { userId: user._id, name: user.name, email: user.email, role: user.role || 'member', tier: user.tier || 'free', studentType: user.studentType || 'fresher', programs: user.programs || ['general'], activeProgram: user.activeProgram || 'general',
+      program: user.program?.id
+        ? {
+            id: user.program.id,
+            label: user.program.label,
+            type: user.program.type,
+            customName: user.program.customName,
+            category: user.program.category,
+            specialization: user.program.specialization,
+            cohort: user.program.cohort,
+            institution: user.program.institution,
+          }
+        : undefined },
     process.env.JWT_SECRET,
     { expiresIn: '7d' }
   );
