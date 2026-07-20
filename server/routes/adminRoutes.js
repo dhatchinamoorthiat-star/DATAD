@@ -56,7 +56,7 @@ const { TIERS } = require('../subscription/tierHierarchy');
 
 const VALID_TIERS = TIERS;
 
-// Paid plans run for exactly one month from activation; trials for 7 days.
+// Paid plans run for exactly one month from activation; trials for 14 days.
 const oneMonthFromNow = () => {
   const d = new Date();
   d.setMonth(d.getMonth() + 1);
@@ -151,6 +151,104 @@ router.patch('/subscriptions/:id/review', async (req, res, next) => {
     }
 
     res.json({ message: `Request ${sr.status}`, request: sr });
+  } catch (err) { next(err); }
+});
+
+// ── Subscription Analytics ───────────────────────────────────────────────
+router.get('/subscriptions/analytics', async (req, res, next) => {
+  try {
+    const users = await User.find()
+      .select('tier trialStartedAt tierExpiresAt createdAt subscriptionRef')
+      .lean();
+
+    const now = new Date();
+
+    // Tier distribution
+    const tierCount = {
+      free: 0,
+      trial: 0,
+      pro: 0,
+      max: 0,
+    };
+
+    // Active subscriptions (not expired)
+    const activeCount = {
+      trial: 0,
+      pro: 0,
+      max: 0,
+    };
+
+    // Trial conversion metrics
+    let trialConverted = 0;
+    let trialExpired = 0;
+
+    // Revenue calculation (conservative estimate: avg 250k INR per Pro/yr, 500k per Max/yr)
+    const proAnnualPrice = 4799; // yearly price
+    const maxAnnualPrice = 12499;
+    let estimatedMrr = 0;
+
+    // Signups by day (last 30 days)
+    const signupsByDay = {};
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      signupsByDay[d.toISOString().slice(0, 10)] = 0;
+    }
+
+    users.forEach((user) => {
+      tierCount[user.tier]++;
+
+      // Count active subscriptions (non-free, not expired)
+      if (user.tier !== 'free') {
+        if (!user.tierExpiresAt || user.tierExpiresAt > now) {
+          activeCount[user.tier]++;
+
+          // Estimate MRR
+          if (user.tier === 'pro') estimatedMrr += proAnnualPrice / 12;
+          if (user.tier === 'max') estimatedMrr += maxAnnualPrice / 12;
+        }
+      }
+
+      // Trial conversion metrics
+      if (user.trialStartedAt) {
+        if (user.tier !== 'trial' && user.tier !== 'free') {
+          trialConverted++;
+        } else if (user.tier === 'trial' && user.tierExpiresAt && user.tierExpiresAt < now) {
+          trialExpired++;
+        }
+      }
+
+      // Signups by day
+      const signupDate = new Date(user.createdAt).toISOString().slice(0, 10);
+      if (signupsByDay[signupDate] !== undefined) {
+        signupsByDay[signupDate]++;
+      }
+    });
+
+    const totalUsers = users.length;
+    const totalTrialStarts = users.filter(u => u.trialStartedAt).length;
+    const conversionRate = totalTrialStarts > 0 ? Math.round((trialConverted / totalTrialStarts) * 100) : 0;
+
+    res.json({
+      summary: {
+        totalUsers,
+        totalTrialStarts,
+        trialConverted,
+        trialExpired,
+        conversionRate: `${conversionRate}%`,
+        estimatedMrr: Math.round(estimatedMrr),
+      },
+      tierDistribution: {
+        free: tierCount.free,
+        trial: tierCount.trial,
+        pro: tierCount.pro,
+        max: tierCount.max,
+      },
+      activeSubscriptions: activeCount,
+      signupsByDay: Object.entries(signupsByDay)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, signups: count })),
+    });
   } catch (err) { next(err); }
 });
 

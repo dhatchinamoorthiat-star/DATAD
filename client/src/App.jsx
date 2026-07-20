@@ -60,6 +60,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const SubscribePage = lazy(() => import('./pages/SubscribePage'));
 const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptionsPage'));
+const AdminSubscriptionsAnalyticsPage = lazy(() => import('./pages/admin/AdminSubscriptionsAnalyticsPage'));
 const CalendarPage = lazy(() => import('./pages/me/CalendarPage'));
 const StudyHubPage = lazy(() => import('./pages/study/StudyHubPage'));
 const WellbeingPage         = lazy(() => import('./pages/me/WellbeingPage'));
@@ -270,6 +271,7 @@ export default function App() {
                 <Route path="/admin/ai-center" element={<AdminRoute><AdminAICenterPage /></AdminRoute>} />
                 <Route path="/admin/ai-runtime" element={<AdminRoute><AdminAIDashboardPage /></AdminRoute>} />
                 <Route path="/admin/subscriptions" element={<AdminRoute><AdminSubscriptionsPage /></AdminRoute>} />
+                <Route path="/admin/subscriptions/analytics" element={<AdminRoute><AdminSubscriptionsAnalyticsPage /></AdminRoute>} />
 
                 {/* Legacy routes → new workspace homes */}
                 <Route path="/notes/*" element={<LegacyRedirect from="/notes" to="/study/notes" />} />
