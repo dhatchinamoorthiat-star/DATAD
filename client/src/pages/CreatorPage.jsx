@@ -108,7 +108,7 @@ export default function CreatorPage() {
   ];
 
   return (
-    <Page className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black">
+    <Page bare className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black">
       {/* Background elements */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
