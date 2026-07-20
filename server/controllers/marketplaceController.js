@@ -5,6 +5,13 @@ exports.list = async (req, res, next) => {
     const filter = {};
     if (req.query.showSold !== 'true') filter.sold = false;
     if (req.query.category) filter.category = req.query.category;
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) {
+      filter.program = programId;
+    }
+
     if (req.query.search) {
       const re = new RegExp(req.query.search, 'i');
       filter.$or = [{ title: re }, { description: re }, { tags: re }];
@@ -24,6 +31,8 @@ exports.create = async (req, res, next) => {
       title, description, price, category, condition,
       images: images || [], contact, tags: tags || [],
       seller: req.user.userId,
+      // ⭐ Automatically scope listing to user's program
+      program: req.user?.program?.id || null,
     });
     res.status(201).json(listing);
   } catch (err) { next(err); }

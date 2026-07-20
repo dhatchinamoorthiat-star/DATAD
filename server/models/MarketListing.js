@@ -16,6 +16,8 @@ const marketListingSchema = new mongoose.Schema(
     contact: { type: String, trim: true },
     sold: { type: Boolean, default: false },
     tags: [{ type: String, trim: true }],
+    // ⭐ Program Personalization
+    program: { type: String, default: null },     // Program ID this listing belongs to
   },
   { timestamps: true }
 );

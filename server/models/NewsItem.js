@@ -11,6 +11,9 @@ const newsItemSchema = new mongoose.Schema(
     category: { type: String, required: true, index: true },
     publishedAt: { type: Date, index: true },
 
+    // ⭐ Program Personalization
+    programs: [{ type: String }],  // Program IDs this article is relevant to
+
     // Reserved for the future AI enhancement layer.
     whyItMatters: String,
     concepts: [String],

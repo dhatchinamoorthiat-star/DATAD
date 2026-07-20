@@ -21,6 +21,9 @@ const dailyBriefingSchema = new mongoose.Schema({
   tokensUsed:    { type: Number },
   confidence:    { type: Number, default: 0.8 },
   status:        { type: String, enum: ['published', 'pending_review', 'failed'], default: 'published' },
+
+  // ⭐ Program Personalization
+  programs:      [{ type: String }], // Program-specific briefings (can be empty for general)
 }, { timestamps: true });
 
 module.exports = mongoose.model('DailyBriefing', dailyBriefingSchema);

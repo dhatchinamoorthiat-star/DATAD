@@ -18,7 +18,19 @@ const SPEC_SECTIONS = {
 router.get('/today', verifyToken, refreshTier, requireFeature(FEATURE.BRIEFING), async (req, res, next) => {
   try {
     const dateKey = new Date().toISOString().slice(0, 10);
-    const briefing = await DailyBriefing.findOne({ dateKey, status: 'published' }).lean();
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    const filter = { dateKey, status: 'published' };
+    if (programId) {
+      // Include both program-specific briefings and general briefings (empty programs array)
+      filter.$or = [
+        { programs: { $in: [programId] } },
+        { programs: { $size: 0 } },
+      ];
+    }
+
+    const briefing = await DailyBriefing.findOne(filter).lean();
     if (!briefing) return res.status(404).json({ message: 'No briefing for today yet' });
 
     // Phase 8 — surface most-relevant sections for user's specialization
@@ -33,7 +45,19 @@ router.get('/today', verifyToken, refreshTier, requireFeature(FEATURE.BRIEFING),
 router.get('/history', verifyToken, refreshTier, requireFeature(FEATURE.BRIEFING), async (req, res, next) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 7, 30);
-    const briefings = await DailyBriefing.find({ status: 'published' })
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    const filter = { status: 'published' };
+    if (programId) {
+      // Include both program-specific briefings and general briefings
+      filter.$or = [
+        { programs: { $in: [programId] } },
+        { programs: { $size: 0 } },
+      ];
+    }
+
+    const briefings = await DailyBriefing.find(filter)
       .sort({ dateKey: -1 })
       .limit(limit)
       .select('dateKey headline interviewTip keyNumbers mustKnowTerm createdAt')
