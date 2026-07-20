@@ -1,34 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Mail, Phone, Sparkles, Brain, Code2,
-  Heart, ShieldCheck, Compass, Target, Zap, Trophy, TrendingUp,
-  Quote, BookOpen, Building2, Users, CheckCircle, Globe,
-  Lightbulb, Cpu, GraduationCap, Palette,
+  ArrowRight, Mail, Github, Linkedin, ExternalLink, Code2, Sparkles,
+  BookOpen, Users, Zap, Heart, Shield, Globe, CheckCircle,
+  Trophy, TrendingUp, Lightbulb, Brain, Palette, Building2,
 } from 'lucide-react';
+import { Page } from '../components/common/motion';
 
-function useReveal(threshold = 0.12) {
+function IntersectionReveal({ children, delay = 0 }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold }
+      { threshold: 0.1 }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, visible];
-}
+  }, []);
 
-function Reveal({ children, delay = 0, className = '' }) {
-  const [ref, visible] = useReveal();
   return (
     <div
       ref={ref}
-      className={`transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
+      className={`transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
       style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
@@ -37,338 +34,417 @@ function Reveal({ children, delay = 0, className = '' }) {
 }
 
 export default function CreatorPage() {
-  const [heroLoaded, setHeroLoaded] = useState(false);
+  const [hoveredStat, setHoveredStat] = useState(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setHeroLoaded(true), 100);
-    return () => clearTimeout(t);
-  }, []);
+  const stats = [
+    { label: 'Lines of Code', value: '50K+', icon: Code2 },
+    { label: 'Students Using', value: '500+', icon: Users },
+    { label: 'Features Built', value: '25+', icon: Sparkles },
+    { label: 'Years of Work', value: '3', icon: Trophy },
+  ];
+
+  const milestones = [
+    {
+      year: '2022',
+      title: 'The Problem',
+      desc: 'Noticed placement season chaos — students juggling tools across spreadsheets, WhatsApp, and sticky notes.',
+      icon: Lightbulb,
+      color: 'from-blue-500/20 to-cyan-500/20',
+    },
+    {
+      year: '2023',
+      title: 'First Code',
+      desc: 'Started building alone with no framework. Just a laptop and belief that student tools should be different.',
+      icon: Code2,
+      color: 'from-purple-500/20 to-pink-500/20',
+    },
+    {
+      year: '2024',
+      title: 'First Users',
+      desc: 'Notes and Planner shipped. Classmates started using it. Realized this was solving a real problem.',
+      icon: BookOpen,
+      color: 'from-amber-500/20 to-orange-500/20',
+    },
+    {
+      year: '2025',
+      title: 'Full Platform',
+      desc: 'Finance, Resume, Career Hub, Community, and Dax AI. A complete Student Operating System.',
+      icon: Globe,
+      color: 'from-emerald-500/20 to-teal-500/20',
+    },
+  ];
+
+  const pillars = [
+    {
+      icon: Brain,
+      title: 'Psychology First',
+      subtitle: 'Cognitive Design',
+      desc: 'No infinite scrolls. No dark patterns. Built on principles of sustainable productivity and mental wellbeing.',
+      color: 'text-purple-400 bg-purple-500/10',
+      border: 'border-purple-500/30',
+    },
+    {
+      icon: Code2,
+      title: 'Full-Stack Built',
+      subtitle: 'By One Person',
+      desc: 'Express backend, React frontend, MongoDB database, AI pipeline. Every feature designed end-to-end.',
+      color: 'text-cyan-400 bg-cyan-500/10',
+      border: 'border-cyan-500/30',
+    },
+    {
+      icon: Heart,
+      title: 'Student-Centric',
+      subtitle: 'Always',
+      desc: 'Built by a student. For students. Every decision asks: does this actually help someone?',
+      color: 'text-rose-400 bg-rose-500/10',
+      border: 'border-rose-500/30',
+    },
+  ];
+
+  const principles = [
+    { icon: Shield, title: 'No Ads', desc: 'Ever. Your attention is yours.' },
+    { icon: Lock, title: 'No Data Selling', desc: 'Your thoughts stay with you.' },
+    { icon: Zap, title: 'No Dark Patterns', desc: 'Only genuine value.' },
+  ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 relative overflow-hidden">
+    <Page className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-950 to-black">
+      {/* Background elements */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl" />
+      </div>
 
-      {/* Dot matrix background */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(99,102,241,0.3) 1.2px, transparent 1.2px)', backgroundSize: '24px 24px' }} />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-600/10 blur-[180px] pointer-events-none rounded-full" />
-      <div className="absolute bottom-1/4 right-0 w-[500px] h-[400px] bg-purple-600/8 blur-[150px] pointer-events-none rounded-full" />
-
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
-        <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-          <ArrowRight className="w-4 h-4 rotate-180" /> Back to DATAD
-        </Link>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Digital Don
-        </div>
-      </header>
-
-      {/* ── Hero ── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-4 pt-8 pb-16 text-center">
-        <div className={`transition-all duration-1000 ${heroLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
-          {/* Avatar with glow */}
-          <div className="relative mx-auto mb-8 w-fit">
-            <div className="absolute inset-0 rounded-full bg-indigo-500 blur-3xl opacity-30 animate-pulse" />
-            <div className="relative flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-rose-500 text-5xl font-black text-white shadow-2xl shadow-indigo-500/30 ring-4 ring-slate-900">
-              DD
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center">
-              <div className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-ping" />
-            </div>
-          </div>
-
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-indigo-400 mb-3">
-            Dhatchina Moorthi · akA <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-rose-400">Digital Don</span>
-          </p>
-
-          <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white">
-            Builder. Psychology grad.<br className="sm:hidden" />{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-rose-400">One-person product studio.</span>
-          </h1>
-
-          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-slate-300 leading-relaxed">
-            Self-taught engineer from <strong className="text-white">Tamil Nadu, India</strong> — built{' '}
-            <span className="font-bold text-white">DATAD</span> from scratch during placement season{' '}
-            because no tool existed that could hold a student's entire life. Notes, career prep, finance, community,{' '}
-            and an AI companion — all in one place, no ads, no tracking.
-          </p>
-
-          <p className="mx-auto mt-3 max-w-xl text-sm text-slate-500 italic leading-relaxed">
-            "Technology should reduce complexity, not create it."
-          </p>
-
-          {/* Contact bar */}
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <a href="mailto:digitaldoncodes@gmail.com"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-sm font-medium text-slate-200 hover:border-indigo-500/50 hover:text-white hover:bg-slate-800/90 transition-all group">
-              <Mail className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" /> digitaldoncodes@gmail.com
-            </a>
-            <a href="tel:+919363632214"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-sm font-medium text-slate-200 hover:border-indigo-500/50 hover:text-white hover:bg-slate-800/90 transition-all group">
-              <Phone className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" /> +91 93636 32214
-            </a>
-            <a href="https://instagram.com/technerdalert" target="_blank" rel="noreferrer"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700/60 text-sm font-medium text-slate-200 hover:border-indigo-500/50 hover:text-white hover:bg-slate-800/90 transition-all group">
-              <Globe className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" /> @technerdalert
-            </a>
+      {/* Header/Nav */}
+      <div className="relative z-10 border-b border-slate-800/50 backdrop-blur-md sticky top-0">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium">
+            <ArrowRight className="w-4 h-4 rotate-180" /> Back to DATAD
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-semibold text-emerald-400">Still Building</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── The Origin Story ── */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 mb-24">
-        <Reveal>
-          <div className="bg-gradient-to-br from-indigo-500/8 via-slate-900 to-purple-500/8 border border-indigo-500/20 rounded-3xl p-8 sm:p-12 relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 text-slate-800/20 pointer-events-none">
-              <Quote className="w-40 h-40" />
-            </div>
-            <span className="text-[10px] font-bold tracking-widest text-indigo-400 uppercase bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20">
-              The origin story
-            </span>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-5 mb-4">Why I started building</h2>
-
-            <div className="space-y-3 text-sm sm:text-base text-slate-300 leading-relaxed">
-              <p>
-                I was a psychology student at <strong className="text-white">KCLAS</strong> watching my batchmates — and myself —{' '}
-                juggle placement prep across WhatsApp groups, spreadsheets, Google Docs, and sticky notes. 
-                Every campus had the same problem: the tools students needed were scattered, and the ones that existed{' '}
-                were built for corporate HR, not for a 21-year-old trying to figure out their career.
-              </p>
-              <p>
-                So I started building. No CS degree, no mentor, no funding — just a laptop and the conviction that{' '}
-                software for students should feel different. Notes came first because every student needed them.{' '}
-                Then a planner. Then a resume builder during placement season because the timing couldn't wait.
-              </p>
-              <p>
-                One thing led to another. Finance tracking. Company prep. A community. Dax —{' '}
-                an AI companion that doesn't try to replace you but works alongside you.
-              </p>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-indigo-500/10 flex items-center gap-3">
-              <GraduationCap className="w-5 h-5 text-indigo-400 shrink-0" />
-              <p className="text-xs text-slate-400 italic">
-                "The best tools are built by the people who most need them. I was that student."
-              </p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── What I Believe ── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 mb-24">
-        <Reveal>
-          <div className="text-center mb-10 space-y-3">
-            <span className="text-[10px] font-bold tracking-widest text-purple-400 uppercase bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
-              The philosophy
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Three pillars that guide every decision</h2>
-            <p className="text-slate-400 text-sm max-w-lg mx-auto">Not buzzwords — actual engineering constraints I built the platform around.</p>
-          </div>
-        </Reveal>
-
-        <div className="grid md:grid-cols-3 gap-5 mb-12">
-          {[
-            {
-              icon: Cpu, title: 'Technology',
-              tagline: 'Full-stack, self-taught',
-              gradient: 'from-cyan-500/10 via-slate-900 to-slate-900', border: 'border-cyan-500/30',
-              desc: 'I learned by building. Every line of DATAD — from the Express server to the React components to the AI pipeline — was written by one person who refused to wait for someone else to make what students needed.',
-            },
-            {
-              icon: Brain, title: 'Psychology',
-              tagline: 'Cognitive design, not dark patterns',
-              gradient: 'from-purple-500/10 via-slate-900 to-slate-900', border: 'border-purple-500/30',
-              desc: 'My psychology background isn\'t a credential on a wall — it\'s in every decision. Sustainable tools need restorative breaks, not addictive loops. That\'s why DATAD has no infinite scroll and no engagement metrics.',
-            },
-            {
-              icon: Heart, title: 'Impact',
-              tagline: 'Student-first, always',
-              gradient: 'from-rose-500/10 via-slate-900 to-slate-900', border: 'border-rose-500/30',
-              desc: 'This platform exists to make campus life measurably better. If a feature doesn\'t help a student prepare better, save time, or feel less overwhelmed, it doesn\'t belong here. No bloat. No growth hacks.',
-            },
-          ].map((p, idx) => (
-            <Reveal key={idx} delay={idx * 120}>
-              <div className={`bg-gradient-to-b ${p.gradient} border ${p.border} p-6 sm:p-8 rounded-3xl backdrop-blur-md shadow-xl hover:-translate-y-1 transition-all duration-300 h-full group`}>
-                <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 w-fit shadow-md mb-4 group-hover:scale-110 transition-transform">
-                  <p.icon className="w-5 h-5 text-indigo-400" />
+      {/* Hero Section */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20 sm:py-32">
+        <IntersectionReveal>
+          <div className="text-center max-w-3xl mx-auto">
+            {/* Avatar */}
+            <div className="mb-8 flex justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 blur-2xl opacity-40 animate-pulse" />
+                <div className="relative h-32 w-32 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-6xl font-black text-white shadow-2xl ring-4 ring-slate-900">
+                  DD
                 </div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-400">{p.tagline}</span>
-                <h3 className="text-base font-bold text-white mt-1 mb-3">{p.title}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{p.desc}</p>
               </div>
-            </Reveal>
-          ))}
-        </div>
+            </div>
 
-        {/* The principles */}
-        <Reveal>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8">
-            <h3 className="text-base font-bold text-white mb-4 text-center">Lines I won't cross</h3>
-            <div className="grid sm:grid-cols-3 gap-5">
-              {[
-                { icon: ShieldCheck, title: 'No ads. Ever.', body: 'A platform with ads answers to advertisers — optimizing for your attention, not your outcomes. DATAD will never carry one.' },
-                { icon: Compass, title: 'No data selling', body: 'Your notes, finances, and reflections are not inventory. Nothing you put into DATAD is ever mined or shared.' },
-                { icon: Zap, title: 'No engagement tricks', body: 'No streaks, no infinite feeds, no gamified retention. Success is you needing the platform less, not more.' },
-              ].map((item, idx) => (
-                <div key={idx} className="text-center">
-                  <div className="mx-auto mb-2.5 p-2 rounded-xl bg-slate-950/80 border border-slate-800 w-fit">
-                    <item.icon className="w-4 h-4 text-rose-400" />
+            {/* Title */}
+            <div className="mb-6 space-y-3">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
+                T. A. Dhatchina Moorthi
+              </p>
+              <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white leading-tight">
+                Builder.<br />
+                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Psychology-driven.
+                </span>
+                <br />
+                Student-first.
+              </h1>
+            </div>
+
+            {/* Tagline */}
+            <p className="text-lg text-slate-300 mb-8 leading-relaxed max-w-xl mx-auto">
+              A self-taught engineer who built <span className="font-bold text-white">DATAD</span> — a complete operating system for student life — because no tool existed that understood what students actually needed.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-12">
+              <Link
+                to="/register"
+                className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-2xl transition-all shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 flex items-center justify-center gap-2"
+              >
+                Join DATAD <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <a
+                href="mailto:digitaldoncodes@gmail.com"
+                className="px-8 py-4 border-2 border-slate-700 hover:border-blue-500/50 text-slate-300 hover:text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+              >
+                <Mail className="w-4 h-4" /> Get in Touch
+              </a>
+            </div>
+
+            {/* Social Links */}
+            <div className="flex gap-4 justify-center">
+              <a href="https://instagram.com/technerdalert" target="_blank" rel="noreferrer" className="p-3 rounded-full bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 hover:text-blue-400 transition-all text-slate-400">
+                <Globe className="w-5 h-5" />
+              </a>
+              <a href="mailto:digitaldoncodes@gmail.com" className="p-3 rounded-full bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 hover:text-blue-400 transition-all text-slate-400">
+                <Mail className="w-5 h-5" />
+              </a>
+              <a href="tel:+919363632214" className="p-3 rounded-full bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 hover:text-blue-400 transition-all text-slate-400">
+                <Zap className="w-5 h-5" />
+              </a>
+            </div>
+          </div>
+        </IntersectionReveal>
+      </section>
+
+      {/* Stats Section */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-16 border-y border-slate-800/50">
+        <IntersectionReveal>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {stats.map((stat, idx) => {
+              const Icon = stat.icon;
+              return (
+                <div
+                  key={idx}
+                  onMouseEnter={() => setHoveredStat(idx)}
+                  onMouseLeave={() => setHoveredStat(null)}
+                  className={`p-6 rounded-2xl border transition-all ${
+                    hoveredStat === idx
+                      ? 'bg-slate-800/50 border-blue-500/50 scale-105'
+                      : 'bg-slate-900/30 border-slate-800'
+                  }`}
+                >
+                  <Icon className="w-6 h-6 text-blue-400 mb-3" />
+                  <p className="text-2xl font-black text-white">{stat.value}</p>
+                  <p className="text-xs text-slate-400 mt-1">{stat.label}</p>
+                </div>
+              );
+            })}
+          </div>
+        </IntersectionReveal>
+      </section>
+
+      {/* The Story */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+        <IntersectionReveal>
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/30 inline-block">
+                Origin Story
+              </span>
+              <h2 className="text-4xl font-black text-white mt-4 mb-6">
+                Why I started building
+              </h2>
+              <div className="space-y-4 text-slate-300 leading-relaxed">
+                <p>
+                  I was a psychology student at KCLAS watching my batchmates juggle placement prep across five different apps. Every tool solved one problem — but student life isn't one-dimensional.
+                </p>
+                <p>
+                  No one had built software that understood placement deadlines, finance tracking, career prep, and community all together. So I did.
+                </p>
+                <p>
+                  Three years, 50K+ lines of code, and one person later — DATAD exists. Not as a startup. Not as a side project. As the tool students actually needed.
+                </p>
+              </div>
+            </div>
+            <IntersectionReveal delay={200}>
+              <div className="bg-gradient-to-br from-blue-500/10 via-slate-900 to-purple-500/10 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl" />
+                <div className="relative space-y-4">
+                  <div className="text-sm font-mono text-blue-400">
+                    <div>const DATAD = {'{' }</div>
+                    <div className="ml-4">madeBy: 'one student',</div>
+                    <div className="ml-4">forWho: 'all students',</div>
+                    <div className="ml-4">hasAds: false,</div>
+                    <div className="ml-4">sellingData: false,</div>
+                    <div className="ml-4">philosophy: 'human first',</div>
+                    <div>{'}' }</div>
                   </div>
-                  <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
-                  <p className="text-xs text-slate-400 leading-relaxed">{item.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── The Journey ── */}
-      <section className="relative z-10 max-w-4xl mx-auto px-6 mb-24">
-        <Reveal>
-          <div className="text-center mb-12 space-y-3">
-            <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20">
-              The journey
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">From hostel room to student OS</h2>
-            <p className="text-slate-400 text-sm max-w-lg mx-auto">Built incrementally — each feature responding to what the batch actually needed that semester.</p>
-          </div>
-        </Reveal>
-
-        <div className="relative before:absolute before:inset-0 before:left-6 sm:before:left-1/2 before:-translate-x-px before:w-0.5 before:bg-gradient-to-b before:from-indigo-500/60 before:via-purple-500/60 before:to-rose-500/60">
-          {[
-            { year: '2022', title: 'The frustration', icon: Lightbulb, detail: 'Watching batchmates — and myself — juggle placement prep across WhatsApp, spreadsheets, and sticky notes. Wondering why no single tool existed for a student\'s entire campus life.' },
-            { year: '2023', title: 'First lines of code', icon: Code2, detail: 'Started building alone. No CS degree, no framework, no plan — just a laptop and the belief that student software should feel fundamentally different from corporate tools.' },
-            { year: '2024', title: 'Notes & Planner ship', icon: BookOpen, detail: 'Shared a note-taking app with a few classmates. They stayed. Then a planner. The first sign that this wasn\'t just a project — it was something people actually needed.' },
-            { year: 'Early 2025', title: 'Finance & Resume', icon: TrendingUp, detail: 'Expense tracking, budget visualisation, and an ATS-ready resume builder. Built around placement season because that\'s when students need it most and no existing tool understood campus context.' },
-            { year: 'Mid 2025', title: 'Career Hub & Dax', icon: Target, detail: 'Company prep, readiness scoring, daily case studies, live market briefing — and Dax, the AI companion. The platform stopped being a collection of tools and became a real operating system for student life.' },
-            { year: 'Now', title: 'v1.0 — Public Launch', icon: Sparkles, detail: 'A complete Student Operating System: study, career, community, finance, wellbeing, and AI. One deliberately calm, ad-free space. Built by a student, for students — still maintained by the same person who wrote the first line.' },
-          ].map((item, idx) => (
-            <Reveal key={idx} delay={idx * 80}>
-              <div className={`relative flex items-start gap-6 sm:gap-12 mb-8 ${idx % 2 === 0 ? 'sm:flex-row-reverse' : ''}`}>
-                <div className="absolute left-6 sm:left-1/2 -translate-x-1/2 w-10 h-10 rounded-full bg-slate-900 border-2 border-indigo-500 z-10 flex items-center justify-center shadow-[0_0_14px_rgba(99,102,241,0.5)]">
-                  <item.icon className="w-4 h-4 text-indigo-400" />
-                </div>
-                <div className="ml-16 sm:ml-0 sm:w-1/2 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-md hover:border-indigo-500/30 transition-all shadow-lg">
-                  <span className="text-[10px] font-bold tracking-widest text-indigo-400 uppercase bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">
-                    {item.year}
-                  </span>
-                  <h4 className="text-sm font-bold text-white mt-3">{item.title}</h4>
-                  <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{item.detail}</p>
                 </div>
               </div>
-            </Reveal>
-          ))}
+            </IntersectionReveal>
+          </div>
+        </IntersectionReveal>
+      </section>
+
+      {/* Three Pillars */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+        <IntersectionReveal>
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-purple-400 bg-purple-500/10 px-4 py-2 rounded-full border border-purple-500/30 inline-block">
+              Philosophy
+            </span>
+            <h2 className="text-4xl font-black text-white mt-4">What guides every decision</h2>
+          </div>
+        </IntersectionReveal>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {pillars.map((pillar, idx) => {
+            const Icon = pillar.icon;
+            return (
+              <IntersectionReveal key={idx} delay={idx * 100}>
+                <div className={`group p-8 rounded-3xl border ${pillar.border} ${pillar.color} backdrop-blur-md hover:border-blue-500/50 hover:scale-105 transition-all`}>
+                  <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800 w-fit mb-4 group-hover:scale-110 transition-transform">
+                    <Icon className={`w-6 h-6 ${pillar.color}`} />
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-1">{pillar.title}</h3>
+                  <p className="text-xs font-semibold text-slate-400 mb-3">{pillar.subtitle}</p>
+                  <p className="text-sm text-slate-300 leading-relaxed">{pillar.desc}</p>
+                </div>
+              </IntersectionReveal>
+            );
+          })}
         </div>
       </section>
 
-      {/* ── What's Inside ── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 mb-24">
-        <Reveal>
-          <div className="text-center mb-10 space-y-3">
-            <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
-              What I built
+      {/* Timeline */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+        <IntersectionReveal>
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-amber-400 bg-amber-500/10 px-4 py-2 rounded-full border border-amber-500/30 inline-block">
+              Timeline
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">The platform, feature by feature</h2>
-            <p className="text-slate-400 text-sm max-w-lg mx-auto">Everything here was built because a student needed it — including me.</p>
+            <h2 className="text-4xl font-black text-white mt-4">From hostel room to 500+ users</h2>
           </div>
-        </Reveal>
+        </IntersectionReveal>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {milestones.map((milestone, idx) => {
+            const Icon = milestone.icon;
+            return (
+              <IntersectionReveal key={idx} delay={idx * 100}>
+                <div className={`p-6 rounded-2xl bg-gradient-to-br ${milestone.color} border border-slate-800 hover:border-blue-500/30 transition-all`}>
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-xl bg-slate-950/50 border border-slate-800 shrink-0 mt-1">
+                      <Icon className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-bold uppercase text-slate-400 tracking-wider">{milestone.year}</p>
+                      <h3 className="text-lg font-bold text-white mt-1 mb-2">{milestone.title}</h3>
+                      <p className="text-sm text-slate-300 leading-relaxed">{milestone.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              </IntersectionReveal>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Core Values */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20 border-y border-slate-800/50">
+        <IntersectionReveal>
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-rose-400 bg-rose-500/10 px-4 py-2 rounded-full border border-rose-500/30 inline-block">
+              Core Values
+            </span>
+            <h2 className="text-4xl font-black text-white mt-4">Lines I won't cross</h2>
+          </div>
+        </IntersectionReveal>
+
+        <div className="grid sm:grid-cols-3 gap-6">
+          {principles.map((principle, idx) => {
+            const Icon = principle.icon;
+            return (
+              <IntersectionReveal key={idx} delay={idx * 100}>
+                <div className="text-center p-8 rounded-2xl bg-slate-900/30 border border-slate-800 hover:border-rose-500/30 transition-all">
+                  <div className="inline-flex p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 mb-4">
+                    <Icon className="w-6 h-6 text-rose-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{principle.title}</h3>
+                  <p className="text-sm text-slate-400">{principle.desc}</p>
+                </div>
+              </IntersectionReveal>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* What's Inside */}
+      <section className="relative z-10 max-w-6xl mx-auto px-6 py-20">
+        <IntersectionReveal>
+          <div className="text-center mb-16">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-500/30 inline-block">
+              Features
+            </span>
+            <h2 className="text-4xl font-black text-white mt-4">Everything built from scratch</h2>
+          </div>
+        </IntersectionReveal>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { icon: BookOpen, title: 'Notes & Study', desc: 'Rich text notes with tagging, search, and workspaces. Built first because every student needed it.' },
-            { icon: Palette, title: 'Planner & Calendar', desc: 'Weekly planning, deadlines, and a calendar that actually understands semester rhythms.' },
-            { icon: TrendingUp, title: 'Finance Tracker', desc: 'Expense logging, budgets, ROI calculators — built because campus money management is real.' },
-            { icon: Building2, title: 'Career Hub', desc: 'Company prep, readiness scoring, placement drives, internship tracking. The feature that started it all.' },
-            { icon: Users, title: 'Community', desc: 'Announcements, discussions, events, skill exchange, and a nostalgia archive for campus memories.' },
-            { icon: Brain, title: 'Dax AI Companion', desc: 'Not a chatbot — an AI that knows your context, reviews your resume, plans your week, and adapts to you.' },
-          ].map((item, idx) => (
-            <Reveal key={idx} delay={idx * 60}>
-              <div className="bg-slate-900/60 border border-slate-800/60 rounded-2xl p-5 backdrop-blur-md hover:border-indigo-500/30 hover:-translate-y-0.5 transition-all">
-                <div className="p-2 rounded-xl bg-slate-950/80 border border-slate-800 w-fit mb-3">
-                  <item.icon className="w-4 h-4 text-indigo-400" />
+            { icon: BookOpen, title: 'Study Notes', desc: 'Rich text, tagging, search, and smart organization.' },
+            { icon: Palette, title: 'Planner', desc: 'Weekly planning that understands semester rhythms.' },
+            { icon: TrendingUp, title: 'Finance', desc: 'Expense tracking, budgets, and ROI calculators.' },
+            { icon: Building2, title: 'Career Hub', desc: 'Company prep, placement drives, internship tracking.' },
+            { icon: Users, title: 'Community', desc: 'Announcements, events, skill exchange, memories.' },
+            { icon: Brain, title: 'Dax AI', desc: 'AI companion that adapts to your needs.' },
+          ].map((item, idx) => {
+            const Icon = item.icon;
+            return (
+              <IntersectionReveal key={idx} delay={idx * 60}>
+                <div className="p-6 rounded-2xl bg-slate-900/30 border border-slate-800 hover:border-emerald-500/30 hover:bg-slate-800/20 transition-all group">
+                  <Icon className="w-6 h-6 text-emerald-400 mb-3 group-hover:scale-110 transition-transform" />
+                  <h4 className="font-bold text-white mb-2">{item.title}</h4>
+                  <p className="text-sm text-slate-400">{item.desc}</p>
                 </div>
-                <h4 className="text-sm font-bold text-white mb-1">{item.title}</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">{item.desc}</p>
-              </div>
-            </Reveal>
-          ))}
+              </IntersectionReveal>
+            );
+          })}
         </div>
       </section>
 
-      {/* ── The T.A.D Signature ── */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 mb-24">
-        <Reveal>
-          <div className="bg-gradient-to-br from-slate-900 to-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-10 text-center">
-            <span className="text-[10px] font-bold tracking-widest text-indigo-400 uppercase bg-indigo-500/10 px-3 py-1.5 rounded-full border border-indigo-500/20">
-              The name
+      {/* DATAD Name */}
+      <section className="relative z-10 max-w-3xl mx-auto px-6 py-20">
+        <IntersectionReveal>
+          <div className="text-center p-8 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-900/50 border border-slate-800">
+            <span className="text-xs font-bold uppercase tracking-[0.2em] text-blue-400 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/30 inline-block">
+              The Name
             </span>
-            <h2 className="text-2xl font-black text-white mt-5 mb-3">Why "DATAD"?</h2>
-            <p className="text-sm text-slate-300 leading-relaxed max-w-lg mx-auto">
-              The letters <strong className="text-white">T, A, D</strong> at the heart of{' '}
-              <strong className="text-white">DA<span className="text-indigo-300">T</span>AD</strong>{' '}
-              are my initials: <strong className="text-white">T. A. Dhatchina Moorthi</strong>.
+            <h2 className="text-3xl font-black text-white mt-5 mb-4">Why DATAD?</h2>
+            <p className="text-slate-300 mb-4">
+              <strong className="text-white">D</strong>iscov<strong className="text-blue-400">E</strong>r. <strong className="text-white">A</strong>spire. <strong className="text-white">T</strong>ransform. <strong className="text-white">A</strong>chieve. <strong className="text-white">D</strong>evelop.
             </p>
-            <p className="text-sm text-slate-400 leading-relaxed mt-3 max-w-lg mx-auto">
-              The acronym — <strong className="text-slate-200">D</strong>iscover,{' '}
-              <strong className="text-slate-200">A</strong>spire,{' '}
-              <strong className="text-slate-200">T</strong>ransform,{' '}
-              <strong className="text-slate-200">A</strong>chieve,{' '}
-              <strong className="text-slate-200">D</strong>evelop — is the journey{' '}
-              I wanted every student to take. The name came first. The meaning came from building it.
+            <p className="text-slate-400 text-sm max-w-lg mx-auto">
+              Plus the initials T.A.D of my name. The platform reflects the journey I wanted every student to take — and the person who built it.
             </p>
-            <div className="mt-5 pt-5 border-t border-slate-800">
-              <p className="text-xs text-slate-500 italic">D² Labs — Technology × Psychology × Impact</p>
-            </div>
           </div>
-        </Reveal>
+        </IntersectionReveal>
       </section>
 
-      {/* ── Closing Quote ── */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 mb-24 text-center">
-        <Reveal>
-          <div className="bg-slate-900/80 border border-slate-800 p-8 sm:p-12 rounded-3xl backdrop-blur-xl shadow-2xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 text-slate-800/20 pointer-events-none"><Heart className="w-32 h-32" /></div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" /> Still building
+      {/* Final CTA */}
+      <section className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
+        <IntersectionReveal>
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-5xl font-black text-white mb-4">
+                Built by a student.<br />
+                <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">For students.</span>
+              </h2>
+              <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+                No ads. No tracking. No dark patterns. Just software that respects your time and your mind.
+              </p>
             </div>
-            <blockquote className="text-sm sm:text-base text-slate-200 leading-relaxed italic">
-              "DATAD was created out of a desire for a unified digital sanctuary — a place where raw analytical data meets human craftsmanship, and where productivity and deliberate rest coexist seamlessly. A student's life is not a funnel. It deserves better software."
-            </blockquote>
-            <div className="pt-2">
-              <h4 className="text-sm font-bold text-white">T. A. Dhatchina Moorthi</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Psychology · KCLAS · Self-taught builder</p>
-              <p className="text-xs text-slate-600 mt-1">Tamil Nadu, India · D² Labs</p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
 
-      {/* ── CTA ── */}
-      <footer className="relative z-10 text-center space-y-6">
-        <Reveal>
-          <div className="max-w-lg mx-auto px-6">
-            <span className="text-[10px] font-bold tracking-widest text-emerald-400 uppercase bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
-              Built by a student. For students.
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white mt-5 mb-3">Try what I built</h2>
-            <p className="text-sm text-slate-400 max-w-md mx-auto mb-6">
-              Free for the student community. No ads. No tracking. Your data stays yours — always.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/register"
-                className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-sm font-bold rounded-2xl transition-all shadow-xl shadow-indigo-950/50">
-                <span>Join the platform</span><ArrowRight className="w-4 h-4" />
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
+              <Link
+                to="/register"
+                className="group px-10 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-2xl transition-all shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 flex items-center justify-center gap-2"
+              >
+                Join Free Today <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/support"
-                className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl border border-slate-700 text-slate-300 text-sm font-bold hover:border-indigo-500/50 hover:text-white transition-all">
-                <Sparkles className="w-4 h-4 text-amber-400" /> Back DATAD
+              <Link
+                to="/support"
+                className="px-10 py-4 border-2 border-slate-700 hover:border-blue-500/50 text-slate-300 hover:text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
+              >
+                <Heart className="w-4 h-4" /> Support the Project
               </Link>
             </div>
-            <p className="mt-6 text-[11px] text-slate-600">Independent · Ad-free · Community-backed · D² Labs</p>
+
+            <p className="text-xs text-slate-500 pt-8 border-t border-slate-800">
+              Independent · Community-backed · Built with love · D² Labs 🚀
+            </p>
           </div>
-        </Reveal>
-      </footer>
-    </div>
+        </IntersectionReveal>
+      </section>
+    </Page>
   );
 }
