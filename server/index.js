@@ -48,7 +48,9 @@ app.use(
       if (!origin || allowedOrigins.includes(origin) || NGROK_RE.test(origin)) {
         return cb(null, true);
       }
-      cb(new Error('Not allowed by CORS'));
+      const err = new Error('Not allowed by CORS');
+      err.statusCode = 403;
+      cb(err);
     },
   })
 );

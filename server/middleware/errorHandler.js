@@ -20,7 +20,10 @@ const errorHandler = (err, req, res, next) => {
   if (err.code === 11000) {
     return res.status(409).json({ message: 'That value is already taken' });
   }
-  logger.error(err);
+  if (err.statusCode) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
+  logger.error(err.message, { stack: err.stack });
   res.status(500).json({ message: 'Something went wrong' });
 };
 

@@ -3,7 +3,7 @@ const { notify } = require('./notificationController');
 
 exports.listTasks = async (req, res, next) => {
   try {
-    const filter = {};
+    const filter = { $or: [{ createdBy: req.user.userId }, { assignee: req.user.userId }] };
     if (req.query.status) filter.status = req.query.status;
     if (req.query.subject) filter.subject = req.query.subject;
     const tasks = await Task.find(filter)
