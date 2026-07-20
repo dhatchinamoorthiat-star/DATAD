@@ -19,7 +19,6 @@ import { Page } from '../common/motion';
 import { Skeleton } from '../common/Skeleton';
 import Card from '../common/Card';
 import Button from '../common/Button';
-import AIEnhancement from '../common/AIEnhancement';
 import UsageSummary from '../dashboard/UsageSummary';
 
 // ── 1. Arrival — a personalised morning briefing, not a chat window ────────

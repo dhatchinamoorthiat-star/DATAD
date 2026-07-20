@@ -11,7 +11,6 @@ import ReadinessBreakdown from '../../components/career/ReadinessBreakdown';
 import { getReadiness } from '../../api/readiness';
 import { Page } from '../../components/common/motion';
 import { Skeleton } from '../../components/common/Skeleton';
-import AIEnhancement from '../../components/common/AIEnhancement';
 import TierGate from '../../components/common/TierGate';
 
 const NEWS_LIMIT = 6;

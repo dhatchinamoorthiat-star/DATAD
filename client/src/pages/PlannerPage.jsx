@@ -14,7 +14,6 @@ import TierGate from '../components/common/TierGate';
 import CrownBadge from '../components/common/CrownBadge';
 import DateInput from '../components/common/DateInput';
 import Button from '../components/common/Button';
-import AIEnhancement from '../components/common/AIEnhancement';
 import { DAX_CAPABILITY } from '../utils/dax';
 
 function AIPlannerPanel({ tasks }) {

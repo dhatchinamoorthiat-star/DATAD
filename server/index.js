@@ -78,7 +78,6 @@ app.use('/api/companies', require('./routes/companyRoutes'));
 app.use('/api/readiness', require('./routes/readinessRoutes'));
 app.use('/api/journal', require('./routes/journalRoutes'));
 app.use('/api/dax', require('./routes/daxRoutes'));
-app.use('/api/enhance', require('./routes/enhanceRoutes'));
 // Migration Blueprint Phase 1 (P1-3): /api/chat and /api/ai are unmounted,
 // not deleted. Traced every client call site — nothing targets either path
 // anymore (the client moved to /api/dax). Unmounting first, rather than

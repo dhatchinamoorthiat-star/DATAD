@@ -259,17 +259,7 @@ const HANDLERS = {
         userId,
       };
 
-      let result, meta;
-      if (RUNTIME_V2_TASKS.has('summarise-note')) {
-        try {
-          ({ result, meta } = await _executeViaRuntimeV2(runArgs));
-        } catch (err) {
-          console.warn(`[dax] Runtime V2 path failed for summarise-note, falling back to V1: ${err.message}`);
-        }
-      }
-      if (!result) {
-        ({ result, meta } = await runPipeline(runArgs));
-      }
+      const { result, meta } = await _executeViaRuntimeV2(runArgs);
 
       upsertEmbedding({
         collection: 'notes',

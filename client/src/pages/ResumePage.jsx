@@ -12,7 +12,6 @@ import TierGate from '../components/common/TierGate';
 import AIBadge from '../components/common/AIBadge';
 import CrownBadge from '../components/common/CrownBadge';
 import Button from '../components/common/Button';
-import AIEnhancement from '../components/common/AIEnhancement';
 
 function AIReviewPanel({ resumeData }) {
   const [state, setState] = useState('idle');

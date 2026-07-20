@@ -9,7 +9,6 @@ import { Skeleton } from '../components/common/Skeleton';
 import ConfirmModal from '../components/common/ConfirmModal';
 import TierGate from '../components/common/TierGate';
 import CrownBadge from '../components/common/CrownBadge';
-import AIEnhancement from '../components/common/AIEnhancement';
 
 export default function NoteDetailPage() {
   const { id } = useParams();

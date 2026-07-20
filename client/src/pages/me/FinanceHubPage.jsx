@@ -15,7 +15,6 @@ import BudgetBar from '../../components/finance/BudgetBar';
 import CategoryChart from '../../components/finance/CategoryChart';
 import { Page } from '../../components/common/motion';
 import { Skeleton } from '../../components/common/Skeleton';
-import AIEnhancement from '../../components/common/AIEnhancement';
 import TierGate from '../../components/common/TierGate';
 
 const CATEGORIES = ['Food', 'Travel', 'Rent', 'Books & Courses', 'Entertainment', 'Shopping', 'Other'];
