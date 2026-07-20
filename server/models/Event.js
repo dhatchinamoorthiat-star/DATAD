@@ -19,6 +19,8 @@ const eventSchema = new mongoose.Schema(
     registrationOpen: { type: Boolean, default: true },
     maxAttendees: { type: Number },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // ⭐ Program Personalization
+    program: { type: String, default: null },     // Program ID event belongs to
   },
   { timestamps: true }
 );

@@ -7,6 +7,8 @@ const noteSchema = new mongoose.Schema(
     semester: { type: String, trim: true, maxlength: 30 },
     content: { type: String, default: '', maxlength: 20000 },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // ⭐ Program Personalization
+    program: { type: String, default: null },     // Program ID notes belong to
     contentItem: { type: mongoose.Schema.Types.ObjectId, ref: 'ContentItem' },
     // Attachments: files uploaded or links pasted by the author
     attachments: [{

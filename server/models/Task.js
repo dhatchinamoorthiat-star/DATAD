@@ -18,6 +18,8 @@ const taskSchema = new mongoose.Schema(
       default: 'pending',
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // ⭐ Program Personalization
+    program: { type: String, default: null },     // Program ID task belongs to
   },
   { timestamps: true }
 );

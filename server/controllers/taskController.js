@@ -4,6 +4,13 @@ const { notify } = require('./notificationController');
 exports.listTasks = async (req, res, next) => {
   try {
     const filter = { $or: [{ createdBy: req.user.userId }, { assignee: req.user.userId }] };
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) {
+      filter.program = programId;
+    }
+
     if (req.query.status) filter.status = req.query.status;
     if (req.query.subject) filter.subject = req.query.subject;
     const tasks = await Task.find(filter)
@@ -27,6 +34,8 @@ exports.createTask = async (req, res, next) => {
       title, type, subject, dueDate, description,
       assignee: resolvedAssignee,
       createdBy: req.user.userId,
+      // ⭐ Automatically scope task to user's program
+      program: req.user?.program?.id || null,
     });
     // Notify assignee if different from creator
     if (resolvedAssignee && String(resolvedAssignee) !== req.user.userId) {

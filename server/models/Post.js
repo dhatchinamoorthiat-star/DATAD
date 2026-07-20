@@ -11,6 +11,8 @@ const postSchema = new mongoose.Schema(
       default: 'general',
     },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // ⭐ Program Personalization
+    program: { type: String, default: null },     // Program ID this post belongs to
     likes: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
     replyCount: { type: Number, default: 0 },
     type: { type: String, enum: ['text', 'photo', 'poll', 'achievement'], default: 'text' },

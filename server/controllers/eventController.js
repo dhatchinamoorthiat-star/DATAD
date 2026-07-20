@@ -6,6 +6,13 @@ const { notify, notifyBulk } = require('./notificationController');
 exports.listEvents = async (req, res, next) => {
   try {
     const filter = {};
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) {
+      filter.program = programId;
+    }
+
     if (req.query.category) filter.category = req.query.category;
     if (req.query.upcoming !== 'false') filter.date = { $gte: new Date() };
     const events = await Event.find(filter)
@@ -23,6 +30,8 @@ exports.createEvent = async (req, res, next) => {
       title, description, date, endDate, location, online, meetLink, organizer, category,
       image, registrationOpen, maxAttendees,
       createdBy: req.user.userId,
+      // ⭐ Automatically scope event to user's program
+      program: req.user?.program?.id || null,
     });
     User.find({ role: { $ne: 'admin' } }).select('_id').lean().then((users) => {
       notifyBulk(users.map((u) => u._id), {

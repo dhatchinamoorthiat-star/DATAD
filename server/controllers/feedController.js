@@ -7,6 +7,13 @@ exports.getFeed = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const filter = {};
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) {
+      filter.program = programId;
+    }
+
     if (req.query.type) filter.type = req.query.type;
 
     const [posts, total] = await Promise.all([
@@ -39,9 +46,15 @@ exports.createPost = async (req, res, next) => {
     const { title, body, type, tags, imageUrl, pollOptions } = req.body;
     if (!body) return res.status(400).json({ message: 'Post body required' });
     const post = await Post.create({
-      title: title || body.slice(0, 100), body, type: type || 'text', tags: tags || [], imageUrl,
+      title: title || body.slice(0, 100),
+      body,
+      type: type || 'text',
+      tags: tags || [],
+      imageUrl,
       pollOptions: pollOptions ? pollOptions.map((t) => ({ text: t, votes: 0 })) : [],
       author: req.user.userId,
+      // ⭐ Automatically scope post to user's program
+      program: req.user?.program?.id || null,
     });
     await post.populate('author', 'name avatar');
     res.status(201).json(post);

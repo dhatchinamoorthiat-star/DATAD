@@ -6,7 +6,14 @@ const { Readable } = require('stream');
 
 exports.listNotes = async (req, res, next) => {
   try {
-    const filter = {};
+    const filter = { author: req.user.userId };  // Only user's own notes
+
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) {
+      filter.program = programId;
+    }
+
     if (req.query.subject) filter.subject = req.query.subject;
     const notes = await Note.find(filter)
       .populate('author', 'name')
@@ -65,9 +72,19 @@ exports.createNote = async (req, res, next) => {
       },
       user: req.user,
     });
-    // Save attachments separately since publishDirect may not handle them
+    // Save attachments and program separately since publishDirect may not handle them
     if (attachments && attachments.length) {
-      await Note.findByIdAndUpdate(note._id, { attachments, customSubject: customSubject || '' });
+      await Note.findByIdAndUpdate(note._id, {
+        attachments,
+        customSubject: customSubject || '',
+        // ⭐ Automatically scope note to user's program
+        program: req.user?.program?.id || null,
+      });
+    } else {
+      // Still add program even if no attachments
+      await Note.findByIdAndUpdate(note._id, {
+        program: req.user?.program?.id || null,
+      });
     }
     res.status(201).json(note);
   } catch (err) {
