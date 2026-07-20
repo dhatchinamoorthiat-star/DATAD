@@ -9,7 +9,7 @@ exports.getDirectory = async (req, res, next) => {
     if (req.query.skill) filter.skills = new RegExp(req.query.skill, 'i');
 
     let profiles = await UserProfile.find(filter)
-      .populate('user', 'name avatar email rollNumber')
+      .populate('user', 'name avatar')
       .sort({ createdAt: -1 });
 
     if (req.query.search) {
