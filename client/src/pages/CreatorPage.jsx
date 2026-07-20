@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Mail, Github, Linkedin, ExternalLink, Code2, Sparkles,
+  ArrowRight, Mail, ExternalLink, Code2, Sparkles,
   BookOpen, Users, Zap, Heart, Shield, Globe, CheckCircle,
-  Trophy, TrendingUp, Lightbulb, Brain, Palette, Building2,
+  Trophy, TrendingUp, Lightbulb, Brain, Palette, Building2, Lock,
 } from 'lucide-react';
 import { Page } from '../components/common/motion';
 
