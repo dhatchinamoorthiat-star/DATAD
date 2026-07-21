@@ -3,6 +3,7 @@ const CompanyRead = require('../models/CompanyRead');
 const User = require('../models/User');
 const { canAccessFeature } = require('../subscription/permissionEngine');
 const { FEATURE } = require('../subscription/featureRegistry');
+const { mergeWithProgramsFilter, getProgramsFilter } = require('../utils/programFilter');
 
 const PREMIUM_FIELDS = ['interviewQuestions', 'prepTips', 'rounds', 'salaryRange'];
 
@@ -16,9 +17,12 @@ const slugify = (name) =>
 
 exports.listCompanies = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.query.sector) filter.sector = req.query.sector;
-    if (req.query.q) filter.name = { $regex: req.query.q.trim(), $options: 'i' };
+    const base = {};
+    if (req.query.sector) base.sector = req.query.sector;
+    if (req.query.q) base.name = { $regex: req.query.q.trim(), $options: 'i' };
+    // Recruiters the program sync tagged for this student, plus untagged
+    // companies that are relevant to everyone.
+    const filter = mergeWithProgramsFilter(req.user, base);
     const companies = await Company.find(filter)
       .select('name slug sector logoUrl salaryRange roles views')
       .sort({ views: -1, name: 1 })
@@ -33,8 +37,10 @@ exports.listCompanies = async (req, res, next) => {
 exports.getCompanyBySlug = async (req, res, next) => {
   try {
     const [company, dbUser] = await Promise.all([
+      // Scoped by program too: filtering only the list would leave the detail
+      // page reachable by guessing a slug.
       Company.findOneAndUpdate(
-        { slug: req.params.slug },
+        mergeWithProgramsFilter(req.user, { slug: req.params.slug }),
         { $inc: { views: 1 } },
         { returnDocument: 'after' }
       ).lean(),

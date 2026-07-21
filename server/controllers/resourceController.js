@@ -2,19 +2,23 @@ const crypto = require('crypto');
 const Resource = require('../models/Resource');
 const cloudinary = require('../config/cloudinary');
 const docUpload = require('../middleware/docUpload');
+const { mergeWithProgramsFilter } = require('../utils/programFilter');
 const studioUpload = require('../middleware/studioUpload');
 const publishService = require('../services/publishing/publishService');
 
 exports.list = async (req, res, next) => {
   try {
-    const filter = {};
-    if (req.query.type) filter.type = req.query.type;
-    if (req.query.subject) filter.subject = new RegExp(req.query.subject, 'i');
-    if (req.query.semester) filter.semester = req.query.semester;
+    const base = {};
+    if (req.query.type) base.type = req.query.type;
+    if (req.query.subject) base.subject = new RegExp(req.query.subject, 'i');
+    if (req.query.semester) base.semester = req.query.semester;
     if (req.query.search) {
       const re = new RegExp(req.query.search, 'i');
-      filter.$or = [{ title: re }, { professor: re }, { tags: re }];
+      base.$or = [{ title: re }, { professor: re }, { tags: re }];
     }
+    // Search already owns `$or`, so this combines under `$and` rather than
+    // overwriting it — otherwise searching would drop the program scope.
+    const filter = mergeWithProgramsFilter(req.user, base);
     const sort = req.query.sort === 'downloads' ? { downloads: -1 } : { createdAt: -1 };
     const resources = await Resource.find(filter).populate('uploadedBy', 'name').sort(sort);
     res.json(resources);
@@ -28,6 +32,9 @@ exports.create = async (req, res, next) => {
     const resource = await Resource.create({
       title, subject, semester, professor, type, url, fileSize, tags: tags || [],
       uploadedBy: req.user.userId,
+      // Scoped to the uploader's program. Admin-curated material is seeded with
+      // an empty array instead, which shares it across every program.
+      programs: req.user?.program?.id ? [req.user.program.id] : [],
     });
     res.status(201).json(resource);
   } catch (err) { next(err); }
