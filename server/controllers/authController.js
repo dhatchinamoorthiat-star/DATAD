@@ -14,6 +14,7 @@ const Announcement = require('../models/Announcement');
 const UserProfile = require('../models/UserProfile');
 const StudentIdentity = require('../models/StudentIdentity');
 const ProgramApproval = require('../models/ProgramApproval');
+const { resolveProgramFromCourse } = require('../utils/programResolver');
 const { upsertFromRegistration, updateIdentity } = require('../services/studentIdentityService');
 const { inferNewsInterests } = require('../utils/domainClassifier');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../config/mailer');
@@ -88,6 +89,16 @@ exports.checkEmail = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Sync a program's content the first time anyone joins it. Already-synced
+// programs are skipped: a second MBA student doesn't need the MBA feed rebuilt.
+const ensureProgramSynced = async (approval, program) => {
+  const ProgramRegistry = require('../models/ProgramRegistry');
+  if (await ProgramRegistry.exists({ _id: program.id })) return;
+
+  const { runProgramSync } = require('../services/programSyncService');
+  await runProgramSync(approval._id);
+};
+
 exports.register = async (req, res, next) => {
   try {
     const {
@@ -96,8 +107,8 @@ exports.register = async (req, res, next) => {
       password,
       referralCode,
       rollNumber,
-      // ⭐ Program Personalization
-      program,
+      // Optional explicit override; normally derived from `course` below.
+      program: explicitProgram,
       // New profile fields
       college,
       course,
@@ -129,13 +140,12 @@ exports.register = async (req, res, next) => {
     const pwdProblem = passwordProblem(password);
     if (pwdProblem) return res.status(400).json({ message: pwdProblem });
 
-    // Program validation
-    if (!program || !program.id || !program.label) {
-      return res.status(400).json({ message: 'Program selection is required' });
-    }
-    if (!['preset', 'custom'].includes(program.type)) {
-      return res.status(400).json({ message: 'Invalid program type' });
-    }
+    // The program is derived from the course/specialization the academic step
+    // already collects, not asked for separately. An explicit `program` in the
+    // body still wins so non-form clients can set it directly.
+    const program = explicitProgram?.id
+      ? explicitProgram
+      : resolveProgramFromCourse({ course, specialization, graduationYear, college });
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
@@ -240,21 +250,14 @@ exports.register = async (req, res, next) => {
     const studentType = years === 0 || ['fresher', 'intern'].includes(expType) ? 'fresher' : 'experienced';
     const workExYears = years > 0 ? years : null;
 
-    // Map the student's chosen course to a registered module slug. Only
-    // 'mba' has a dedicated module today (with MBA-specific tooling like
-    // case-interview prep); every other course — including "Other" free
-    // text — lands on 'general', the discipline-agnostic default with the
-    // same full feature set. This is the one place a course selection
-    // actually reaches the module/feature-routing system; previously
-    // programs/activeProgram were hardcoded to ['mba']/'mba' regardless
-    // of what a student picked at signup.
-    const programSlug = (course || '').trim().toLowerCase() === 'mba' ? 'mba' : 'general';
-
-    // Update user with computed studentType, workExYears, and program
+    // programs/activeProgram drive the older module + feature-routing system;
+    // program.id drives content filtering. They are the same concept, so they
+    // resolve from the same place — keeping them independent is how a student
+    // ends up on the MBA module with a Law feed.
     user.studentType = studentType;
     user.workExYears = workExYears;
-    user.programs = [programSlug];
-    user.activeProgram = programSlug;
+    user.programs = [program.id];
+    user.activeProgram = program.id;
     await user.save();
 
     if (referrer) {
@@ -264,7 +267,7 @@ exports.register = async (req, res, next) => {
         user,
         { referrerName: referrer.name, referrerEmail: referrer.email, code: referrer.referralCode }
       );
-    } else if (approved) {
+    } else if (autoApproved) {
       logActivity('register_admin', `${user.name} registered as admin (ADMIN_EMAIL match)`, user);
     } else {
       logActivity('register_pending', `${user.name} registered without a code — waiting for approval`, user);
@@ -378,6 +381,14 @@ exports.register = async (req, res, next) => {
         programAwaitingApproval: isCustomProgram,
       });
     }
+
+    // An auto-approved account skips the admin screen that normally kicks off
+    // the sync, so its program would never get registered or tagged. Run it
+    // here instead — but only for a program nobody has synced yet, since the
+    // work is per-program, not per-user.
+    ensureProgramSynced(programApproval, program).catch((err) =>
+      logger.error('Auto-approve program sync failed', { error: err.message, programId: program.id })
+    );
 
     // Auto-approved: Preset program + referral
     if (isPresetProgram && referrer) {

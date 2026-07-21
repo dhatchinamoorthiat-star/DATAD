@@ -39,7 +39,15 @@ const userSchema = new mongoose.Schema(
     tierExpiresAt: { type: Date, default: null },    // null = never expires
     subscriptionRef: { type: String, default: null }, // last verified payment ref
 
-    // ⭐ Program Personalization System
+    // Module system: which module's feature set and dashboard the user gets.
+    // Set from program.id at registration — moduleContext, moduleRoutes and the
+    // client's AuthContext all still read these, so they can't be dropped in
+    // favour of `program` below without migrating those first.
+    programs: { type: [{ type: String }], default: ['general'] },
+    activeProgram: { type: String, default: 'general' },
+
+    // Content personalization: the richer record driving every content filter.
+    // program.id is the same slug as activeProgram.
     program: {
       id: { type: String, default: null },              // 'mba', 'btech-cs', 'custom-xyz'
       label: { type: String, default: null },           // 'MBA', 'BTech Computer Science'

@@ -10,6 +10,8 @@ const activityLogSchema = new mongoose.Schema(
         'register_pending',
         'register_referral',
         'register_admin',
+        'register_program_pending',
+        'register_program_auto_approved',
         'approved',
         'rejected',
         'password_reset_requested',

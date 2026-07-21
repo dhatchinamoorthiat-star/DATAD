@@ -6,6 +6,17 @@
   },
   "programs": [
     {
+      "id": "general",
+      "label": "General",
+      "category": null,
+      "icon": "🎓",
+      "description": "Discipline-agnostic default for students who skip the course step",
+      "specializations": [],
+      "newsCategories": ["placements", "corporate", "economy"],
+      "companySectors": ["it_services", "consulting", "banking", "other"],
+      "careerPaths": []
+    },
+    {
       "id": "mba",
       "label": "MBA",
       "category": "Master",

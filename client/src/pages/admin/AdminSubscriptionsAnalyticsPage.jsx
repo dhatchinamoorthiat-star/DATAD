@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, Users, DollarSign, ZapOff, CheckCircle2, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
-import { admin } from '../../api/admin';
+import { getSubscriptionAnalytics } from '../../api/admin';
 import { Page } from '../../components/common/motion';
 import { Skeleton } from '../../components/common/Skeleton';
 
@@ -12,8 +12,7 @@ export default function AdminSubscriptionsAnalyticsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    admin
-      .get('/subscriptions/analytics')
+    getSubscriptionAnalytics()
       .then((res) => setData(res.data))
       .catch(() => toast.error('Could not load subscription analytics'))
       .finally(() => setLoading(false));

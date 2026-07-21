@@ -21,3 +21,4 @@ export const listSubscriptionUsers    = ()              => api.get('/admin/subsc
 export const listSubscriptionRequests = (status)        => api.get('/admin/subscriptions', { params: status ? { status } : {} });
 export const updateUserTier           = (id, data)      => api.patch(`/admin/subscriptions/users/${id}/tier`, data);
 export const reviewSubscriptionRequest= (id, data)      => api.patch(`/admin/subscriptions/${id}/review`, data);
+export const getSubscriptionAnalytics = ()              => api.get('/admin/subscriptions/analytics');
