@@ -29,6 +29,14 @@ const userSchema = new mongoose.Schema(
     resetTokenHash: { type: String, default: null },
     resetTokenExpires: { type: Date, default: null },
 
+    // Email verification. Proving inbox ownership is what actually filters
+    // bots — admin approval is for judging people, not for blocking scripts.
+    // Only the hash is stored, same as the reset flow: a leaked DB must not
+    // yield usable tokens.
+    emailVerifiedAt: { type: Date, default: null },
+    verifyTokenHash: { type: String, default: null },
+    verifyTokenExpires: { type: Date, default: null },
+
     // Background
     studentType: { type: String, enum: ['fresher', 'experienced'], default: 'fresher' },
     workExYears: { type: Number, min: 0, max: 40, default: null },

@@ -74,7 +74,9 @@ exports.getStats = async (req, res, next) => {
 exports.listStudents = async (req, res, next) => {
   try {
     const students = await User.find()
-      .select('-password -resetTokenHash -resetTokenExpires')
+      // emailVerifiedAt and program are the two signals the approval screen
+      // vets on, so they must survive this projection.
+      .select('-password -resetTokenHash -resetTokenExpires -verifyTokenHash -verifyTokenExpires')
       .sort({ status: -1, createdAt: -1 }) // 'pending' > 'approved', so pending first
       .lean();
 
@@ -124,6 +126,29 @@ exports.approveStudent = async (req, res, next) => {
 
     user.status = 'approved';
     await user.save();
+
+    // Approving the person also provisions their program. These were two
+    // separate admin actions; forgetting the second one let a student in with
+    // an empty feed, so there is now only one.
+    const ProgramApproval = require('../models/ProgramApproval');
+    const ProgramRegistry = require('../models/ProgramRegistry');
+    const programId = user.program?.id;
+    if (programId && !(await ProgramRegistry.exists({ _id: programId }))) {
+      const approval = await ProgramApproval.findById(user.program?.approvalId);
+      if (approval) {
+        approval.status = 'approved';
+        approval.approvedBy = req.user.userId;
+        approval.approvedAt = new Date();
+        await approval.save();
+
+        // Fire-and-forget: the sync reports its own progress on the approval
+        // doc, and a slow sync must not hold up the admin's response.
+        require('../services/programSyncService')
+          .runProgramSync(approval._id)
+          .catch((err) => logger.error('Program sync on approval failed', { error: err.message, programId }));
+      }
+    }
+
     sendAccountApprovedEmail(user).catch((err) => logger.error('Approval email failed:', err.message));
     sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', err.message));
     notify({ user: user._id, type: 'general', title: `Welcome to DATAD, ${user.name.split(' ')[0]}! Your account has been approved.`, link: '/' }).catch(() => {});

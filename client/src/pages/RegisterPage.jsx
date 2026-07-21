@@ -92,6 +92,8 @@ export default function RegisterPage() {
         name: data.name,
         email: data.email,
         password: data.password,
+        // Honeypot — always empty for real users; the server rejects it if filled.
+        website: data.website || '',
         rollNumber: data.rollNumber || '',
         referralCode: data.referralCode || '',
         studentType: data.studentType || 'fresher',

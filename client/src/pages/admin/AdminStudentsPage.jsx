@@ -151,6 +151,18 @@ export default function AdminStudentsPage() {
                           pending
                         </span>
                       )}
+                      {/* The main bot signal: an unconfirmed address means
+                          nobody has proven they can receive mail there. */}
+                      {!s.emailVerifiedAt && s.status === 'pending' && (
+                        <span className="ml-1.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                          unconfirmed email
+                        </span>
+                      )}
+                      {s.program?.label && (
+                        <span className="ml-1.5 rounded-full bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                          {s.program.label}
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-xs text-gray-400">{s.email}</p>
                   </div>

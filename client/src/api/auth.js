@@ -3,6 +3,7 @@ import api from './axios';
 export const register = (data) => api.post('/auth/register', data);
 export const checkEmail = (email) => api.get('/auth/check-email', { params: { email } });
 export const login = (data) => api.post('/auth/login', data);
+export const verifyEmail = (token) => api.post('/auth/verify-email', { token });
 export const getMe = () => api.get('/auth/me');
 export const updateProfile = (data) => api.put('/auth/profile', data);
 export const uploadAvatar = (formData) => api.post('/auth/avatar', formData, { headers: { 'Content-Type': 'multipart/form-data' } });

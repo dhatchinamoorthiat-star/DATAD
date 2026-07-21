@@ -132,6 +132,21 @@ export default function ProgramStep() {
           <input {...register('referralCode')} placeholder="DHAT-7K2M" className="input" />
         </div>
       </div>
+
+      {/* Honeypot. Hidden from people and from screen readers, but present in
+          the DOM for form-filling bots. Anything typed here fails the signup
+          server-side. Not `display:none` — some bots skip those. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+        <label htmlFor="website">Website</label>
+        <input
+          id="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          {...register('website')}
+        />
+      </div>
+
       <p className="text-[11px] text-gray-400">
         A valid referral code from a batchmate skips the approval queue.
       </p>

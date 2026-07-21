@@ -17,7 +17,7 @@ const ProgramApproval = require('../models/ProgramApproval');
 const { resolveProgramFromCourse } = require('../utils/programResolver');
 const { upsertFromRegistration, updateIdentity } = require('../services/studentIdentityService');
 const { inferNewsInterests } = require('../utils/domainClassifier');
-const { sendWelcomeEmail, sendPasswordResetEmail } = require('../config/mailer');
+const { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail } = require('../config/mailer');
 const logActivity = require('../utils/logActivity');
 const cloudinary = require('../config/cloudinary');
 const logger = require('../utils/logger');
@@ -129,6 +129,17 @@ exports.register = async (req, res, next) => {
       timeAvailable,
       challenges,
     } = req.body;
+
+    // Honeypot: a field hidden from real users that form-filling bots populate.
+    // Answer exactly as if the signup succeeded — telling a bot it was detected
+    // just tells its author which field to skip next time.
+    if (String(req.body.website || '').trim()) {
+      logger.warn('Honeypot triggered on register', { email, ip: req.ip });
+      return res.status(201).json({
+        pending: true,
+        message: 'Account created — check your email to confirm your address.',
+      });
+    }
 
     // Basic validation
     if (!name || !email || !password) {
@@ -358,61 +369,86 @@ exports.register = async (req, res, next) => {
       ).catch(() => {});
     }
 
-    // Profile data (course, specialization, interests, etc.) is now saved
-    // above regardless of approval status — this gate only controls the
-    // response/token/email, so a pending signup's registration data isn't
-    // silently discarded while they wait for an admin to approve them.
+    // Profile data is saved above regardless of approval status, so a pending
+    // signup's registration data isn't discarded while they wait.
+    //
+    // Nobody gets a session before proving they own the address — not even a
+    // referred or auto-approved account. That single rule is what keeps bots
+    // out of the admin queue, so it has no exceptions.
+    const verifyToken = crypto.randomBytes(32).toString('hex');
+    user.verifyTokenHash = crypto.createHash('sha256').update(verifyToken).digest('hex');
+    user.verifyTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
 
-    if (approvalStatus === 'pending') {
-      const message = isCustomProgram
-        ? `Account created for ${program.label}! Admin will verify your program and sync all data shortly.`
-        : 'Account created — an admin will review and approve it shortly.';
-
-      logActivity(
-        'register_program_pending',
-        `${user.name} registered with ${isCustomProgram ? 'custom' : 'preset'} program: ${program.label}`,
-        user,
-        { programId: program.id, programType: program.type, approvalId: programApproval._id }
-      );
-
-      return res.status(201).json({
-        pending: true,
-        message,
-        programAwaitingApproval: isCustomProgram,
-      });
-    }
-
-    // An auto-approved account skips the admin screen that normally kicks off
-    // the sync, so its program would never get registered or tagged. Run it
-    // here instead — but only for a program nobody has synced yet, since the
-    // work is per-program, not per-user.
-    ensureProgramSynced(programApproval, program).catch((err) =>
-      logger.error('Auto-approve program sync failed', { error: err.message, programId: program.id })
+    logActivity(
+      approvalStatus === 'pending' ? 'register_program_pending' : 'register_program_auto_approved',
+      `${user.name} registered (${program.label}) — awaiting email confirmation`,
+      user,
+      { programId: program.id, programType: program.type, approvalId: programApproval._id }
     );
 
-    // Auto-approved: Preset program + referral
-    if (isPresetProgram && referrer) {
-      logActivity(
-        'register_program_auto_approved',
-        `${user.name} registered with preset program ${program.label} via referral`,
-        user,
-        { programId: program.id, referrerName: referrer.name }
-      );
+    const link = `${process.env.CLIENT_URL || 'http://localhost:5174'}/verify-email?token=${verifyToken}`;
+    sendVerificationEmail(user, link).catch((err) =>
+      logger.error('Verification email failed', { error: err.message, email: user.email })
+    );
 
-      // Fire-and-forget: registration must not fail if the mail service is down.
-      sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', { error: err.message }));
-      return res.status(201).json({
-        token: signToken(user),
-        programReady: true,
-      });
-    }
-
-    // Fire-and-forget: registration must not fail if the mail service is down.
-    sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', { error: err.message }));
-    res.status(201).json({ token: signToken(user) });
+    return res.status(201).json({
+      pending: true,
+      needsEmailVerification: true,
+      message: 'Account created — check your email to confirm your address.',
+    });
   } catch (err) {
     next(err);
   }
+};
+
+// Confirming the address is what turns a raw signup into a real account: it's
+// where the referral auto-approve resolves and where the program sync fires.
+// Doing that work at registration would mean bots trigger it.
+exports.verifyEmail = async (req, res, next) => {
+  try {
+    const raw = String(req.body.token || req.query.token || '');
+    if (!raw) return res.status(400).json({ message: 'Verification token is required' });
+
+    const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
+    const user = await User.findOne({
+      verifyTokenHash: tokenHash,
+      verifyTokenExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: 'This confirmation link is invalid or has expired. Request a new one from the login page.',
+      });
+    }
+
+    user.emailVerifiedAt = new Date();
+    user.verifyTokenHash = null;
+    user.verifyTokenExpires = null;
+    await user.save();
+
+    // Only now does the account become real enough to justify the work.
+    if (user.status === 'approved') {
+      const approval = await ProgramApproval.findById(user.program?.approvalId);
+      if (approval) {
+        ensureProgramSynced(approval, user.program).catch((err) =>
+          logger.error('Program sync after verification failed', {
+            error: err.message, programId: user.program?.id,
+          })
+        );
+      }
+      sendWelcomeEmail(user).catch((err) =>
+        logger.error('Welcome email failed', { error: err.message })
+      );
+      return res.json({ token: signToken(user), verified: true });
+    }
+
+    res.json({
+      verified: true,
+      pending: true,
+      message: 'Email confirmed. An admin will review your account shortly.',
+    });
+  } catch (err) { next(err); }
 };
 
 exports.login = async (req, res, next) => {
@@ -424,6 +460,15 @@ exports.login = async (req, res, next) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    // Accounts predating email verification have no verifyTokenHash and were
+    // never sent a link — gating them would lock out every existing user, so
+    // only accounts issued a token are held to it.
+    if (!user.emailVerifiedAt && user.verifyTokenHash && !isAdminEmail(user.email)) {
+      return res.status(403).json({
+        needsEmailVerification: true,
+        message: 'Confirm your email address first — check your inbox for the link.',
+      });
     }
     // Only explicit 'pending' is blocked — accounts created before gating pass through.
     if (user.status === 'pending' && !isAdminEmail(user.email)) {

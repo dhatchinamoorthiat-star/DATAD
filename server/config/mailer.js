@@ -74,6 +74,25 @@ exports.sendAccountApprovedEmail = (user) =>
     ),
   }).catch((err) => logger.error('Approval email failed:', { error: err.message }));
 
+// Sent immediately at signup. Until this link is clicked the account cannot
+// log in and never reaches the admin queue, so a bot with a fake address
+// costs the admin nothing.
+exports.sendVerificationEmail = (user, link) =>
+  send({
+    to: [{ email: user.email, name: user.name }],
+    subject: 'Confirm your email — DATAD',
+    html: wrap(
+      'Confirm your email',
+      `<p>Hi ${user.name},</p>
+       <p>Confirm this address to finish creating your DATAD account.</p>
+       <p><a href="${link}"
+         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+         Confirm email
+       </a></p>
+       <p style="color:#6b7280">This link expires in 24 hours. If you didn't sign up for DATAD, ignore this email — no account is created without confirming.</p>`
+    ),
+  });
+
 // Sent only after a program's data sync finishes cleanly — see
 // programSyncService. Reaching a student before their content exists is worse
 // than reaching them a minute later.
