@@ -5,8 +5,7 @@ import { ProgramBadge } from '../../components/program/ProgramBadge';
 import { Page } from '../../components/common/motion';
 import Button from '../../components/common/Button';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
-import toast from 'react-hot-toast';
-import { BookOpen, Edit2, Lock, AlertCircle } from 'lucide-react';
+import { BookOpen, Edit2, Lock, AlertCircle, Mail } from 'lucide-react';
 
 export default function ProgramSettingsPage() {
   useDocumentTitle('Program Settings');
@@ -14,27 +13,23 @@ export default function ProgramSettingsPage() {
   const program = useProgramContext();
   const [changeReason, setChangeReason] = useState('');
   const [showChangeForm, setShowChangeForm] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const canChangeProgram = !user?.programHistory || user.programHistory.length === 0;
 
-  const handleRequestChange = async () => {
-    if (!changeReason.trim()) {
-      toast.error('Please select a reason for changing');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // TODO: Implement program change request endpoint
-      toast.success('Program change requested! Admin will review shortly.');
-      setShowChangeForm(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to request change');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Program changes are rare and need evidence (a transfer certificate, proof of
+  // graduation), so they are handled by a person rather than a form. This used
+  // to show a success toast and do nothing at all, which was worse than saying so.
+  const ADMIN_EMAIL = 'digitaldoncodes@gmail.com';
+  const mailtoHref =
+    `mailto:${ADMIN_EMAIL}` +
+    `?subject=${encodeURIComponent(`Program change request — ${user?.name || ''}`)}` +
+    `&body=${encodeURIComponent(
+      `Account: ${user?.email || ''}\n` +
+      `Current program: ${program.label || ''}\n` +
+      `Requested program: \n` +
+      `Reason: ${changeReason ? changeReason.replace(/_/g, ' ') : ''}\n\n` +
+      `Please attach supporting evidence (transfer certificate, proof of graduation).`
+    )}`;
 
   return (
     <Page className="mx-auto max-w-3xl px-4 py-8">
@@ -180,21 +175,30 @@ export default function ProgramSettingsPage() {
                   </select>
                 </div>
 
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Changes are reviewed by an admin and need supporting evidence.
+                  This opens a pre-filled email — attach your document before sending.
+                </p>
+
                 <div className="flex gap-3">
-                  <Button
-                    onClick={handleRequestChange}
-                    disabled={!changeReason || loading}
-                    loading={loading}
+                  <a
+                    href={changeReason ? mailtoHref : undefined}
+                    aria-disabled={!changeReason}
+                    className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                      changeReason
+                        ? 'bg-blue-600 text-white hover:bg-blue-500'
+                        : 'pointer-events-none bg-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-600'
+                    }`}
                   >
-                    Submit Request
-                  </Button>
+                    <Mail className="h-4 w-4" />
+                    Email the request
+                  </a>
                   <Button
                     onClick={() => {
                       setShowChangeForm(false);
                       setChangeReason('');
                     }}
                     variant="outline"
-                    disabled={loading}
                   >
                     Cancel
                   </Button>

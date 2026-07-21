@@ -1,5 +1,4 @@
 import { useProgramContext } from '../../context/ProgramContext';
-import { ProgramBadge } from './ProgramBadge';
 
 export function ProgramHeader() {
   const program = useProgramContext();
@@ -17,9 +16,10 @@ export function ProgramHeader() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               {program.label}
             </h1>
-            <ProgramBadge size="sm" />
           </div>
-          {program.specialization && (
+          {/* The label already carries the specialization for derived programs
+              ("MBA (Finance)"), so only spell it out when it would add something. */}
+          {program.specialization && !program.label?.includes(program.specialization) && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               Specialization: <span className="font-semibold">{program.specialization}</span>
             </p>

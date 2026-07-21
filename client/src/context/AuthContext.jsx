@@ -14,8 +14,11 @@ const decodeUser = (token) => {
       email: payload.email,
       role: payload.role || 'member',
       tier: payload.tier || 'free',
-      programs: payload.programs || ['mba'],
-      activeProgram: payload.activeProgram || 'mba',
+      programs: payload.programs || ['general'],
+      activeProgram: payload.activeProgram || 'general',
+      // ProgramProvider reads this to drive the whole program UI; omitting it
+      // here silently renders every program component as null.
+      program: payload.program || null,
     };
   } catch {
     return null;
