@@ -73,3 +73,6 @@ client/src/
 - Photo uploads are capped at 10MB, images only.
 - Auth endpoints are rate-limited (20 requests / 15 min).
 - JWT (7-day expiry) in `Authorization: Bearer` header; 401 triggers client-side logout.
+# DATAD
+# DATAD
+# DATAD
