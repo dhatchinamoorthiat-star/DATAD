@@ -1,0 +1,1297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DATAD — The Student Operating System</title>
+<meta name="description" content="DATAD: a complete Student Operating System — study, career, finance, community and reflection, with Dax as one AI identity across all of it. Built solo by T. A. Dhatchina Moorthi.">
+<style>
+  :root{
+    --bg:#05070d;
+    --bg-2:#0a0f1a;
+    --panel:rgba(15,23,42,.55);
+    --panel-solid:#0d1424;
+    --line:rgba(148,163,184,.14);
+    --line-str:rgba(148,163,184,.28);
+    --text:#e7edf7;
+    --muted:#93a3bb;
+    --dim:#64748b;
+    --cyan:#22d3ee;
+    --blue:#60a5fa;
+    --violet:#a78bfa;
+    --amber:#fbbf24;
+    --rose:#fb7185;
+    --emerald:#34d399;
+    --radius:20px;
+    --maxw:1140px;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font:400 16px/1.65 ui-sans-serif,-apple-system,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  /* ── ambient background ── */
+  .bg-fx{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .bg-fx .dots{
+    position:absolute;inset:0;opacity:.22;
+    background-image:radial-gradient(circle, rgba(168,85,247,.45) 1.2px, transparent 1.2px);
+    background-size:26px 26px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+  }
+  .bg-fx .glow{position:absolute;border-radius:50%;filter:blur(150px)}
+  .g1{top:-10%;left:8%;width:520px;height:520px;background:rgba(59,130,246,.16)}
+  .g2{top:28%;right:2%;width:480px;height:480px;background:rgba(168,85,247,.15)}
+  .g3{top:62%;left:-6%;width:520px;height:520px;background:rgba(251,191,36,.10)}
+  .g4{top:88%;right:15%;width:480px;height:480px;background:rgba(244,63,94,.10)}
+
+  .wrap{position:relative;z-index:1;max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+  /* ── nav ── */
+  nav{
+    position:sticky;top:0;z-index:50;
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    background:rgba(5,7,13,.72);
+    border-bottom:1px solid var(--line);
+  }
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px;gap:16px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.18em;font-size:14px}
+  .brand .mark{
+    width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--cyan),var(--violet) 55%,var(--amber));
+    color:#04070e;font-size:12px;font-weight:900;letter-spacing:0;
+  }
+  .navlinks{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+  .navlinks::-webkit-scrollbar{display:none}
+  .navlinks a{
+    color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;
+    padding:7px 11px;border-radius:9px;white-space:nowrap;transition:.18s;
+  }
+  .navlinks a:hover{color:#fff;background:rgba(148,163,184,.10)}
+
+  /* ── typography / shared ── */
+  section{padding:86px 0;position:relative;z-index:1;scroll-margin-top:78px}
+  header.hero{scroll-margin-top:0}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+    padding:7px 14px;border-radius:999px;border:1px solid;
+  }
+  .eb-blue{color:var(--blue);background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.30)}
+  .eb-violet{color:var(--violet);background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.30)}
+  .eb-amber{color:var(--amber);background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.30)}
+  .eb-emerald{color:var(--emerald);background:rgba(52,211,153,.10);border-color:rgba(52,211,153,.30)}
+  .eb-rose{color:var(--rose);background:rgba(251,113,133,.10);border-color:rgba(251,113,133,.30)}
+  .eb-cyan{color:var(--cyan);background:rgba(34,211,238,.10);border-color:rgba(34,211,238,.30)}
+
+  h2{font-size:clamp(28px,4.4vw,42px);font-weight:900;letter-spacing:-.025em;line-height:1.12;margin:16px 0 12px}
+  h3{font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:17px;max-width:64ch}
+  .sec-head{margin-bottom:44px}
+  .sec-head.center{text-align:center}
+  .sec-head.center .lede{margin-inline:auto}
+
+  .grad{background:linear-gradient(100deg,var(--cyan),var(--blue) 35%,var(--violet) 68%,var(--amber));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    transition:border-color .22s, transform .22s, background .22s;
+  }
+  .card:hover{border-color:var(--line-str);transform:translateY(-3px)}
+  .card p{color:var(--muted);font-size:14.5px;margin-top:8px}
+  .card .kicker{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:10px}
+
+  .grid{display:grid;gap:18px}
+  .g-2{grid-template-columns:repeat(2,1fr)}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  .g-4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.g-3,.g-4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:620px){.g-2,.g-3,.g-4{grid-template-columns:1fr}}
+
+  .ico{
+    width:40px;height:40px;border-radius:12px;display:grid;place-items:center;
+    font-size:19px;border:1px solid var(--line-str);background:rgba(2,6,23,.6);margin-bottom:14px;
+  }
+
+  /* ── hero ── */
+  .hero{padding:104px 0 78px;text-align:center}
+  .hero h1{
+    font-size:clamp(46px,10vw,104px);font-weight:900;letter-spacing:-.05em;line-height:.94;
+    margin:22px 0 0;
+  }
+  .hero .sub{
+    margin-top:18px;font-size:clamp(15px,2.4vw,21px);font-weight:700;letter-spacing:.03em;color:#cbd5e1;
+  }
+  .hero .sub span{color:var(--dim);font-weight:400;padding:0 6px}
+  .hero .pitch{margin:26px auto 0;max-width:60ch;color:var(--muted);font-size:17px}
+  .pulse{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:p 2.2s infinite}
+  @keyframes p{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 9px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:52px}
+  @media(max-width:760px){.metrics{grid-template-columns:repeat(2,1fr)}}
+  .metric{
+    border:1px solid var(--line);border-radius:16px;padding:18px 14px;background:rgba(13,20,36,.5);
+    transition:.2s;
+  }
+  .metric:hover{border-color:var(--line-str);background:rgba(30,41,59,.5)}
+  .metric b{display:block;font-size:clamp(22px,3.6vw,30px);font-weight:900;letter-spacing:-.03em}
+  .metric small{display:block;color:var(--dim);font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:5px}
+
+  /* ── acronym ── */
+  .acro{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  @media(max-width:760px){.acro{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:420px){.acro{grid-template-columns:1fr}}
+  .acro .card{text-align:center;padding:22px 14px}
+  .acro .letter{font-size:44px;font-weight:900;line-height:1;letter-spacing:-.04em}
+  .acro .word{font-size:15px;font-weight:800;margin-top:8px}
+  .acro .card p{font-size:13px;margin-top:6px}
+
+  /* ── table ── */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel)}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:14.5px}
+  th,td{padding:14px 18px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:800;background:rgba(2,6,23,.5)}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:rgba(148,163,184,.045)}
+  td strong{color:#fff;font-weight:700}
+  .pill{display:inline-block;font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;border:1px solid}
+  .pill.priv{color:var(--rose);border-color:rgba(251,113,133,.35);background:rgba(251,113,133,.10)}
+  .pill.shared{color:var(--cyan);border-color:rgba(34,211,238,.35);background:rgba(34,211,238,.10)}
+  .pill.live{color:var(--emerald);border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.10)}
+  .pill.wip{color:var(--amber);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.10)}
+  .pill.next{color:var(--violet);border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.10)}
+
+  /* ── architecture diagram ── */
+  .diagram{border:1px solid var(--line);border-radius:var(--radius);background:rgba(2,6,23,.55);padding:26px;overflow-x:auto}
+  .diagram svg{display:block;min-width:640px;width:100%;height:auto}
+
+  /* ── code block ── */
+  pre{
+    background:rgba(2,6,23,.72);border:1px solid var(--line);border-radius:16px;
+    padding:20px;overflow-x:auto;font:500 13px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:#a5c9ff;
+  }
+  pre .c{color:var(--dim)}
+  pre .k{color:var(--violet)}
+  pre .s{color:var(--emerald)}
+
+  /* ── stack chips ── */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{
+    font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;
+    border:1px solid var(--line-str);background:rgba(2,6,23,.55);color:#c3cfe0;
+  }
+
+  /* ── timeline ── */
+  .tl{position:relative;padding-left:30px}
+  .tl:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--cyan),var(--violet),var(--amber),transparent)}
+  .tl .item{position:relative;padding-bottom:26px}
+  .tl .item:last-child{padding-bottom:0}
+  .tl .dot{position:absolute;left:-27px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--violet)}
+  .tl .when{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .tl h4{font-size:16px;font-weight:800;margin:3px 0 5px}
+  .tl p{color:var(--muted);font-size:14.5px}
+
+  /* ── pricing ── */
+  .price{position:relative}
+  .price.featured{border-color:rgba(167,139,250,.45);background:linear-gradient(180deg,rgba(167,139,250,.09),rgba(15,23,42,.55))}
+  .price .tag{position:absolute;top:-11px;right:20px;font-size:10.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;padding:4px 11px;border-radius:999px;background:var(--violet);color:#12081f}
+  .price .amt{font-size:38px;font-weight:900;letter-spacing:-.035em;margin:10px 0 2px}
+  .price .amt small{font-size:14px;font-weight:600;color:var(--dim);letter-spacing:0}
+  .price ul{list-style:none;margin-top:16px;display:grid;gap:9px}
+  .price li{font-size:14px;color:var(--muted);display:flex;gap:9px;align-items:flex-start}
+  .price li:before{content:"→";color:var(--violet);font-weight:800;flex-shrink:0}
+
+  /* ══ CREATOR ══ */
+  .creator{
+    position:relative;padding:100px 0;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(167,139,250,.13), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 20% 100%, rgba(34,211,238,.10), transparent 70%),
+      linear-gradient(180deg,rgba(2,6,23,.5),rgba(5,7,13,.9));
+  }
+  .avatar-wrap{position:relative;width:132px;height:132px;margin:0 auto 26px}
+  .avatar-wrap .halo{position:absolute;inset:-14px;border-radius:50%;background:conic-gradient(from 0deg,var(--cyan),var(--violet),var(--rose),var(--amber),var(--cyan));filter:blur(26px);opacity:.55;animation:spin 14s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .avatar{
+    position:relative;width:132px;height:132px;border-radius:50%;overflow:hidden;
+    background:linear-gradient(135deg,var(--blue),var(--violet) 50%,var(--rose));
+    display:grid;place-items:center;font-size:46px;font-weight:900;letter-spacing:-.03em;color:#fff;
+    box-shadow:0 0 0 5px var(--bg), 0 24px 60px rgba(0,0,0,.6);
+  }
+  /* Photo overlays the initials; if it ever fails to load it is removed and
+     the gradient + "TAD" monogram underneath shows instead. */
+  .avatar img{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;border-radius:50%;display:block;
+  }
+  .creator .name{
+    font-size:clamp(34px,6vw,60px);font-weight:900;letter-spacing:-.04em;line-height:1.05;margin-top:6px;
+  }
+  .creator .role{
+    margin-top:12px;font-size:clamp(15px,2.2vw,19px);font-weight:700;color:#cbd5e1;letter-spacing:.01em;
+  }
+  .creator .role em{font-style:normal;color:var(--dim);font-weight:400}
+  .creator .bio{margin:24px auto 0;max-width:62ch;color:var(--muted);font-size:16.5px}
+
+  .quote{
+    margin:44px auto 0;max-width:74ch;text-align:center;
+    font-size:clamp(19px,3vw,26px);font-weight:700;letter-spacing:-.02em;line-height:1.42;color:#e9eefb;
+    padding:26px 24px;border-left:0;position:relative;
+  }
+  .quote:before{content:"“";position:absolute;left:50%;top:-14px;transform:translateX(-50%);font-size:70px;line-height:1;color:rgba(167,139,250,.35);font-family:Georgia,serif}
+
+  .contact{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:34px}
+  .contact a{
+    display:inline-flex;align-items:center;gap:9px;text-decoration:none;
+    font-size:14px;font-weight:700;color:#dbe4f2;
+    padding:12px 20px;border-radius:14px;border:1px solid var(--line-str);
+    background:rgba(2,6,23,.6);transition:.2s;
+  }
+  .contact a:hover{border-color:var(--violet);color:#fff;background:rgba(167,139,250,.12);transform:translateY(-2px)}
+  .contact a .em{font-size:16px}
+
+  .creds{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:52px}
+  @media(max-width:760px){.creds{grid-template-columns:1fr}}
+
+  .valuebar{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:32px}
+  @media(max-width:620px){.valuebar{grid-template-columns:1fr}}
+  .value{
+    text-align:center;padding:22px 16px;border-radius:16px;
+    border:1px solid rgba(251,113,133,.22);background:rgba(251,113,133,.05);
+  }
+  .value b{display:block;font-size:16px;font-weight:800}
+  .value small{display:block;color:var(--muted);font-size:13px;margin-top:5px}
+
+  /* ── footer ── */
+  footer{padding:52px 0 66px;text-align:center;color:var(--dim);font-size:13.5px}
+  footer .brand{justify-content:center;margin-bottom:14px}
+  footer a{color:var(--muted);text-decoration:none}
+  footer a:hover{color:#fff}
+  .note{
+    margin:26px auto 0;max-width:72ch;font-size:12.5px;color:#55617a;line-height:1.65;
+    border-top:1px solid var(--line);padding-top:20px;
+  }
+
+  /* ── scroll progress + scroll-spy ── */
+  .progress{position:fixed;top:0;left:0;height:2px;width:0;z-index:60;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--amber));transition:width .1s linear}
+  .navlinks a.active{color:#fff;background:rgba(167,139,250,.16);box-shadow:inset 0 0 0 1px rgba(167,139,250,.30)}
+
+  /* ── interactive acronym ── */
+  .acro .card{text-align:center;padding:22px 14px;cursor:pointer;border:1px solid var(--line);width:100%;font:inherit;color:inherit;background:var(--panel)}
+  .acro .card:focus-visible{outline:2px solid var(--violet);outline-offset:3px}
+  .js .acro .card{opacity:0;transform:translateY(14px) scale(.96);transition:opacity .45s ease,transform .45s ease,border-color .22s}
+  .js .acro .card.shown{opacity:1;transform:none}
+  .acro .card[aria-expanded="true"]{border-color:var(--violet);background:rgba(167,139,250,.10)}
+  .acro .hint{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-top:10px}
+  .acro-detail{
+    margin-top:16px;border:1px solid rgba(167,139,250,.35);border-radius:var(--radius);
+    background:rgba(167,139,250,.07);padding:0 24px;overflow:hidden;
+    max-height:0;opacity:0;transition:max-height .4s ease,opacity .3s ease,padding .4s ease;
+  }
+  .acro-detail.open{max-height:520px;opacity:1;padding:22px 24px}
+  .acro-detail h4{font-size:20px;font-weight:900;letter-spacing:-.02em}
+  .acro-detail .sub{font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--violet);margin-top:4px}
+  .acro-detail p{color:var(--muted);margin-top:10px;font-size:15px}
+  .replay{
+    display:inline-flex;align-items:center;gap:8px;margin-top:18px;cursor:pointer;
+    font:700 12px/1 inherit;color:var(--muted);background:rgba(2,6,23,.6);
+    border:1px solid var(--line-str);border-radius:999px;padding:9px 16px;transition:.2s;
+  }
+  .replay:hover{color:#fff;border-color:var(--violet)}
+
+  /* ── expanding module cards ── */
+  .mod{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit;display:block}
+  .mod:focus-visible{outline:2px solid var(--emerald);outline-offset:3px}
+  .mod[aria-expanded="true"]{border-color:rgba(52,211,153,.45);background:rgba(52,211,153,.06)}
+  .mod .more{
+    max-height:0;opacity:0;overflow:hidden;
+    transition:max-height .4s ease,opacity .3s ease,margin .4s ease;
+    border-top:1px solid transparent;margin-top:0;
+  }
+  .mod[aria-expanded="true"] .more{max-height:640px;opacity:1;margin-top:16px;border-top-color:var(--line);padding-top:14px}
+  .mod .more .lbl{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--emerald);margin-bottom:7px;display:block}
+  .mod .more .chips{margin-top:0;margin-bottom:12px}
+  .mod .more .chip{font-size:11.5px;padding:4px 9px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .mod .caret{float:right;color:var(--dim);font-size:13px;transition:transform .3s ease;display:inline-block}
+  .mod[aria-expanded="true"] .caret{transform:rotate(180deg);color:var(--emerald)}
+
+  /* ── pricing toggle ── */
+  .billing{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0 34px}
+  .billing .lab{font-size:13.5px;font-weight:700;color:var(--dim);transition:color .2s}
+  .billing .lab.on{color:#fff}
+  .switch{
+    position:relative;width:54px;height:29px;border-radius:999px;cursor:pointer;
+    background:rgba(2,6,23,.8);border:1px solid var(--line-str);transition:.25s;padding:0;
+  }
+  .switch:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+  .switch[aria-checked="true"]{background:rgba(251,191,36,.22);border-color:var(--amber)}
+  .switch .knob{
+    position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;
+    background:linear-gradient(135deg,var(--blue),var(--violet));transition:transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .switch[aria-checked="true"] .knob{transform:translateX(25px);background:linear-gradient(135deg,var(--amber),var(--rose))}
+  .saver{font-size:11.5px;font-weight:800;color:var(--emerald);opacity:0;transition:opacity .25s}
+  .saver.on{opacity:1}
+  .price .amt .val{transition:opacity .18s ease}
+  .price .amt .val.swap{opacity:0}
+
+  /* reveal — only armed when JS is running, so the page is never blank without it */
+  .js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}
+  .js .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){
+    .js .rv{opacity:1;transform:none;transition:none}
+    .halo,.pulse{animation:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+<script>document.documentElement.className += ' js';</script>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<div class="bg-fx" aria-hidden="true">
+  <div class="dots"></div>
+  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div><div class="glow g4"></div>
+</div>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="mark">D</span>DATAD</div>
+    <div class="navlinks">
+      <a href="#what">What</a>
+      <a href="#modules">Modules</a>
+      <a href="#dax">Dax</a>
+      <a href="#tech">Engineering</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#plans">Plans</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#creator">Creator</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════ HERO ══════════ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="rv">
+      <span class="eyebrow eb-emerald"><span class="pulse"></span> v1.0 · Still building</span>
+      <h1>DATAD</h1>
+      <p class="sub">Discover <span>·</span> Aspire <span>·</span> Transform <span>·</span> Achieve <span>·</span> Develop</p>
+      <p class="pitch">
+        A <strong>Student Operating System</strong> — study, career, finance, community and reflection
+        in one calm, engineered place, with a single AI identity called <strong>Dax</strong> running
+        through all of it. No ads. No feeds. No data selling. Built and maintained by one person.
+      </p>
+    </div>
+
+    <div class="metrics rv">
+      <div class="metric"><b class="grad">~57K</b><small>Lines of code</small></div>
+      <div class="metric"><b class="grad">590</b><small>Source files</small></div>
+      <div class="metric"><b class="grad">78</b><small>Data models</small></div>
+      <div class="metric"><b class="grad">1</b><small>Engineer</small></div>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════ WHAT IT IS ══════════ -->
+<section id="what">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-blue">The premise</span>
+      <h2>Student life isn't one-dimensional.<br><span class="grad">So why is every tool?</span></h2>
+      <p class="lede">
+        Notes live in one app, placement deadlines in a WhatsApp group, expenses nowhere at all,
+        and the resume in a Word file that gets renamed <em>final_v7</em>. Every tool solves one slice.
+        DATAD is the attempt to hold the whole thing — without becoming another app that
+        optimises for your attention instead of your outcomes.
+      </p>
+    </div>
+
+    <div class="grid g-3">
+      <div class="card rv">
+        <div class="ico" style="color:var(--rose)">⚡</div>
+        <div class="kicker">The problem</div>
+        <h3>Fragmentation costs</h3>
+        <p>Context-switching between five tools during placement season means missed deadlines,
+        forgotten prep, and burnout — not because students lack discipline, but because nothing
+        holds the picture for them.</p>
+      </div>
+      <div class="card rv">
+        <div class="ico" style="color:var(--cyan)">◎</div>
+        <div class="kicker">The approach</div>
+        <h3>One system, five dimensions</h3>
+        <p>Study, career, finance, community and personal reflection share one login, one data
+        model, and one AI. Progress in one dimension is visible to the others.</p>
+      </div>
+      <div class="card rv">
+        <div class="ico" style="color:var(--emerald)">◇</div>
+        <div class="kicker">The constraint</div>
+        <h3>Engineered for clarity</h3>
+        <p>No infinite scroll, no streak-guilt, no dark patterns. Success is measured in outcomes,
+        not in minutes spent inside the product.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ ACRONYM ══════════ -->
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head center rv">
+      <span class="eyebrow eb-cyan">The name</span>
+      <h2>Why <span class="grad">DATAD</span>?</h2>
+      <p class="lede">Five verbs for the arc of a student's journey — and the initials <strong>T.A.D</strong> of the person who built it.</p>
+    </div>
+
+    <div class="acro" id="acro">
+      <button type="button" class="card" aria-expanded="false" aria-controls="acro-detail"
+        data-title="D — Discover" data-sub="Uncover insight" data-color="var(--cyan)"
+        data-desc="Explore knowledge, opportunities, and yourself. Notes, semantic search and the Intelligence Center all serve this first step — you cannot aspire toward something you have never encountered.">
+        <div class="letter" style="color:var(--cyan)">D</div><div class="word">Discover</div>
+        <p>Uncover knowledge, opportunities, and yourself.</p><div class="hint">Tap to read</div>
+      </button>
+      <button type="button" class="card" aria-expanded="false" aria-controls="acro-detail"
+        data-title="A — Aspire" data-sub="Set purpose" data-color="var(--blue)"
+        data-desc="Dream bigger and set goals that mean something. The Planner and goal tracking exist to turn a vague ambition into a dated, visible commitment rather than a feeling.">
+        <div class="letter" style="color:var(--blue)">A</div><div class="word">Aspire</div>
+        <p>Dream bigger, and set goals that mean something.</p><div class="hint">Tap to read</div>
+      </button>
+      <button type="button" class="card" aria-expanded="false" aria-controls="acro-detail"
+        data-title="T — Transform" data-sub="Apply knowledge" data-color="var(--violet)"
+        data-desc="Convert learning into practical, usable skill. Daily case studies, the resume builder and Dax Resume Review turn what you know into something an employer can actually evaluate.">
+        <div class="letter" style="color:var(--violet)">T</div><div class="word">Transform</div>
+        <p>Convert learning into practical, usable skill.</p><div class="hint">Tap to read</div>
+      </button>
+      <button type="button" class="card" aria-expanded="false" aria-controls="acro-detail"
+        data-title="A — Achieve" data-sub="Realise success" data-color="var(--amber)"
+        data-desc="Reach the academic and career milestones. The Career Hub tracks every application from Applied through to Offer, so progress is a record rather than a memory.">
+        <div class="letter" style="color:var(--amber)">A</div><div class="word">Achieve</div>
+        <p>Reach the academic and career milestones.</p><div class="hint">Tap to read</div>
+      </button>
+      <button type="button" class="card" aria-expanded="false" aria-controls="acro-detail"
+        data-title="D — Develop" data-sub="Continuous growth" data-color="var(--rose)"
+        data-desc="Keep growing — personally and professionally. The private Journal, weekly reviews and reflection tools exist because sustainable achievement needs recovery, not just output.">
+        <div class="letter" style="color:var(--rose)">D</div><div class="word">Develop</div>
+        <p>Keep growing — personally and professionally.</p><div class="hint">Tap to read</div>
+      </button>
+    </div>
+
+    <div class="acro-detail" id="acro-detail" role="region" aria-live="polite">
+      <h4 id="acro-detail-title"></h4>
+      <div class="sub" id="acro-detail-sub"></div>
+      <p id="acro-detail-desc"></p>
+    </div>
+
+    <div style="text-align:center">
+      <button type="button" class="replay" id="acro-replay">↻ Replay the reveal</button>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ MODULES ══════════ -->
+<section id="modules">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-emerald">What's inside</span>
+      <h2>Every module, built from scratch</h2>
+      <p class="lede">Each one shipped incrementally, without breaking what came before. Click any card to see the models and routes behind it.</p>
+    </div>
+
+    <div class="grid g-3" id="modules-grid" style="align-items:start">
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--cyan)">📚</div>
+        <h3>Notes <span class="caret">▾</span></h3>
+        <p>Study notes organised by subject and semester, rich-text, tagged, searchable. Shared with the batch; only the author can edit.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Note</span><span class="chip">SubjectRegistry</span><span class="chip">Bookmark</span><span class="chip">noteRoutes</span></div>
+          <span class="lbl">Privacy</span>
+          <p style="margin-top:0">Shared with every registered user. Mutations check <code>author.equals(req.user.userId)</code>, so only the author can edit or delete. Slated to grow into the full Resource Library in Phase 4.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--blue)">🗓️</div>
+        <h3>Planner <span class="caret">▾</span></h3>
+        <p>Case studies, deadlines, exam and interview prep — planning that understands semester rhythms rather than generic to-dos.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Task</span><span class="chip">CalendarEvent</span><span class="chip">ProjectTask</span><span class="chip">taskRoutes</span><span class="chip">calendarRoutes</span></div>
+          <span class="lbl">Privacy</span>
+          <p style="margin-top:0">Shared. Either the creator or the assignee can edit a task. Dax Planner reads it to answer “what should I focus on today?”</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--emerald)">₹</div>
+        <h3>Finance <span class="caret">▾</span></h3>
+        <p>Expense tracking, budgets, category breakdowns, plus EMI / SIP / savings calculators. Private to each user, always.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Expense</span><span class="chip">Budget</span><span class="chip">financeRoutes</span></div>
+          <span class="lbl">Privacy</span>
+          <p style="margin-top:0"><strong style="color:var(--rose)">Private.</strong> Every query is scoped to <code>user: req.user.userId</code>. No endpoint returns another user's finances — admin included.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--amber)">📄</div>
+        <h3>Resume Builder <span class="caret">▾</span></h3>
+        <p>Guided, section-by-section, ATS-friendly, with print-to-PDF output and Dax review on top.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Resume</span><span class="chip">ResumeTip</span><span class="chip">StarStory</span><span class="chip">resumeRoutes</span></div>
+          <span class="lbl">Privacy</span>
+          <p style="margin-top:0"><strong style="color:var(--rose)">Private</strong>, one per user (unique index). Dax Resume Review scores it and tracks changes across iterations.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--violet)">🏢</div>
+        <h3>Career Hub <span class="caret">▾</span></h3>
+        <p>Company prep, placement drives, internship board, application tracking, and a placement-readiness score.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Company</span><span class="chip">PlacementDrive</span><span class="chip">PlacementApplication</span><span class="chip">Internship</span><span class="chip">Opportunity</span><span class="chip">MatchScore</span></div>
+          <span class="lbl">Flow</span>
+          <p style="margin-top:0">Per-student status moves Applied → Shortlisted → Interview → Offer or Rejected. Companies and resources filter by programme.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--cyan)">📈</div>
+        <h3>Intelligence Center <span class="caret">▾</span></h3>
+        <p>Live business news from ten Economic Times RSS categories and a market snapshot — Nifty, Sensex, USD/INR, Gold, Crude.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">NewsItem</span><span class="chip">MarketSnapshot</span><span class="chip">StockQuote</span><span class="chip">newsFetcher</span><span class="chip">marketFetcher</span></div>
+          <span class="lbl">Cadence</span>
+          <p style="margin-top:0">News refreshes every 30 minutes and caches into Mongo; market data every 15 minutes off Yahoo Finance's keyless endpoint. Both free — no API key required.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--rose)">👥</div>
+        <h3>Community <span class="caret">▾</span></h3>
+        <p>Discussions, announcements, events with RSVP, skill exchange, student directory, and a shared memories archive.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Post</span><span class="chip">Reply</span><span class="chip">PostReaction</span><span class="chip">Event</span><span class="chip">EventRSVP</span><span class="chip">SkillListing</span><span class="chip">TalentProfile</span></div>
+          <span class="lbl">Design stance</span>
+          <p style="margin-top:0">Deliberately not a feed you fall into. No infinite scroll, no engagement optimisation — discussion as a tool, not a habit loop.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--violet)">🖼️</div>
+        <h3>Photos &amp; Memories <span class="caret">▾</span></h3>
+        <p>Album-based batch memories on Cloudinary, plus Google Photos shared-album links to keep storage cost at zero.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">Album</span><span class="chip">Photo</span><span class="chip">photoRoutes</span><span class="chip">albumRoutes</span></div>
+          <span class="lbl">Limits</span>
+          <p style="margin-top:0">Uploads capped at 10 MB, images only, behind a heavier rate limiter. Only the URL and publicId land in Mongo — the bytes stay on Cloudinary.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--amber)">🕯️</div>
+        <h3>Journal &amp; Reflection <span class="caret">▾</span></h3>
+        <p>A private daily journal and reflection tools. Never exposed to other users — and never to admin either.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">JournalEntry</span><span class="chip">DailyReflection</span><span class="chip">WeeklyReview</span><span class="chip">journalRoutes</span></div>
+          <span class="lbl">Privacy</span>
+          <p style="margin-top:0"><strong style="color:var(--rose)">Private, without exception.</strong> The admin's own journal is scoped to the admin's <code>userId</code> exactly like everyone else's — the role grants no extra reach.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--emerald)">🎯</div>
+        <h3>Study Tools <span class="caret">▾</span></h3>
+        <p>Daily case studies, habit and goal tracking, weekly reviews, and semantic search across your own material.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">DailyCase</span><span class="chip">DailyCaseSolve</span><span class="chip">HabitLog</span><span class="chip">SearchHistory</span><span class="chip">PinnedSearch</span></div>
+          <span class="lbl">Stance</span>
+          <p style="margin-top:0">Habits and streaks exist as feedback, never as guilt. Nothing punishes you for a missed day.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--blue)">🛡️</div>
+        <h3>Admin Console <span class="caret">▾</span></h3>
+        <p>Student register, platform counts, announcements over email, moderation and observability.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">ActivityLog</span><span class="chip">ModerationCase</span><span class="chip">Announcement</span><span class="chip">BetaEvent</span><span class="chip">adminRoutes</span></div>
+          <span class="lbl">Boundary</span>
+          <p style="margin-top:0">Guarded by <code>checkRole('admin')</code>; the account matching <code>ADMIN_EMAIL</code> is promoted on register. Sees names, emails, join dates and counts — never finances, resumes or journals.</p>
+        </div>
+      </button>
+
+      <button type="button" class="card mod rv" aria-expanded="false">
+        <div class="ico" style="color:var(--rose)">📱</div>
+        <h3>PWA <span class="caret">▾</span></h3>
+        <p>Installable, offline-aware, with a device-aware install prompt and an offline banner instead of a dead screen.</p>
+        <div class="more">
+          <span class="lbl">Backed by</span>
+          <div class="chips"><span class="chip">OfflineBanner</span><span class="chip">service worker</span><span class="chip">pitch-mini</span></div>
+          <span class="lbl">Deploy</span>
+          <p style="margin-top:0">Server ships via a Render blueprint (<code>render.yaml</code>), client via Vercel. Sentry captures browser errors on both.</p>
+        </div>
+      </button>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ DAX ══════════ -->
+<section id="dax">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-violet">The AI layer</span>
+      <h2>Meet <span class="grad">Dax</span> — one intelligence, many jobs</h2>
+      <p class="lede">
+        DATAD has exactly one AI identity. Not a chatbot plus a summariser plus a recommender —
+        one intelligence that shows up in different places doing different work. A student should
+        never have to wonder which AI they're talking to, because there is only one.
+      </p>
+    </div>
+
+    <div class="grid g-2" style="align-items:start">
+      <div class="card rv">
+        <div class="kicker">Capabilities</div>
+        <h3>Ten hats, one name</h3>
+        <div class="chips">
+          <span class="chip">Dax Chat</span><span class="chip">Dax Insights</span>
+          <span class="chip">Dax Resume Review</span><span class="chip">Dax Planner</span>
+          <span class="chip">Dax Research</span><span class="chip">Dax Memory</span>
+          <span class="chip">Dax Recommendations</span><span class="chip">Dax Career Coach</span>
+          <span class="chip">Dax Notifications</span><span class="chip">Dax Summaries</span>
+        </div>
+        <p style="margin-top:16px">
+          The naming rule is written down and enforced: <strong>if a student can read it, it says Dax;
+          if a machine reads it, it doesn't.</strong> Wire-protocol roles, database collections and
+          model-provider names are deliberately left alone.
+        </p>
+      </div>
+
+      <div class="card rv">
+        <div class="kicker">Why it isn't a chatbot bolt-on</div>
+        <h3>Context is the product</h3>
+        <p>
+          Dax reads your actual resume, knows your tier and quota, sees your placement timeline and
+          exam schedule, and carries memory across resume iterations and interview attempts.
+          The provider running underneath is shown as provenance — never hidden, never presented as
+          the identity.
+        </p>
+        <div class="chips" style="margin-top:16px">
+          <span class="chip">Anthropic</span><span class="chip">OpenAI-compatible</span>
+          <span class="chip">NVIDIA</span><span class="chip">Model router</span>
+          <span class="chip">Tool calling</span><span class="chip">Embeddings + retrieval</span>
+          <span class="chip">Usage metering</span><span class="chip">Telemetry</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card rv" style="margin-top:18px">
+      <div class="kicker">Single source of truth</div>
+      <pre><span class="c">// client/src/utils/dax.js — the name lives in exactly one place</span>
+<span class="k">export const</span> DAX = <span class="s">'Dax'</span>;
+
+<span class="k">export const</span> DAX_CAPABILITY = {
+  chat: <span class="s">'Dax Chat'</span>, insights: <span class="s">'Dax Insights'</span>,
+  resumeReview: <span class="s">'Dax Resume Review'</span>, careerCoach: <span class="s">'Dax Career Coach'</span>,
+  <span class="c">/* …and six more */</span>
+};
+
+<span class="c">// Attribution: Dax is the author, the model is provenance.</span>
+<span class="k">export const</span> daxAttribution = (provider) => provider ? <span class="s">`${DAX} · ${provider}`</span> : DAX;</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ ENGINEERING ══════════ -->
+<section id="tech">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-cyan">Engineering</span>
+      <h2>How it's put together</h2>
+      <p class="lede">A React SPA talking to a layered Express API over JWT, with MongoDB Atlas underneath and a handful of well-chosen third parties at the edges.</p>
+    </div>
+
+    <div class="diagram rv">
+      <svg viewBox="0 0 760 380" role="img" aria-label="Architecture: React SPA over HTTPS to an Express API, which talks to MongoDB Atlas, Cloudinary, Resend, and model providers.">
+        <defs>
+          <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#22d3ee" stop-opacity=".16"/><stop offset="1" stop-color="#60a5fa" stop-opacity=".06"/>
+          </linearGradient>
+          <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#a78bfa" stop-opacity=".18"/><stop offset="1" stop-color="#f472b6" stop-opacity=".06"/>
+          </linearGradient>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#64748b"/>
+          </marker>
+        </defs>
+
+        <!-- client -->
+        <rect x="230" y="16" width="300" height="76" rx="16" fill="url(#gA)" stroke="#22d3ee" stroke-opacity=".4"/>
+        <text x="380" y="45" text-anchor="middle" fill="#e7edf7" font-size="15" font-weight="700" font-family="sans-serif">Browser · React 19 SPA</text>
+        <text x="380" y="66" text-anchor="middle" fill="#93a3bb" font-size="11.5" font-family="sans-serif">Vite · Tailwind · Framer Motion · JWT in localStorage</text>
+
+        <line x1="380" y1="92" x2="380" y2="138" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="392" y="120" fill="#64748b" font-size="11" font-family="monospace">HTTPS · Authorization: Bearer</text>
+
+        <!-- server -->
+        <rect x="190" y="140" width="380" height="104" rx="16" fill="url(#gB)" stroke="#a78bfa" stroke-opacity=".45"/>
+        <text x="380" y="169" text-anchor="middle" fill="#e7edf7" font-size="15" font-weight="700" font-family="sans-serif">Express API · routes → controllers → models</text>
+        <text x="380" y="192" text-anchor="middle" fill="#93a3bb" font-size="11.5" font-family="sans-serif">helmet · cors allow-list · hpp · mongo-sanitize · rate limiters</text>
+        <text x="380" y="212" text-anchor="middle" fill="#93a3bb" font-size="11.5" font-family="sans-serif">verifyToken · checkRole · multer · errorHandler</text>
+        <text x="380" y="232" text-anchor="middle" fill="#64748b" font-size="11" font-family="monospace">43 route modules · 32 controllers · 78 models</text>
+
+        <line x1="270" y1="244" x2="150" y2="290" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="345" y1="244" x2="315" y2="290" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="415" y1="244" x2="465" y2="290" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="490" y1="244" x2="625" y2="290" stroke="#64748b" stroke-width="1.5" marker-end="url(#ar)"/>
+
+        <g font-family="sans-serif">
+          <rect x="42" y="292" width="176" height="62" rx="13" fill="#0d1424" stroke="#94a3b8" stroke-opacity=".25"/>
+          <text x="130" y="317" text-anchor="middle" fill="#e7edf7" font-size="13" font-weight="700">MongoDB Atlas</text>
+          <text x="130" y="336" text-anchor="middle" fill="#93a3bb" font-size="11">Mongoose ODM</text>
+
+          <rect x="232" y="292" width="150" height="62" rx="13" fill="#0d1424" stroke="#94a3b8" stroke-opacity=".25"/>
+          <text x="307" y="317" text-anchor="middle" fill="#e7edf7" font-size="13" font-weight="700">Cloudinary</text>
+          <text x="307" y="336" text-anchor="middle" fill="#93a3bb" font-size="11">photos · URL + id only</text>
+
+          <rect x="396" y="292" width="146" height="62" rx="13" fill="#0d1424" stroke="#94a3b8" stroke-opacity=".25"/>
+          <text x="469" y="317" text-anchor="middle" fill="#e7edf7" font-size="13" font-weight="700">Email · RSS</text>
+          <text x="469" y="336" text-anchor="middle" fill="#93a3bb" font-size="11">Resend · ET feeds · Yahoo</text>
+
+          <rect x="556" y="292" width="162" height="62" rx="13" fill="#0d1424" stroke="#a78bfa" stroke-opacity=".4"/>
+          <text x="637" y="317" text-anchor="middle" fill="#e7edf7" font-size="13" font-weight="700">Dax model layer</text>
+          <text x="637" y="336" text-anchor="middle" fill="#93a3bb" font-size="11">Anthropic · OpenAI · NVIDIA</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="grid g-3 rv" style="margin-top:18px">
+      <div class="card">
+        <div class="kicker">Frontend</div>
+        <div class="chips">
+          <span class="chip">React 19</span><span class="chip">Vite 8</span><span class="chip">Tailwind 3</span>
+          <span class="chip">React Router 7</span><span class="chip">Framer Motion</span><span class="chip">axios</span>
+          <span class="chip">react-hook-form</span><span class="chip">TanStack Virtual</span>
+          <span class="chip">react-markdown</span><span class="chip">Sentry</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="kicker">Backend</div>
+        <div class="chips">
+          <span class="chip">Node + Express 4</span><span class="chip">Mongoose 9</span><span class="chip">JWT</span>
+          <span class="chip">bcrypt</span><span class="chip">helmet</span><span class="chip">hpp</span>
+          <span class="chip">rate-limit</span><span class="chip">multer</span><span class="chip">node-cron</span>
+          <span class="chip">Jest</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="kicker">Scale of the codebase</div>
+        <div class="chips">
+          <span class="chip">~57,000 lines</span><span class="chip">590 JS/JSX files</span>
+          <span class="chip">91 pages</span><span class="chip">72 components</span>
+          <span class="chip">84 AI-layer files</span><span class="chip">78 Mongoose models</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card rv" style="margin-top:18px">
+      <div class="kicker">Request lifecycle</div>
+      <p style="color:var(--muted)">
+        <strong style="color:#fff">1.</strong> helmet, CORS allow-list, 1 MB JSON cap, mongo-sanitize, hpp, general rate limiter ·
+        <strong style="color:#fff">2.</strong> route-level limiters — stricter on auth, on photo upload, on announcements ·
+        <strong style="color:#fff">3.</strong> <code style="color:var(--cyan)">verifyToken</code> resolves the Bearer JWT to <code style="color:var(--cyan)">req.user</code> ·
+        <strong style="color:#fff">4.</strong> <code style="color:var(--cyan)">checkRole('admin')</code> guards the admin surface ·
+        <strong style="color:#fff">5.</strong> controller runs, Mongoose enforces field limits ·
+        <strong style="color:#fff">6.</strong> the error handler maps validation and duplicate-key errors to 4xx and everything else to a generic 500 — details stay in the server log.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PRIVACY ══════════ -->
+<section id="privacy">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-rose">The core invariant</span>
+      <h2>Private by default. Shared on purpose.</h2>
+      <p class="lede">
+        Every private query is scoped to the caller's own user id. There is no endpoint anywhere in
+        the API that returns another user's finances, resume, or journal — including for admin.
+      </p>
+    </div>
+
+    <div class="tablewrap rv">
+      <table>
+        <thead><tr><th>Data</th><th>Owner</th><th>Visibility</th><th>Who can change it</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Notes</strong></td><td><code>author</code></td><td><span class="pill shared">Shared</span></td><td>Author only</td></tr>
+          <tr><td><strong>Albums &amp; Photos</strong></td><td><code>createdBy</code> / <code>uploadedBy</code></td><td><span class="pill shared">Shared</span></td><td>Owner only</td></tr>
+          <tr><td><strong>Tasks</strong></td><td><code>createdBy</code> + <code>assignee</code></td><td><span class="pill shared">Shared</span></td><td>Creator or assignee</td></tr>
+          <tr><td><strong>Expenses &amp; Budgets</strong></td><td><code>user</code></td><td><span class="pill priv">Private</span></td><td>The user, alone</td></tr>
+          <tr><td><strong>Resume</strong></td><td><code>user</code> (unique)</td><td><span class="pill priv">Private</span></td><td>The user, alone</td></tr>
+          <tr><td><strong>Journal</strong></td><td><code>user</code></td><td><span class="pill priv">Private</span></td><td>The user — invisible to admin</td></tr>
+          <tr><td><strong>Announcements</strong></td><td><code>createdBy</code></td><td><span class="pill shared">Readable by all</span></td><td>Admin</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid g-4 rv" style="margin-top:18px">
+      <div class="card"><div class="ico" style="color:var(--emerald)">🔐</div><h3>bcrypt + JWT</h3><p>Passwords hashed at 10 rounds, minimum 8 chars with a letter and a number. Tokens expire in 7 days; no server-side session store.</p></div>
+      <div class="card"><div class="ico" style="color:var(--amber)">🚦</div><h3>Rate limited</h3><p>Auth endpoints capped at 20 requests per 15 minutes, with heavier limits on uploads and announcement sends.</p></div>
+      <div class="card"><div class="ico" style="color:var(--cyan)">✉️</div><h3>Verified email</h3><p>Email verification, honeypot fields, and password reset flows over Resend.</p></div>
+      <div class="card"><div class="ico" style="color:var(--rose)">🙈</div><h3>Admin can't peek</h3><p>Admin sees the student register and platform counts. The admin's own journal is scoped to their own id, exactly like everyone else's.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ PLANS ══════════ -->
+<section id="plans">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-amber">Sustainability</span>
+      <h2>Paid by students, not by advertisers</h2>
+      <p class="lede">
+        The free tier stays genuinely free and genuinely ad-free, because paid tiers cover the
+        compute. Prices below are the ones currently in the code, exclusive of 18% GST.
+      </p>
+    </div>
+
+    <div class="billing rv">
+      <span class="lab on" id="lab-m">Monthly</span>
+      <button type="button" class="switch" id="billing-switch" role="switch" aria-checked="false" aria-label="Toggle yearly billing">
+        <span class="knob"></span>
+      </button>
+      <span class="lab" id="lab-y">Yearly</span>
+      <span class="saver" id="saver"></span>
+    </div>
+
+    <div class="grid g-3">
+      <div class="card price rv">
+        <div class="kicker">Free</div>
+        <div class="amt">₹0 <small>forever</small></div>
+        <ul>
+          <li>Every core module — notes, planner, finance, resume</li>
+          <li>Basic Dax help: concepts, summaries, general advice</li>
+          <li>No ads, no tracking, no data selling</li>
+        </ul>
+      </div>
+      <div class="card price featured rv">
+        <span class="tag">Most chosen</span>
+        <div class="kicker" style="color:var(--violet)">Pro</div>
+        <div class="amt" data-plan="pro" data-monthly="499" data-yearly="4799"><span class="val">₹499</span> <small class="per">/ month</small></div>
+        <ul>
+          <li>Unlimited Dax resume reviews and mock interviews</li>
+          <li>Career coaching and placement-season prep</li>
+          <li>A more capable model behind every Dax capability</li>
+        </ul>
+      </div>
+      <div class="card price rv">
+        <div class="kicker" style="color:var(--amber)">Max</div>
+        <div class="amt" data-plan="max" data-monthly="1299" data-yearly="12499"><span class="val">₹1,299</span> <small class="per">/ month</small></div>
+        <ul>
+          <li>Frontier-model reasoning for complex career decisions</li>
+          <li>Personalised roadmaps and priority queue</li>
+          <li>Everything in Pro, with the deepest context window</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ ROADMAP ══════════ -->
+<section id="roadmap">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="eyebrow eb-violet">Roadmap</span>
+      <h2>Shipped, shipping, and next</h2>
+      <p class="lede">The principle throughout: never break what already works. Ship small, verify in the browser, commit per feature.</p>
+    </div>
+
+    <div class="grid g-2" style="align-items:start">
+      <div class="rv">
+        <div class="tl">
+          <div class="item"><div class="dot" style="border-color:var(--emerald)"></div>
+            <div class="when">Phase 0 · <span class="pill live">Done</span></div>
+            <h4>Foundation</h4>
+            <p>Auth, dark mode, Notes, Photos, Planner, private Finance, Resume Builder, roles and admin console, Intelligence Center with live news and market data, Support and legal pages.</p>
+          </div>
+          <div class="item"><div class="dot" style="border-color:var(--emerald)"></div>
+            <div class="when">Phase 1 · <span class="pill live">Done</span></div>
+            <h4>Go live</h4>
+            <p>Render blueprint for the server, Vercel for the client, email verification, rate limiting, profile pages, code-split routes, PWA install.</p>
+          </div>
+          <div class="item"><div class="dot" style="border-color:var(--amber)"></div>
+            <div class="when">Phase 2 · <span class="pill wip">In progress</span></div>
+            <h4>Placements &amp; careers</h4>
+            <p>Placement Hub with per-student status tracking, internship board, multiple stored resumes and more templates.</p>
+          </div>
+        </div>
+      </div>
+      <div class="rv">
+        <div class="tl">
+          <div class="item"><div class="dot" style="border-color:var(--violet)"></div>
+            <div class="when">Phase 3 · <span class="pill next">Next</span></div>
+            <h4>Community</h4>
+            <p>Community feed with posts, polls and comments; student directory; pinned announcements and a real-time notification centre.</p>
+          </div>
+          <div class="item"><div class="dot" style="border-color:var(--violet)"></div>
+            <div class="when">Phase 4 · <span class="pill next">Next</span></div>
+            <h4>Resources &amp; events</h4>
+            <p>Notes graduate into a full Resource Library across file types, plus event management with RSVP and certificates, and group projects with kanban.</p>
+          </div>
+          <div class="item"><div class="dot" style="border-color:var(--violet)"></div>
+            <div class="when">Phase 5 · <span class="pill next">Next</span></div>
+            <h4>Growth &amp; intelligence</h4>
+            <p>Dax study companion and case coach, gamified contribution scores, skill exchange marketplace, public portfolio generator, analytics dashboards.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CREATOR ══════════════════ -->
+<section class="creator" id="creator">
+  <div class="wrap">
+
+    <div class="sec-head center rv" style="margin-bottom:34px">
+      <span class="eyebrow eb-violet">The creator</span>
+    </div>
+
+    <div class="rv" style="text-align:center">
+      <div class="avatar-wrap">
+        <div class="halo" aria-hidden="true"></div>
+        <div class="avatar">
+          <span aria-hidden="true">TAD</span>
+          <img
+            src="https://res.cloudinary.com/di0xf2sin/image/upload/w_400,h_400,c_fill,g_face,f_auto,q_auto/v1786729267/ddd_xss5nd.png"
+            alt="T. A. Dhatchina Moorthi"
+            width="132" height="132" decoding="async"
+            onerror="this.remove()">
+        </div>
+      </div>
+
+      <p style="font-size:11.5px;font-weight:800;letter-spacing:.24em;text-transform:uppercase;color:var(--blue)">
+        Founder · Engineer · Designer
+      </p>
+      <h1 class="name">T. A. Dhatchina&nbsp;Moorthi</h1>
+      <p class="role">
+        Self-taught full-stack engineer <em>·</em> psychology student at KCLAS <em>·</em> sole author of DATAD
+      </p>
+
+      <p class="bio">
+        “I built DATAD alone — backend, frontend, database, design system and AI pipeline — because
+        I watched my own batchmates run placement season across five disconnected apps, and no tool
+        existed that understood the whole of student life. Not a startup exercise. Not a portfolio
+        side project. The tool students actually needed, written by someone living the same problem.”
+      </p>
+
+      <p class="quote">
+        Built by a student, for students. Not designed in a boardroom —<br>
+        built by someone who lived the problem.
+      </p>
+    </div>
+
+    <div class="creds">
+      <div class="card rv">
+        <div class="ico" style="color:var(--violet)">🧠</div>
+        <div class="kicker">Psychology first</div>
+        <h3>Cognitive design</h3>
+        <p>A psychology background applied directly to product decisions: no infinite scroll, no
+        streak guilt, no manufactured urgency. Reflection and recovery are built in alongside
+        productivity, because burnout is not a feature.</p>
+      </div>
+      <div class="card rv">
+        <div class="ico" style="color:var(--cyan)">⌨️</div>
+        <div class="kicker">Full stack, one person</div>
+        <h3>End to end</h3>
+        <p>Express API, React SPA, MongoDB schema design, the Dax AI pipeline, the design system,
+        deployment and the docs — around 57,000 lines across 590 files, every one of them authored
+        and reviewed by the same person.</p>
+      </div>
+      <div class="card rv">
+        <div class="ico" style="color:var(--rose)">❤️</div>
+        <div class="kicker">Student-centric</div>
+        <h3>One question, always</h3>
+        <p>Every feature has to answer the same test before it ships: <em>does this actually help
+        someone?</em> Anything that only helps the metrics doesn't get built.</p>
+      </div>
+    </div>
+
+    <div class="rv">
+      <p style="text-align:center;margin-top:56px;font-size:11.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--rose)">
+        Lines I won't cross
+      </p>
+      <div class="valuebar">
+        <div class="value"><b>No ads</b><small>Ever. Your attention is yours.</small></div>
+        <div class="value"><b>No data selling</b><small>Your thoughts stay with you.</small></div>
+        <div class="value"><b>No dark patterns</b><small>Only genuine value.</small></div>
+      </div>
+    </div>
+
+    <div class="rv">
+      <p style="text-align:center;margin-top:56px;font-size:11.5px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)">
+        Get in touch
+      </p>
+      <div class="contact">
+        <a href="mailto:digitaldoncodes@gmail.com"><span class="em">✉️</span> digitaldoncodes@gmail.com</a>
+        <a href="https://instagram.com/technerdalert" target="_blank" rel="noreferrer"><span class="em">🌐</span> @technerdalert</a>
+        <a href="tel:+919363632214"><span class="em">📞</span> +91 93636 32214</a>
+      </div>
+    </div>
+
+    <div class="card rv" style="max-width:520px;margin:52px auto 0;background:linear-gradient(135deg,rgba(96,165,250,.10),rgba(15,23,42,.6),rgba(167,139,250,.10))">
+      <pre style="background:transparent;border:0;padding:0;color:var(--blue)"><span class="k">const</span> DATAD = {
+  madeBy:      <span class="s">'one student'</span>,
+  forWho:      <span class="s">'all students'</span>,
+  hasAds:      <span class="k">false</span>,
+  sellingData: <span class="k">false</span>,
+  philosophy:  <span class="s">'human first'</span>,
+};</pre>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════ FOOTER ══════════ -->
+<footer>
+  <div class="wrap">
+    <div class="brand"><span class="mark">D</span>DATAD</div>
+    <p><strong style="color:#cbd5e1">Technology · Psychology · Impact</strong></p>
+    <p style="margin-top:8px">
+      Independently built and maintained by T. A. Dhatchina Moorthi ·
+      <a href="mailto:digitaldoncodes@gmail.com">digitaldoncodes@gmail.com</a>
+    </p>
+    <p class="note">
+      With love , Dhatchina Moorthi TA  💖 !
+    </p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var els = document.querySelectorAll('.rv');
+    if (!('IntersectionObserver' in window)) {
+      els.forEach(function (e) { e.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry, i) {
+        if (!entry.isIntersecting) return;
+        var el = entry.target;
+        setTimeout(function () { el.classList.add('in'); }, (i % 6) * 70);
+        io.unobserve(el);
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(function (e) { io.observe(e); });
+
+    // Failsafe: nothing stays invisible, whatever the observer does.
+    setTimeout(function () {
+      document.querySelectorAll('.rv:not(.in)').forEach(function (e) {
+        if (e.getBoundingClientRect().top < window.innerHeight) e.classList.add('in');
+      });
+    }, 1200);
+  })();
+
+  /* ── nav: scroll explicitly, never rely on fragment navigation ──
+     In some embedded/sandboxed viewers (and on data: URLs) a plain #hash link
+     does nothing at all, so the jump is driven from script instead. */
+  (function () {
+    var navEl = document.querySelector('nav');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // A hard, non-animated jump. CSS `scroll-behavior: smooth` applies to
+    // scrollTo() as well, so it has to be suspended for the duration or the
+    // "instant" fallback animates too — and stalls for the same reason.
+    function jump(top) {
+      var html = document.documentElement;
+      var prev = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto';
+      window.scrollTo(0, top);
+      html.style.scrollBehavior = prev;
+    }
+
+    function goTo(target) {
+      var offset = (navEl ? navEl.getBoundingClientRect().height : 0) + 14;
+      var top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset);
+      var start = window.scrollY;
+
+      if (reduce) { jump(top); return; }
+
+      try { window.scrollTo({ top: top, behavior: 'smooth' }); }
+      catch (e) { jump(top); return; }
+
+      // If the smooth scroll never advanced — embedded viewers that don't paint
+      // frames leave it frozen at the start — force the jump instead.
+      setTimeout(function () {
+        if (Math.abs(window.scrollY - start) < 4 && Math.abs(top - start) > 4) jump(top);
+      }, 450);
+    }
+
+    [].slice.call(document.querySelectorAll('a[href^="#"]')).forEach(function (a) {
+      a.addEventListener('click', function (ev) {
+        var target = document.getElementById(a.getAttribute('href').slice(1));
+        if (!target) return;
+        ev.preventDefault();
+        goTo(target);
+        if (history && history.replaceState) history.replaceState(null, '', a.getAttribute('href'));
+      });
+    });
+  })();
+
+  /* ── scroll progress bar + nav scroll-spy ── */
+  (function () {
+    var bar = document.getElementById('progress');
+    var links = [].slice.call(document.querySelectorAll('.navlinks a'));
+    var targets = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+    var ticking = false;
+
+    function update() {
+      ticking = false;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      bar.style.width = (max > 0 ? (window.scrollY / max) * 100 : 0) + '%';
+
+      var best = -1, line = window.innerHeight * 0.35;
+      targets.forEach(function (t, i) {
+        if (t && t.getBoundingClientRect().top <= line) best = i;
+      });
+      links.forEach(function (a, i) { a.classList.toggle('active', i === best); });
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+  })();
+
+  /* ── acronym: staged reveal, click-to-expand, replay ── */
+  (function () {
+    var cards = [].slice.call(document.querySelectorAll('#acro .card'));
+    var panel = document.getElementById('acro-detail');
+    var elTitle = document.getElementById('acro-detail-title');
+    var elSub = document.getElementById('acro-detail-sub');
+    var elDesc = document.getElementById('acro-detail-desc');
+    var replay = document.getElementById('acro-replay');
+    var timers = [];
+    var open = null;
+
+    function reveal() {
+      timers.forEach(clearTimeout); timers = [];
+      cards.forEach(function (c) { c.classList.remove('shown'); });
+      cards.forEach(function (c, i) {
+        timers.push(setTimeout(function () { c.classList.add('shown'); }, 90 + i * 160));
+      });
+    }
+
+    function close() {
+      panel.classList.remove('open');
+      cards.forEach(function (c) { c.setAttribute('aria-expanded', 'false'); });
+      open = null;
+    }
+
+    cards.forEach(function (card) {
+      card.addEventListener('click', function () {
+        if (open === card) { close(); return; }
+        cards.forEach(function (c) { c.setAttribute('aria-expanded', String(c === card)); });
+        elTitle.textContent = card.dataset.title;
+        elTitle.style.color = card.dataset.color;
+        elSub.textContent = card.dataset.sub;
+        elDesc.textContent = card.dataset.desc;
+        panel.classList.add('open');
+        open = card;
+      });
+    });
+
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && open) close(); });
+    replay.addEventListener('click', function () { close(); reveal(); });
+
+    // Only run the staged reveal once the block is actually on screen.
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { reveal(); io.disconnect(); } });
+      }, { threshold: 0.25 });
+      io.observe(document.getElementById('acro'));
+    } else {
+      cards.forEach(function (c) { c.classList.add('shown'); });
+    }
+  })();
+
+  /* ── module cards: click to expand ── */
+  (function () {
+    [].slice.call(document.querySelectorAll('#modules-grid .mod')).forEach(function (card) {
+      card.addEventListener('click', function () {
+        card.setAttribute('aria-expanded', card.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+      });
+    });
+  })();
+
+  /* ── pricing: monthly / yearly toggle ── */
+  (function () {
+    var sw = document.getElementById('billing-switch');
+    var labM = document.getElementById('lab-m');
+    var labY = document.getElementById('lab-y');
+    var saver = document.getElementById('saver');
+    var amts = [].slice.call(document.querySelectorAll('.amt[data-plan]'));
+    var inr = function (n) { return '₹' + n.toLocaleString('en-IN'); };
+
+    function render(yearly) {
+      amts.forEach(function (amt) {
+        var val = amt.querySelector('.val');
+        var per = amt.querySelector('.per');
+        val.classList.add('swap');
+        setTimeout(function () {
+          var m = +amt.dataset.monthly, y = +amt.dataset.yearly;
+          val.textContent = inr(yearly ? y : m);
+          per.textContent = yearly
+            ? '/ year · ' + inr(Math.round(y / 12)) + ' a month'
+            : '/ month';
+          val.classList.remove('swap');
+        }, 170);
+      });
+
+      // Savings computed the same way pricing.js does it, not hardcoded.
+      var pro = amts[0];
+      var pct = Math.round(((pro.dataset.monthly * 12 - pro.dataset.yearly) / (pro.dataset.monthly * 12)) * 100);
+      saver.textContent = 'Save up to ' + pct + '%';
+      saver.classList.toggle('on', yearly);
+      labM.classList.toggle('on', !yearly);
+      labY.classList.toggle('on', yearly);
+    }
+
+    sw.addEventListener('click', function () {
+      var next = sw.getAttribute('aria-checked') !== 'true';
+      sw.setAttribute('aria-checked', String(next));
+      render(next);
+    });
+
+    render(false);
+  })();
+</script>
+
+</body>
+</html>
