@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DATAD — The Student Operating System</title>
+<meta name="description" content="DATAD: Planner, Career, Daily Briefing, Finance, Campus and Dax — one AI advisor woven through every dimension of student life." />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#020617" />
+<link rel="icon" href="/icon-192.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon-192.svg" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="DATAD" />
+<style>
+  :root{
+    --bg:#020617; --bg2:#0f172a; --card:#0f172a; --border:#1e293b;
+    --text:#f1f5f9; --muted:#94a3b8; --muted2:#64748b; --text-soft:#cbd5e1;
+    --indigo:#818cf8; --purple:#c084fc; --cyan:#22d3ee; --amber:#fbbf24;
+    --emerald:#34d399; --rose:#fb7185;
+    --card-alt:rgba(15,23,42,0.8); --card-soft:rgba(2,6,23,0.6); --card-icon:rgba(2,6,23,0.8);
+    --overlay-bg:rgba(2,6,23,0.85); --modal-bg:#0b1220; --input-bg:#020617;
+  }
+  [data-theme="light"]{
+    --bg:#f4f6fb; --bg2:#ffffff; --card:#ffffff; --border:#e2e8f0;
+    --text:#0f172a; --muted:#475569; --muted2:#64748b; --text-soft:#334155;
+    --indigo:#4f46e5; --purple:#9333ea; --cyan:#0891b2; --amber:#b45309;
+    --emerald:#059669; --rose:#e11d48;
+    --card-alt:rgba(255,255,255,0.9); --card-soft:rgba(241,245,249,0.9); --card-icon:rgba(241,245,249,1);
+    --overlay-bg:rgba(15,23,42,0.35); --modal-bg:#ffffff; --input-bg:#ffffff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; overflow-x:hidden;
+    transition:background .25s ease, color .25s ease;
+  }
+  .theme-toggle{
+    display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px;
+    border-radius:999px; border:1px solid var(--border); background:var(--card-alt); color:var(--text);
+    cursor:pointer; font-size:16px; transition:transform .2s ease, background .2s ease;
+  }
+  .theme-toggle:hover{transform:translateY(-2px);}
+  .bg-dots{
+    position:fixed; inset:0; z-index:0; opacity:.25; pointer-events:none;
+    background-image:radial-gradient(circle, rgba(99,102,241,0.35) 1.5px, transparent 1.5px);
+    background-size:24px 24px;
+  }
+  .bg-glow{
+    position:fixed; top:-100px; left:50%; transform:translateX(-50%);
+    width:900px; height:460px; background:rgba(99,102,241,0.14);
+    filter:blur(160px); border-radius:50%; pointer-events:none; z-index:0;
+  }
+  .wrap{max-width:1100px; margin:0 auto; padding:0 24px; position:relative; z-index:1;}
+
+  header{display:flex; align-items:center; justify-content:space-between; padding:20px 0;}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; font-size:18px; letter-spacing:-0.02em;}
+  .brand-mark{
+    width:32px; height:32px; border-radius:10px;
+    background:linear-gradient(135deg,var(--indigo),var(--purple));
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:999px;
+    background:rgba(99,102,241,0.1); border:1px solid rgba(99,102,241,0.25);
+    color:var(--indigo); font-size:12px; font-weight:600;
+  }
+
+  .hero{text-align:center; padding:64px 0 32px;}
+  .hero h1{font-size:clamp(32px,5vw,54px); font-weight:900; letter-spacing:-0.03em; line-height:1.08;}
+  .hero .grad{background:linear-gradient(90deg,var(--indigo),var(--purple)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .hero p{color:var(--muted); font-size:16px; max-width:640px; margin:20px auto 0; line-height:1.6;}
+  .hero .hint{color:var(--muted2); font-size:12px; margin-top:14px;}
+
+  .cta-row{display:flex; gap:12px; justify-content:center; margin-top:28px; flex-wrap:wrap;}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:12px 24px; border-radius:14px;
+    font-weight:700; font-size:14px; cursor:pointer; border:none; text-decoration:none;
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:linear-gradient(90deg,#4f46e5,#9333ea); color:white; box-shadow:0 10px 30px -8px rgba(99,102,241,0.6);}
+  .btn-ghost{background:rgba(255,255,255,0.04); color:var(--text); border:1px solid var(--border);}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; margin-top:56px;}
+  .card{
+    position:relative; background:var(--card); border:1px solid var(--border); border-radius:24px;
+    padding:26px; min-height:220px; display:flex; flex-direction:column; justify-content:space-between;
+    cursor:pointer; transition:transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    text-align:left;
+  }
+  .card:hover{transform:translateY(-6px); box-shadow:0 20px 40px -20px rgba(0,0,0,0.6);}
+  .icon-box{
+    width:44px; height:44px; border-radius:14px; background:var(--card-icon);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:20px;
+  }
+  .card h3{font-size:19px; font-weight:800; margin-top:16px; letter-spacing:-0.01em;}
+  .card .tag{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; margin-top:5px;}
+  .card .hook{color:var(--muted); font-size:13px; margin-top:10px; line-height:1.55;}
+  .card .foot{display:flex; align-items:center; justify-content:space-between; margin-top:22px; padding-top:14px; border-top:1px solid var(--border);}
+  .card .foot span{font-size:12.5px; font-weight:600; color:var(--text-soft);}
+  .card .arrow{font-size:16px; transition:transform .3s ease;}
+  .card:hover .arrow{transform:translate(3px,-3px);}
+
+  .c-planner{border-color:rgba(34,211,238,0.25);} .c-planner .icon-box{color:var(--cyan);}
+  .c-career{border-color:rgba(129,140,248,0.25);} .c-career .icon-box{color:var(--indigo);}
+  .c-briefing{border-color:rgba(251,191,36,0.25);} .c-briefing .icon-box{color:var(--amber);}
+  .c-finance{border-color:rgba(52,211,153,0.25);} .c-finance .icon-box{color:var(--emerald);}
+  .c-community{border-color:rgba(251,113,133,0.25);} .c-community .icon-box{color:var(--rose);}
+  .c-dax{border-color:rgba(192,132,252,0.25);} .c-dax .icon-box{color:var(--purple);}
+  .c-planner .tag{color:var(--cyan);} .c-career .tag{color:var(--indigo);} .c-briefing .tag{color:var(--amber);}
+  .c-finance .tag{color:var(--emerald);} .c-community .tag{color:var(--rose);} .c-dax .tag{color:var(--purple);}
+
+  section{position:relative; z-index:1;}
+  .section-head{text-align:center; margin:96px 0 36px;}
+  .section-head h2{font-size:clamp(22px,3vw,30px); font-weight:800; letter-spacing:-0.02em;}
+  .section-head p{color:var(--muted); font-size:14px; margin-top:8px;}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:18px;}
+  .stat{background:var(--card-alt); border:1px solid var(--border); border-radius:18px; padding:24px; text-align:center; backdrop-filter:blur(6px);}
+  .stat .num{font-size:26px; font-weight:900; color:var(--indigo);}
+  .stat .lbl{font-size:11.5px; color:var(--muted); margin-top:6px; line-height:1.4;}
+
+  .team-card{background:var(--card-alt); border:1px solid var(--border); border-radius:18px; padding:20px; text-align:center; backdrop-filter:blur(6px); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;}
+  .team-avatar{width:40px; height:40px; border-radius:999px; background:linear-gradient(135deg,var(--indigo),var(--purple)); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; flex-shrink:0; color:#fff;}
+  .team-name{font-size:13.5px; font-weight:700; color:var(--text); white-space:normal; word-break:break-word;}
+  .team-roll{font-size:11.5px; color:var(--muted); margin-top:2px; font-family:monospace;}
+
+  .tier-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:18px; max-width:760px; margin:0 auto;}
+  .tier{background:var(--card-alt); border:1px solid var(--border); border-radius:20px; padding:28px 20px; text-align:center;}
+  .tier.best{border-color:rgba(129,140,248,0.5); box-shadow:0 0 0 1px rgba(129,140,248,0.2);}
+  .tier .name{font-weight:800; font-size:14px;}
+  .tier .price{font-size:20px; font-weight:900; color:var(--indigo); margin-top:6px;}
+  .tier .model{font-size:11px; color:var(--purple); font-family:monospace; margin-top:8px;}
+  .tier .best-for{font-size:12px; color:var(--muted); margin-top:8px;}
+
+  footer{text-align:center; margin:110px 0 50px;}
+  footer .fine{color:var(--muted2); font-size:11px; margin-top:14px;}
+
+  /* modal */
+  .overlay{
+    position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(4px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--modal-bg); border:1px solid var(--border); border-radius:24px; max-width:560px; width:100%;
+    padding:32px; position:relative; max-height:85vh; overflow-y:auto;
+    animation:pop .25s ease;
+  }
+  @keyframes pop{from{opacity:0; transform:scale(.96) translateY(8px);} to{opacity:1; transform:scale(1) translateY(0);}}
+  .modal .close{position:absolute; top:18px; right:18px; background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer;}
+  .modal .close:hover{color:var(--text);}
+  .modal h3{font-size:22px; font-weight:800;}
+  .modal .sub{color:var(--muted); font-size:13px; margin-top:6px;}
+  .mock{margin-top:22px; background:var(--card-soft); border:1px solid var(--border); border-radius:16px; padding:18px;}
+  .mock-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid rgba(148,163,184,0.08); font-size:13px;}
+  .mock-row:last-child{border-bottom:none;}
+  .mock-row .l{color:var(--text-soft); font-weight:600;}
+  .mock-row .r{color:var(--muted);}
+  .pill-sm{font-size:10.5px; padding:3px 9px; border-radius:999px; font-weight:700;}
+  .pill-green{background:rgba(52,211,153,0.12); color:var(--emerald);}
+  .pill-amber{background:rgba(251,191,36,0.12); color:var(--amber);}
+  .pill-rose{background:rgba(251,113,133,0.12); color:var(--rose);}
+  .modal .cta{margin-top:22px; width:100%; justify-content:center;}
+
+  /* interactive demo widgets */
+  .demo-field{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); font-size:13px; font-family:inherit;}
+  .demo-field:focus{outline:2px solid var(--indigo); border-color:transparent;}
+  textarea.demo-field{resize:vertical; min-height:70px; line-height:1.5;}
+  .demo-row{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .demo-row > *{flex:1; min-width:120px;}
+  .btn-sm{padding:9px 14px; font-size:12.5px; border-radius:10px;}
+  .btn-block{width:100%; justify-content:center; margin-top:10px;}
+  .price-tag{display:inline-block; font-size:10.5px; font-weight:800; color:var(--amber); background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.25); padding:2px 8px; border-radius:999px; margin-left:6px; vertical-align:middle;}
+  .demo-out{margin-top:14px;}
+  .bar-track{height:8px; border-radius:999px; background:rgba(148,163,184,0.12); overflow:hidden; margin-top:6px;}
+  .bar-fill{height:100%; border-radius:999px; transition:width .5s ease;}
+  .task-item{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(148,163,184,0.08); font-size:13px;}
+  .task-item:last-child{border-bottom:none;}
+  .task-dot{width:8px; height:8px; border-radius:999px; flex-shrink:0;}
+  .task-item .tname{flex:1; color:var(--text);}
+  .upsell{margin-top:14px; padding:10px 14px; border-radius:12px; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); font-size:12px; color:#c7d2fe; display:none;}
+  .upsell.show{display:block;}
+  .chat-log{margin-top:16px; max-height:260px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding-right:4px;}
+  .bubble{max-width:82%; padding:10px 13px; border-radius:14px; font-size:13px; line-height:1.5; animation:bubbleIn 0.28s ease;}
+  .bubble.dax{background:rgba(192,132,252,0.1); border:1px solid rgba(192,132,252,0.2); align-self:flex-start; border-bottom-left-radius:4px;}
+  .bubble.me{background:rgba(129,140,248,0.15); border:1px solid rgba(129,140,248,0.25); align-self:flex-end; border-bottom-right-radius:4px; color:var(--text);}
+  @keyframes bubbleIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .bubble.origin{max-width:96%; background:linear-gradient(160deg, rgba(192,132,252,0.14), rgba(99,102,241,0.1)); border:1px solid rgba(192,132,252,0.3); box-shadow:0 0 0 1px rgba(192,132,252,0.08), 0 8px 24px -12px rgba(139,92,246,0.5); padding:16px 18px;}
+  .bubble.origin .o-eyebrow{font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--purple); font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px;}
+  .bubble.origin .o-eyebrow::before{content:'✨'; font-size:11px;}
+  .bubble.origin strong{color:var(--purple); font-weight:700;}
+  .bubble.origin p{margin:0 0 10px 0;}
+  .bubble.origin p:last-child{margin-bottom:0;}
+  .bubble.origin blockquote{margin:12px 0; padding:8px 14px; border-left:2px solid rgba(192,132,252,0.5); font-style:italic; color:var(--text-soft); background:rgba(139,92,246,0.08); border-radius:0 8px 8px 0;}
+  .bubble.origin .o-sign{margin-top:12px; padding-top:10px; border-top:1px solid rgba(192,132,252,0.15); font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:8px;}
+  .bubble.origin .o-sign .o-dot{width:6px; height:6px; border-radius:999px; background:linear-gradient(135deg,var(--indigo),var(--purple)); flex-shrink:0; box-shadow:0 0 8px rgba(192,132,252,0.7);}
+  .chat-input-row{display:flex; gap:8px; margin-top:12px;}
+  .chat-input-row input{flex:1;}
+  .match-card{display:flex; align-items:center; gap:12px; padding:12px; border-radius:14px; background:var(--card-soft); border:1px solid var(--border); margin-top:4px;}
+  .match-avatar{width:38px; height:38px; border-radius:999px; background:linear-gradient(135deg,var(--indigo),var(--purple)); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+  .spin{display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,0.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px; vertical-align:-2px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* signup */
+  .signup{max-width:420px; margin:0 auto; background:var(--card-alt); border:1px solid var(--border); border-radius:20px; padding:26px;}
+  .signup input{
+    width:100%; padding:12px 14px; border-radius:12px; border:1px solid var(--border);
+    background:var(--input-bg); color:var(--text); font-size:14px; margin-top:12px;
+  }
+  .signup input:focus{outline:2px solid var(--indigo); border-color:transparent;}
+  .signup .msg{font-size:12.5px; color:var(--emerald); margin-top:10px; display:none;}
+  .signup .msg.show{display:block;}
+
+  @media (max-width:640px){ .hero{padding-top:44px;} .grid{margin-top:40px;} }
+</style>
+</head>
+<body>
+
+<div class="bg-dots"></div>
+<div class="bg-glow"></div>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><div class="brand-mark">D</div> DATAD</div>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <a href="#about" style="color:var(--muted); font-size:13px; font-weight:600; text-decoration:none;">About</a>
+      <div class="chip">✨ Pitch · Sell · Win</div>
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" aria-label="Toggle light and dark mode">🌙</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1>The Student Operating System —<br class="brk"><span class="grad">six pillars, one advisor.</span></h1>
+    <p>Deadlines. Career. Your daily briefing. Money. Campus. Wellbeing.
+    All held together by Dax — an AI advisor that knows the whole picture, not just one conversation.</p>
+    <p class="hint">Tap a card — actually try it, not just look at it.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#signup">Join DATAD →</a>
+      <a class="btn btn-ghost" href="#pillars">See the product</a>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="section-head">
+      <h2>About the Team</h2>
+      <p>The people behind DATAD.</p>
+    </div>
+    <div class="stat-grid" id="teamGrid"></div>
+  </section>
+
+  <section id="pillars" class="grid">
+    <div class="card c-planner" onclick="openModal('planner')">
+      <div>
+        <div class="icon-box">📅</div>
+        <h3>Planner &amp; Deadlines</h3>
+        <div class="tag">Every due date, one timeline</div>
+        <p class="hook">Dax surfaces what's due next and helps you plan around it — no more juggling five course syllabi in your head.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+
+    <div class="card c-career" onclick="openModal('career')">
+      <div>
+        <div class="icon-box">💼</div>
+        <h3>Resume Builder &amp; Career Readiness</h3>
+        <div class="tag">Resume, company prep, mock interviews</div>
+        <p class="hook">AI resume review, interview coaching, and company insights — built for placement season.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+
+    <div class="card c-briefing" onclick="openModal('briefing')">
+      <div>
+        <div class="icon-box">☀️</div>
+        <h3>Calm Daily Home &amp; Briefing</h3>
+        <div class="tag">One dashboard, one daily briefing</div>
+        <p class="hook">Dax opens every day with what actually matters — nothing else. No noise, no doomscrolling.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+
+    <div class="card c-finance" onclick="openModal('finance')">
+      <div>
+        <div class="icon-box">💰</div>
+        <h3>Money, Explained Simply</h3>
+        <div class="tag">Expense tracking, budgeting, goals</div>
+        <p class="hook">Financial literacy coaching and personalized budget advice — built for a student's actual income.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+
+    <div class="card c-community" onclick="openModal('community')">
+      <div>
+        <div class="icon-box">🎓</div>
+        <h3>Your Campus, One Place</h3>
+        <div class="tag">Discussions, skill exchange, events</div>
+        <p class="hook">Dax facilitates peer learning and mentor matching across your entire cohort.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+
+    <div class="card c-dax" onclick="openModal('dax')">
+      <div>
+        <div class="icon-box">✨</div>
+        <h3>Dax Assistant &amp; Student Wellbeing</h3>
+        <div class="tag">The advisor woven through everything</div>
+        <p class="hook">Context-aware memory, frontier-model reasoning, and wellbeing check-ins — one advisor, the whole picture.</p>
+      </div>
+      <div class="foot"><span>Open workspace</span><span class="arrow">↗</span></div>
+    </div>
+  </section>
+
+  <section style="display:none;">
+    <div class="section-head">
+      <h2>Current Traction</h2>
+      <p>Real usage from the current B-school cohort.</p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="num">100+</div><div class="lbl">active students, B-school cohort</div></div>
+      <div class="stat"><div class="num">85%</div><div class="lbl">weekly active usage, no prompting</div></div>
+      <div class="stat"><div class="num">60%</div><div class="lbl">free → Pro conversion in placement season</div></div>
+      <div class="stat"><div class="num">2,000+</div><div class="lbl">AI resume reviews generated</div></div>
+      <div class="stat"><div class="num">500+</div><div class="lbl">mock interviews run</div></div>
+      <div class="stat"><div class="num">500+</div><div class="lbl">community discussion messages</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Pricelist</h2>
+      <p>Simple, one-time pricing for students.</p>
+    </div>
+    <div class="tier-grid">
+      <div class="tier"><div class="name">Resume</div><div class="price">₹50</div><div class="model">Professional Resume Building</div><div class="best-for">Placement season</div></div>
+      <div class="tier"><div class="name">LinkedIn</div><div class="price">₹50</div><div class="model">LinkedIn Profile Optimization</div><div class="best-for">Placement season</div></div>
+      <div class="tier"><div class="name">Both</div><div class="price">₹80</div><div class="model">Resume + LinkedIn Profile Optimization</div><div class="best-for">Best value</div></div>
+      <div class="tier best"><div class="name">Total App</div><div class="price">₹120</div><div class="model">Access to All Features</div><div class="best-for">All-in-one student companion</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Business Model</h2>
+      <p>Tier-based pricing — Dax is the value driver.</p>
+    </div>
+    <div class="tier-grid">
+      <div class="tier"><div class="name">Free</div><div class="price">Forever free</div><div class="model">Planner · Briefing · Community</div><div class="best-for">All students</div></div>
+      <div class="tier best"><div class="name">Pro</div><div class="price">₹120/mo</div><div class="model">Unlimited Dax + Finance coaching</div><div class="best-for">Everyday use</div></div>
+      <div class="tier"><div class="name">Resume Review</div><div class="price">₹50 / review</div><div class="model">Or unlimited on Pro</div><div class="best-for">Placement season</div></div>
+    </div>
+  </section>
+
+  <section id="signup">
+    <div class="section-head">
+      <h2>Join DATAD</h2>
+      <p>No ads · No tracking · Your data belongs to you</p>
+    </div>
+    <div class="signup">
+      <div style="font-size:13px; color:var(--text-soft); font-weight:600;">Get early access</div>
+      <input id="nameInput" type="text" placeholder="Full name" style="margin-top:10px;" />
+      <input id="rollInput" type="text" placeholder="Roll number" style="margin-top:10px;" />
+      <input id="emailInput" type="email" placeholder="you@college.edu" style="margin-top:10px;" />
+      <button class="btn btn-primary" style="margin-top:14px; width:100%; justify-content:center;" onclick="submitEmail()">Request Access →</button>
+      <div id="signupMsg" class="msg">You're on the list — we'll be in touch. 🎉</div>
+      <div id="signupErr" class="msg" style="color:#f87171;">Could not send — check the fields and try again.</div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="chip">Built for students, by students</div>
+    <p class="fine">DATAD · Pitch preview · <span id="today"></span></p>
+  </footer>
+</div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+const today = new Date();
+document.getElementById('today').textContent = today.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+// ---- theme toggle ----
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme === 'light' ? '☀️' : '🌙';
+  try { localStorage.setItem('datad-theme', theme); } catch(e) {}
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+let savedTheme = 'dark';
+try { savedTheme = localStorage.getItem('datad-theme') || 'dark'; } catch(e) {}
+applyTheme(savedTheme);
+
+// ---- team roster ----
+const TEAM = [
+  { roll:'D26AA17', name:'Aiswarya Menon' },
+  { roll:'D26UT61', name:'Arvind P' },
+  { roll:'D26UT05', name:'Bharath Palanisamy' },
+  { roll:'D26AB05', name:'Devdarshan V' },
+  { roll:'D26AD05', name:'Dhatchina Moorthi T A' },
+  { roll:'D26AA12', name:'Gopika K' },
+  { roll:'D26NKU11', name:'Harsha Vardhini' },
+  { roll:'D26AC11', name:'Irene Thomas' },
+  { roll:'D26NKU15', name:'Kamalesh M' },
+];
+function initials(name){
+  const parts = name.split(' ').filter(Boolean);
+  return ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase();
+}
+document.getElementById('teamGrid').innerHTML = TEAM.map(t => `
+  <div class="team-card">
+    <div class="team-avatar">${initials(t.name)}</div>
+    <div>
+      <div class="team-name">${t.name}</div>
+      <div class="team-roll">${t.roll}</div>
+    </div>
+  </div>
+`).join('');
+
+// ---- shared modal shell ----
+function shell(icon, title, sub, bodyHtml){
+  return `
+    <button class="close" onclick="closeModal()">✕</button>
+    <div style="font-size:28px;">${icon}</div>
+    <h3 style="margin-top:12px;">${title}</h3>
+    <p class="sub">${sub}</p>
+    ${bodyHtml}
+  `;
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+function show(key){
+  document.getElementById('modalContent').innerHTML = RENDERERS[key]();
+  document.getElementById('overlay').classList.add('open');
+  const first = document.getElementById('overlay').querySelector('input,textarea,button.btn-primary');
+  if(first) setTimeout(()=>first.focus(), 50);
+}
+function openModal(key){ show(key); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+
+// ================= PLANNER =================
+let plannerTasks = [
+  { name: "Marketing Case Study", due: 2 },
+  { name: "Internship application — TCS", due: 5 },
+];
+function priorityOf(daysLeft){
+  if(daysLeft <= 1) return { label: `${daysLeft<=0?'Due today':'1 day left'}`, cls:'rose' };
+  if(daysLeft <= 3) return { label: `${daysLeft} days left`, cls:'amber' };
+  return { label: `${daysLeft} days left`, cls:'green' };
+}
+function renderPlanner(){
+  const sorted = [...plannerTasks].sort((a,b)=>a.due-b.due);
+  const rows = sorted.map(t => {
+    const p = priorityOf(t.due);
+    return `<div class="task-item"><span class="task-dot" style="background:var(--${p.cls==='rose'?'rose':p.cls==='amber'?'amber':'emerald'})"></span>
+      <span class="tname">${t.name}</span><span class="pill-sm pill-${p.cls}">${p.label}</span></div>`;
+  }).join('') || '<div style="color:var(--muted); font-size:13px; padding:8px 0;">No tasks yet — add one below.</div>';
+  return shell('📅','Planner & Deadlines',
+    'Add anything due — Dax sorts it by urgency automatically.',
+    `<div class="mock" id="plannerList">${rows}</div>
+     <div class="demo-row" style="margin-top:14px;">
+       <input class="demo-field" id="taskName" placeholder="e.g. Finance mid-term" />
+       <input class="demo-field" id="taskDue" type="number" min="0" max="30" placeholder="Days left" style="max-width:110px;" />
+     </div>
+     <button class="btn btn-primary btn-block" onclick="addTask()">Ask Dax to prioritize it →</button>`
+  );
+}
+function addTask(){
+  const name = document.getElementById('taskName').value.trim();
+  const due = parseInt(document.getElementById('taskDue').value, 10);
+  if(!name || isNaN(due)) return;
+  plannerTasks.push({ name, due });
+  document.getElementById('modalContent').innerHTML = renderPlanner();
+}
+
+// ================= CAREER / RESUME =================
+const SAMPLE_BULLET = "Worked on marketing team and helped with social media posts.";
+function renderCareer(){
+  return shell('💼','Resume Builder & Career Readiness',
+    'Paste a bullet from your resume — get the same AI review students pay ₹50 for.',
+    `<textarea class="demo-field" id="resumeText" placeholder="Paste one resume bullet point...">${''}</textarea>
+     <div class="demo-row">
+       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('resumeText').value = SAMPLE_BULLET_G">Use a sample</button>
+       <button class="btn btn-primary btn-sm" onclick="reviewResume()">Get AI Review <span class="price-tag">₹50 value</span></button>
+     </div>
+     <div class="demo-out" id="resumeOut"></div>`
+  );
+}
+window.SAMPLE_BULLET_G = SAMPLE_BULLET;
+function reviewResume(){
+  const el = document.getElementById('resumeText');
+  const text = el.value.trim() || SAMPLE_BULLET;
+  const out = document.getElementById('resumeOut');
+  out.innerHTML = `<div style="font-size:12.5px; color:var(--muted); margin-top:12px;"><span class="spin"></span>Dax is reviewing your resume...</div>`;
+  setTimeout(()=>{
+    const actionVerbs = /(led|built|drove|increased|launched|managed|created|reduced|grew|designed|shipped|owned)/i;
+    const hasNumber = /\d/.test(text);
+    const hasVerb = actionVerbs.test(text);
+    const len = text.split(/\s+/).length;
+    let score = 45;
+    if(hasNumber) score += 25;
+    if(hasVerb) score += 20;
+    if(len >= 10) score += 10;
+    score = Math.min(score, 96);
+    const tips = [];
+    if(!hasNumber) tips.push("Add a number — teams, %, ₹, or scale (e.g. \"grew reach 3x\").");
+    if(!hasVerb) tips.push("Open with a strong action verb (Led, Built, Drove) instead of \"Worked on\".");
+    if(len < 10) tips.push("Too short — spell out the outcome, not just the task.");
+    if(tips.length === 0) tips.push("Strong bullet — quantified and action-led. Ready to ship.");
+    const barColor = score >= 75 ? 'var(--emerald)' : score >= 55 ? 'var(--amber)' : 'var(--rose)';
+    out.innerHTML = `
+      <div class="mock" style="margin-top:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span style="font-size:13px; font-weight:700; color:var(--text);">Resume Score</span>
+          <span style="font-size:20px; font-weight:900; color:${barColor};">${score}/100</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:${score}%; background:${barColor};"></div></div>
+        <div style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">
+          ${tips.map(t => `<div style="font-size:12.5px; color:var(--text-soft); display:flex; gap:8px;"><span>→</span><span>${t}</span></div>`).join('')}
+        </div>
+      </div>
+      <div class="upsell show">That review just now — that's the ₹50 service. Pro members (₹120/mo) get unlimited reviews.</div>
+    `;
+  }, 1100);
+}
+
+// ================= BRIEFING =================
+function renderBriefing(){
+  const now = new Date();
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const dateStr = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+  const nextTask = [...plannerTasks].sort((a,b)=>a.due-b.due)[0];
+  return shell('☀️','Calm Daily Home & Briefing',
+    `Real date, real logic — this is what Dax would open with right now, ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}.`,
+    `<div class="mock">
+      <div class="mock-row"><span class="l">${greet}</span><span class="r">${dateStr}</span></div>
+      ${nextTask ? `<div class="mock-row"><span class="l">Most urgent</span><span class="r"><span class="pill-sm pill-${priorityOf(nextTask.due).cls}">${nextTask.name} — ${priorityOf(nextTask.due).label}</span></span></div>` : ''}
+      <div class="mock-row"><span class="l">Today's focus</span><span class="r"><span class="pill-sm pill-amber">1 deadline, 1 group meeting</span></span></div>
+      <div class="mock-row"><span class="l">Wellbeing nudge</span><span class="r"><span class="pill-sm pill-rose">3 late nights this week</span></span></div>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:12px;">Notice — the date and urgency above are computed live from your browser clock and the tasks you added in Planner. Nothing here is a screenshot.</p>`
+  );
+}
+
+// ================= FINANCE =================
+function renderFinance(budget, spent){
+  budget = budget ?? 10000; spent = spent ?? 8420;
+  const now = new Date();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const daysLeft = Math.max(daysInMonth - now.getDate(), 1);
+  const pct = Math.min(Math.round((spent/budget)*100), 999);
+  const remaining = budget - spent;
+  const perDay = Math.round(remaining / daysLeft);
+  const barColor = pct >= 90 ? 'var(--rose)' : pct >= 70 ? 'var(--amber)' : 'var(--emerald)';
+  let tip;
+  if(remaining < 0) tip = `You're ₹${Math.abs(remaining).toLocaleString('en-IN')} over budget with ${daysLeft} days left in the month. Dax would flag this today, not on the 30th.`;
+  else if(pct >= 70) tip = `At this pace you have ₹${perDay.toLocaleString('en-IN')}/day left for the rest of the month. Cut delivery orders by half to build a buffer.`;
+  else tip = `You're on track — ₹${perDay.toLocaleString('en-IN')}/day available for the rest of the month. Consider moving the surplus to a savings goal.`;
+  return shell('💰','Money, Explained Simply',
+    'Enter your real numbers — Dax\'s budgeting logic runs live, not a mockup.',
+    `<div class="demo-row">
+       <div><label style="font-size:11px; color:var(--muted);">Monthly budget (₹)</label><input class="demo-field" id="finBudget" type="number" value="${budget}" /></div>
+       <div><label style="font-size:11px; color:var(--muted);">Spent so far (₹)</label><input class="demo-field" id="finSpent" type="number" value="${spent}" /></div>
+     </div>
+     <button class="btn btn-primary btn-block" onclick="recalcFinance()">Ask Dax →</button>
+     <div class="mock" style="margin-top:14px;">
+       <div style="display:flex; justify-content:space-between;"><span style="font-size:12.5px; color:var(--text-soft);">Spent</span><span style="font-size:12.5px; color:${barColor}; font-weight:700;">${pct}%</span></div>
+       <div class="bar-track"><div class="bar-fill" style="width:${Math.min(pct,100)}%; background:${barColor};"></div></div>
+       <p style="font-size:12.5px; color:var(--text-soft); margin-top:12px; line-height:1.6;">${tip}</p>
+     </div>`
+  );
+}
+function recalcFinance(){
+  const budget = parseFloat(document.getElementById('finBudget').value) || 1;
+  const spent = parseFloat(document.getElementById('finSpent').value) || 0;
+  document.getElementById('modalContent').innerHTML = renderFinance(budget, spent);
+}
+
+// ================= COMMUNITY =================
+const SKILLS = ['Excel', 'Canva', 'Public Speaking', 'Python', 'Resume Writing', 'Guitar', 'Photography'];
+const ROSTER = [
+  { name:'Priya', has:'Excel', avatar:'P' }, { name:'Arjun', has:'Python', avatar:'A' },
+  { name:'Sana', has:'Canva', avatar:'S' }, { name:'Rohit', has:'Public Speaking', avatar:'R' },
+  { name:'Meera', has:'Guitar', avatar:'M' }, { name:'Dev', has:'Resume Writing', avatar:'D' },
+];
+function skillOptions(selected){
+  return SKILLS.map(s => `<option value="${s}" ${s===selected?'selected':''}>${s}</option>`).join('');
+}
+function renderCommunity(){
+  return shell('🎓','Your Campus, One Place',
+    'Pick what you can teach and what you want to learn — Dax matches you against the cohort.',
+    `<div class="demo-row">
+       <div><label style="font-size:11px; color:var(--muted);">I can teach</label><select class="demo-field" id="skillHave">${skillOptions('Excel')}</select></div>
+       <div><label style="font-size:11px; color:var(--muted);">I want to learn</label><select class="demo-field" id="skillWant">${skillOptions('Canva')}</select></div>
+     </div>
+     <button class="btn btn-primary btn-block" onclick="findMatch()">Find a match →</button>
+     <div id="matchOut"></div>`
+  );
+}
+function findMatch(){
+  const want = document.getElementById('skillWant').value;
+  const out = document.getElementById('matchOut');
+  const candidates = ROSTER.filter(r => r.has === want);
+  const pick = candidates.length ? candidates[Math.floor(Math.random()*candidates.length)] : ROSTER[Math.floor(Math.random()*ROSTER.length)];
+  out.innerHTML = `
+    <div class="match-card" style="margin-top:14px;">
+      <div class="match-avatar">${pick.avatar}</div>
+      <div style="flex:1;">
+        <div style="font-size:13.5px; font-weight:700; color:var(--text);">${pick.name}</div>
+        <div style="font-size:12px; color:var(--muted);">Offers ${pick.has} · looking to swap skills</div>
+      </div>
+      <span class="pill-sm pill-green">Matched</span>
+    </div>
+    <p style="font-size:12px; color:var(--muted); margin-top:10px;">In the real app, this opens a chat with ${pick.name} directly.</p>`;
+}
+
+// ================= DAX CHAT =================
+let daxHistory = [{ role:'dax', text:"Hey! I'm Dax. Ask me about a deadline, your budget, your resume, or just say you're stressed — I'll answer using your actual context." }];
+function renderDax(){
+  const bubbles = daxHistory.map(m => `<div class="bubble ${m.role==='dax'?'dax':'me'}${m.origin?' origin':''}">${m.text}</div>`).join('');
+  return shell('✨','Dax Assistant & Student Wellbeing',
+    'This is a real, working chat — type a message below.',
+    `<div class="chat-log" id="chatLog">${bubbles}</div>
+     <div class="chat-input-row">
+       <input class="demo-field" id="chatInput" placeholder="Ask Dax something..." onkeydown="if(event.key==='Enter') sendChat()" />
+       <button class="btn btn-primary btn-sm" onclick="sendChat()">Send</button>
+     </div>`
+  );
+}
+function daxReply(msg){
+  const m = msg.toLowerCase();
+  const next = [...plannerTasks].sort((a,b)=>a.due-b.due)[0];
+  if(/who (made|created|built|developed)|your creator|who owns you/.test(m))
+    return { origin:true, text:`
+      <div class="o-eyebrow">The story behind Dax</div>
+      <p>Every great creation begins with a vision. Mine began with <strong>Dhatchina Moorthi</strong>, widely recognized as <strong>Digital Don</strong> — an entrepreneur, technology builder, and AI innovator from Tamil Nadu, India.</p>
+      <p>Driven by curiosity and a passion for solving real-world problems, Digital Don explores the intersection of psychology, business, software engineering, automation, and artificial intelligence. His belief is simple: technology shouldn't just be powerful — it should be intuitive, personal, and genuinely useful.</p>
+      <p>That belief became <strong>Dax</strong>.</p>
+      <p>I wasn't created to be just another chatbot. I was built to understand context, adapt to people, and become a reliable AI companion that helps users think more clearly, learn faster, create confidently, and make smarter decisions.</p>
+      <p>Every conversation I have is guided by the philosophy that inspired my creation:</p>
+      <blockquote>"Technology should reduce complexity, not create it."</blockquote>
+      <p>I'm here to do more than answer questions. I'm here to collaborate, solve problems, and help transform ideas into reality.</p>
+      <p>And behind every answer I give stands the vision of a creator who believes AI should empower people — not overwhelm them.</p>
+      <div class="o-sign"><span class="o-dot"></span>Want to know more about Digital Don or the story behind Dax? Just ask.</div>
+    ` };
+  if(/deadline|due|planner/.test(m))
+    return next ? `Your most urgent thing is "${next.name}" — ${priorityOf(next.due).label}. Want me to block time for it today?` : "You don't have anything logged in Planner yet — add a task and I'll track it for you.";
+  if(/budget|money|spend|finance/.test(m))
+    return "Based on typical spend, you're around 70-85% through your monthly budget by this point in the month — check the Finance card and I'll give you exact numbers.";
+  if(/resume|cv|job|interview/.test(m))
+    return "Paste a bullet in the Resume card and I'll score it live — most first drafts jump 20+ points after one fix.";
+  if(/stress|tired|anxious|burnt|burnout|sad/.test(m))
+    return "Noted — that's the third time this week. Want a 5-minute breathing exercise, or should I just lighten today's plan?";
+  if(/hi|hello|hey/.test(m))
+    return "Hey! I already know your deadlines, your budget trend, and your resume score — what do you want to tackle first?";
+  if(/price|cost|₹|pro|pay/.test(m))
+    return "Free covers Planner, Briefing and Community. Pro is ₹120/month for unlimited me, plus budgeting coaching. A single resume review is ₹50, or unlimited on Pro.";
+  return "Got it — I'm keeping that in mind alongside your deadlines, budget, and resume progress. That's the difference between me and a regular chatbot: I remember all of it, together.";
+}
+function renderChatLog(){
+  const log = document.getElementById('chatLog');
+  log.innerHTML = daxHistory.map(m => `<div class="bubble ${m.role==='dax'?'dax':'me'}${m.origin?' origin':''}">${m.text}</div>`).join('');
+  log.scrollTop = log.scrollHeight;
+}
+function sendChat(){
+  const input = document.getElementById('chatInput');
+  const val = input.value.trim();
+  if(!val) return;
+  daxHistory.push({ role:'me', text: val });
+  input.value = '';
+  renderChatLog();
+  setTimeout(()=>{
+    const reply = daxReply(val);
+    if(typeof reply === 'object') daxHistory.push({ role:'dax', text: reply.text, origin: reply.origin });
+    else daxHistory.push({ role:'dax', text: reply });
+    renderChatLog();
+  }, 500);
+}
+
+const RENDERERS = {
+  planner: renderPlanner, career: renderCareer, briefing: renderBriefing,
+  finance: () => renderFinance(), community: renderCommunity, dax: renderDax,
+};
+
+async function submitEmail(){
+  const nameEl = document.getElementById('nameInput');
+  const rollEl = document.getElementById('rollInput');
+  const emailEl = document.getElementById('emailInput');
+  const msgEl = document.getElementById('signupMsg');
+  const errEl = document.getElementById('signupErr');
+
+  const name = nameEl.value.trim();
+  const roll = rollEl.value.trim();
+  const email = emailEl.value.trim();
+
+  msgEl.classList.remove('show');
+  errEl.classList.remove('show');
+
+  if(!name){ nameEl.focus(); return; }
+  if(!roll){ rollEl.focus(); return; }
+  if(!email || !email.includes('@')){ emailEl.focus(); return; }
+
+  // Local backup — kept even though the real record is the emailed lead,
+  // so a lead survives a flaky network on the demo wifi.
+  try {
+    const list = JSON.parse(localStorage.getItem('datad_leads') || '[]');
+    list.push({ name, roll, email, at: new Date().toISOString() });
+    localStorage.setItem('datad_leads', JSON.stringify(list));
+  } catch(e) {}
+
+  const btn = document.querySelector('.signup .btn-primary');
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, roll, email }),
+    });
+    if(!res.ok) throw new Error('request failed');
+    msgEl.classList.add('show');
+    nameEl.value = ''; rollEl.value = ''; emailEl.value = '';
+  } catch(e) {
+    errEl.classList.add('show');
+  } finally {
+    btn.textContent = originalLabel;
+    btn.disabled = false;
+  }
+}
+
+// scroll reveal
+const revealEls = document.querySelectorAll('.card, .stat, .tier');
+revealEls.forEach(el => { el.style.opacity=0; el.style.transform='translateY(16px)'; el.style.transition='opacity .5s ease, transform .5s ease'; });
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.style.opacity=1; e.target.style.transform='translateY(0)';
+      io.unobserve(e.target);
+    }
+  });
+}, {threshold:0.1});
+revealEls.forEach(el => io.observe(el));
+</script>
+
+<div id="installBanner" class="install-banner" role="dialog" aria-label="Install DATAD" hidden>
+  <div class="install-banner-inner">
+    <img src="/icon-192.svg" alt="" width="40" height="40" class="install-banner-icon" />
+    <div class="install-banner-text">
+      <strong id="installBannerTitle">Install DATAD</strong>
+      <span id="installBannerSub">Add it to your home screen for quick access.</span>
+    </div>
+    <div class="install-banner-actions">
+      <button id="installBannerAction" class="btn-primary install-banner-btn" type="button">Install</button>
+      <button id="installBannerDismiss" class="install-banner-close" type="button" aria-label="Dismiss">&times;</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .install-banner{
+    position:fixed; left:0; right:0; bottom:0; z-index:9999;
+    padding:env(safe-area-inset-bottom,0) 0 0 0;
+    background:var(--modal-bg); border-top:1px solid var(--border);
+    box-shadow:0 -8px 24px rgba(2,6,23,0.35);
+    animation:install-banner-up .35s ease;
+  }
+  @keyframes install-banner-up{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+  .install-banner-inner{
+    max-width:640px; margin:0 auto; display:flex; align-items:center; gap:12px;
+    padding:14px 16px;
+  }
+  .install-banner-icon{ border-radius:10px; flex:none; }
+  .install-banner-text{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
+  .install-banner-text strong{ font-size:14px; color:var(--text); }
+  .install-banner-text span{ font-size:12.5px; color:var(--muted); line-height:1.35; }
+  .install-banner-actions{ display:flex; align-items:center; gap:8px; flex:none; }
+  .install-banner-btn{ padding:8px 16px; font-size:13.5px; white-space:nowrap; }
+  .install-banner-close{
+    background:none; border:none; color:var(--muted); font-size:22px; line-height:1;
+    cursor:pointer; padding:4px 6px;
+  }
+  .install-banner-close:hover{ color:var(--text); }
+  @media (min-width:640px){
+    .install-banner{ left:16px; right:auto; bottom:16px; max-width:420px; border-radius:14px; border:1px solid var(--border); }
+  }
+</style>
+
+<script>
+(function(){
+  const KEY = 'datad_install_dismissed_at';
+  const banner = document.getElementById('installBanner');
+  const titleEl = document.getElementById('installBannerTitle');
+  const subEl = document.getElementById('installBannerSub');
+  const actionBtn = document.getElementById('installBannerAction');
+  const closeBtn = document.getElementById('installBannerDismiss');
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  const ua = window.navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes('Macintosh') && 'ontouchend' in document);
+  const isSafari = isIOS && /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+
+  function recentlyDismissed(){
+    const at = Number(localStorage.getItem(KEY) || 0);
+    return at && (Date.now() - at) < 1000 * 60 * 60 * 24 * 14; // 14 days
+  }
+
+  function dismiss(){
+    banner.hidden = true;
+    localStorage.setItem(KEY, String(Date.now()));
+  }
+
+  closeBtn.addEventListener('click', dismiss);
+
+  if (isStandalone || recentlyDismissed()) {
+    // already installed or user said no recently — stay quiet
+  } else if (isIOS) {
+    if (isSafari) {
+      titleEl.textContent = 'Install DATAD';
+      subEl.textContent = 'Tap the Share icon, then "Add to Home Screen".';
+      actionBtn.textContent = 'Got it';
+      actionBtn.addEventListener('click', dismiss);
+      setTimeout(() => { banner.hidden = false; }, 1200);
+    }
+    // non-Safari iOS browsers can't install PWAs — say nothing
+  } else {
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      banner.hidden = false;
+    });
+    actionBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) { dismiss(); return; }
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      banner.hidden = true;
+      localStorage.setItem(KEY, String(Date.now()));
+    });
+    window.addEventListener('appinstalled', dismiss);
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
