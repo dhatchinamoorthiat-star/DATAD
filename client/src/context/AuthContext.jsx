@@ -1,5 +1,6 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import { registerUnauthorizedHandler } from '../api/axios';
 
 const AuthContext = createContext(null);
 
@@ -47,6 +48,14 @@ export function AuthProvider({ children }) {
     toRemove.forEach((k) => localStorage.removeItem(k));
     setToken(null);
   };
+
+  // Any 401 on a non-auth endpoint means the 7-day JWT expired (or was
+  // revoked) — drop the session so the app falls back to the login route
+  // instead of rendering logged-in against an API that rejects every call.
+  useEffect(() => {
+    registerUnauthorizedHandler(logout);
+    return () => registerUnauthorizedHandler(null);
+  });
 
   const switchProgram = async (slug) => {
     const { default: axios } = await import('../api/axios');

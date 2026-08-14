@@ -200,7 +200,14 @@ export default function SearchPage() {
           {pinned.length > 0 && (
             <Section title="Pinned" icon={Pin}>
               {pinned.map((p) => (
-                <ResultItem key={p.resultId || p.id} item={p} onAction={handleNavigate} query={query} pinned />
+                <ResultItem
+                  key={p.resultId || p.id}
+                  item={p}
+                  onAction={handleNavigate}
+                  query={query}
+                  pinned
+                  onPin={handlePin}
+                />
               ))}
             </Section>
           )}
@@ -259,47 +266,69 @@ export default function SearchPage() {
       {/* ── Results ── */}
       {results.length > 0 && (
         <div className="space-y-2">
-          {results.map((item) => {
-            const pinStatus = isPinned(item.id);
-            return (
-              <button
-                key={item.id || `${item.providerId}-${item.title}`}
-                onClick={() => handleNavigate(item)}
-                className="group flex w-full items-center gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-indigo-100 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-900/50"
-              >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-                  {getIcon(item)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                    {query ? highlight(item.title, query) : item.title}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {item.subtitle && <span>{highlight(item.subtitle, query)} · </span>}
-                    <span className="text-[10px] uppercase tracking-wider text-gray-300">{item.category || item.providerLabel}</span>
-                  </p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handlePin(item); }}
-                    className={`text-gray-300 hover:text-amber-500 transition-colors ${pinStatus ? 'text-amber-500' : 'opacity-0 group-hover:opacity-100'}`}
-                    title={pinStatus ? 'Unpin' : 'Pin'}
-                  >
-                    {pinStatus ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
-                  </button>
-                  {item.matchType === 'exact' && (
-                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-                      Exact
-                    </span>
-                  )}
-                  {item.url && <ArrowRight className="h-3.5 w-3.5 text-gray-300" />}
-                </div>
-              </button>
-            );
-          })}
+          {results.map((item) => (
+            <ResultItem
+              key={item.id || `${item.providerId}-${item.title}`}
+              item={item}
+              onAction={handleNavigate}
+              query={query}
+              pinned={isPinned(item.id)}
+              onPin={handlePin}
+            />
+          ))}
         </div>
       )}
     </Page>
+  );
+}
+
+// Shared by the results list and the Pinned dashboard section, which is why it
+// takes `pinned` as a prop rather than calling isPinned itself: the dashboard
+// section already knows every item in it is pinned.
+function ResultItem({ item, onAction, query, pinned, onPin }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onAction(item)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onAction(item);
+        }
+      }}
+      className="group flex w-full cursor-pointer items-center gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-indigo-100 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-900/50"
+    >
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+        {getIcon(item)}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
+          {query ? highlight(item.title, query) : item.title}
+        </p>
+        <p className="text-xs text-gray-400 mt-0.5">
+          {item.subtitle && <span>{highlight(item.subtitle, query)} · </span>}
+          <span className="text-[10px] uppercase tracking-wider text-gray-300">{item.category || item.providerLabel}</span>
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {onPin && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPin(item); }}
+            className={`text-gray-300 hover:text-amber-500 transition-colors ${pinned ? 'text-amber-500' : 'opacity-0 group-hover:opacity-100'}`}
+            title={pinned ? 'Unpin' : 'Pin'}
+          >
+            {pinned ? <Pin className="h-3.5 w-3.5" /> : <PinOff className="h-3.5 w-3.5" />}
+          </button>
+        )}
+        {item.matchType === 'exact' && (
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+            Exact
+          </span>
+        )}
+        {item.url && <ArrowRight className="h-3.5 w-3.5 text-gray-300" />}
+      </div>
+    </div>
   );
 }
 

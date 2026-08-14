@@ -31,6 +31,15 @@ const settle = (config) => {
   }
 };
 
+// The 401 handler has to clear auth *through* AuthContext, not by writing to
+// localStorage directly — otherwise the provider keeps its stale token in
+// React state and the app renders as logged-in against an API that refuses it.
+// AuthProvider registers its logout here on mount.
+let onUnauthorized = null;
+export const registerUnauthorizedHandler = (fn) => {
+  onUnauthorized = fn;
+};
+
 api.interceptors.response.use(
   (res) => {
     settle(res.config);
@@ -38,12 +47,19 @@ api.interceptors.response.use(
   },
   (err) => {
     settle(err.config);
-    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+
+    const status = err.response?.status;
+    const url = err.config?.url || '';
+    // A 401 from /auth/* is a failed login or reset — that's the endpoint
+    // answering the question it was asked, not an expired session.
+    const isAuthRequest = url.includes('/auth/');
+    const isLoginPage = window.location.pathname === '/login';
+
+    if (status === 401 && !isAuthRequest && !isLoginPage) {
+      onUnauthorized?.();
     }
+
     return Promise.reject(err);
   }
 );
-
 export default api;
