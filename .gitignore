@@ -23,3 +23,7 @@ odysseus/
 *.backup
 *.notifications-backup
 *.zip
+
+# Credential bundle written by `node scripts/datad.mjs export`. Contains live
+# Mongo, Brevo and Cloudinary credentials — must never reach the repo.
+datad-secrets.bundle.json

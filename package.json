@@ -1,5 +1,10 @@
 {
   "devDependencies": {
     "playwright": "^1.61.1"
+  },
+  "scripts": {
+    "setup": "node scripts/datad.mjs setup",
+    "doctor": "node scripts/datad.mjs doctor",
+    "export-env": "node scripts/datad.mjs export"
   }
 }
