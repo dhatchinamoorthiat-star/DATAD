@@ -20,8 +20,9 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const mongoose = require('mongoose');
+const { connectTestDb, disconnectTestDb } = require('./helpers/testDb');
 
-const HAS_DB = Boolean(process.env.MONGODB_URI);
+const HAS_DB = Boolean(process.env.MONGODB_TEST_URI || process.env.MONGODB_URI);
 const d = HAS_DB ? describe : describe.skip;
 
 let ChatMessage, Conversation, daxService;
@@ -35,7 +36,7 @@ function newUser() {
 
 beforeAll(async () => {
   if (!HAS_DB) return;
-  await mongoose.connect(process.env.MONGODB_URI);
+  await connectTestDb();
   ChatMessage = require('../models/ChatMessage');
   Conversation = require('../models/Conversation');
   daxService = require('../ai/daxService');
@@ -45,7 +46,7 @@ afterAll(async () => {
   if (!HAS_DB) return;
   await ChatMessage.deleteMany({ user: { $in: users } });
   await Conversation.deleteMany({ user: { $in: users } });
-  await mongoose.disconnect();
+  await disconnectTestDb();
 }, 30000);
 
 d('Conversations', () => {

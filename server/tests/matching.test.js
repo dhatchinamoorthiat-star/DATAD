@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 
 const { scoreContext, inputsHash } = require('../ai/matching/matchingEngine');
 const engine = require('../ai/matching');
+const { connectTestDb, disconnectTestDb } = require('./helpers/testDb');
 
 // A well-qualified helper for a coding_help opportunity.
 const strongCtx = {
@@ -113,7 +114,7 @@ describe('matching — inputsHash (pure)', () => {
   });
 });
 
-const HAS_DB = Boolean(process.env.MONGODB_URI);
+const HAS_DB = Boolean(process.env.MONGODB_TEST_URI || process.env.MONGODB_URI);
 const d = HAS_DB ? describe : describe.skip;
 
 d('matching — cache + invalidation (DB)', () => {
@@ -122,7 +123,7 @@ d('matching — cache + invalidation (DB)', () => {
   let opp;
 
   beforeAll(async () => {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await connectTestDb();
     MatchScore = require('../models/MatchScore');
     Opportunity = require('../models/Opportunity');
     await MatchScore.syncIndexes();
@@ -135,7 +136,7 @@ d('matching — cache + invalidation (DB)', () => {
   afterAll(async () => {
     await MatchScore.deleteMany({ user: userId });
     await Opportunity.deleteMany({ _id: opp._id });
-    await mongoose.disconnect();
+    await disconnectTestDb();
   });
 
   test('scoreAndCache writes a MatchScore row; second read hits the cache', async () => {

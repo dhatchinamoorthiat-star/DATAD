@@ -28,24 +28,29 @@ describe('NVIDIA NIM Migration', () => {
     });
 
     test('gets a specific model', () => {
-      const model = registry.getModel('meta/llama-3.3-70b-instruct');
+      // Model names and field names both track the 2026-07-27 registry trim
+      // (see modelRegistry.js): only 7 NVIDIA models resolved live, and the
+      // shape uses latencyScore/costScore/supportsVision/supportsEmbedding.
+      const model = registry.getModel('nvidia/nemotron-3-super-120b-a12b');
       expect(model).not.toBeNull();
       expect(model.provider).toBe('nvidia');
       expect(model.reasoningScore).toBeDefined();
       expect(model.codingScore).toBeDefined();
       expect(model.writingScore).toBeDefined();
-      expect(model.speed).toBeDefined();
-      expect(model.cost).toBeDefined();
+      expect(model.latencyScore).toBeDefined();
+      expect(model.costScore).toBeDefined();
       expect(model.contextWindow).toBeDefined();
-      expect(model.visionSupport).toBeDefined();
-      expect(model.embeddingSupport).toBeDefined();
+      expect(model.supportsVision).toBeDefined();
+      expect(model.supportsEmbedding).toBeDefined();
       expect(model.availability).toBeDefined();
     });
 
     test('scores models for reasoning capability', () => {
       const ranked = registry.rankModelsForCapability('reasoning', 3);
       expect(ranked.length).toBe(3);
-      expect(ranked[0].score).toBeGreaterThanOrEqual(ranked[1].score);
+      // capabilityScore is the ranking key, not score — see rankModelsForCapability.
+      expect(ranked[0].capabilityScore).toBeGreaterThanOrEqual(ranked[1].capabilityScore);
+      expect(ranked[1].capabilityScore).toBeGreaterThanOrEqual(ranked[2].capabilityScore);
     });
 
     test('finds best model for reasoning', () => {
@@ -68,10 +73,15 @@ describe('NVIDIA NIM Migration', () => {
       expect(ranked[0].score).toBeGreaterThanOrEqual(ranked[1].score);
     });
 
-    test('embedding model has embeddingSupport true', () => {
-      const model = registry.getModel('nvidia/nv-embedqa-e5-v5');
-      expect(model).not.toBeNull();
-      expect(model.embeddingSupport).toBe(true);
+    test('registry exposes no embedding model; embeddings run outside it', () => {
+      // nvidia/nv-embedqa-e5-v5 did not survive the 2026-07-27 live sweep, and
+      // nothing replaced it, so the registry currently carries no embedding
+      // model. Embeddings do not go through the registry at all — ai/embeddings
+      // /embed.js calls NVIDIA directly and falls back to OpenAI, then TF-IDF.
+      // Asserting this pins the split: if an embedding model is ever added to
+      // the registry, this test fails and embed.js should be routed through it.
+      expect(registry.getModel('nvidia/nv-embedqa-e5-v5')).toBeNull();
+      expect(registry.listAllModels().filter((m) => m.supportsEmbedding)).toHaveLength(0);
     });
   });
 
@@ -186,14 +196,38 @@ describe('NVIDIA NIM Migration', () => {
       expect(provider.name).toBe('nvidia');
     });
 
-    test('getProvider returns ollama when NVIDIA_API_KEY is not set', () => {
-      const key = process.env.NVIDIA_API_KEY;
-      delete process.env.NVIDIA_API_KEY;
-      factory.clearCache();
-      const provider = factory.getProvider();
-      expect(provider.name).toBe('ollama');
-      process.env.NVIDIA_API_KEY = key;
-      factory.clearCache();
+    test('getProvider falls back to ollama only when no cloud key is set', () => {
+      // Ollama is the last resort in PROVIDER_ORDER, not the immediate fallback,
+      // so every cloud provider has to be unavailable for this to be
+      // deterministic — otherwise the result depends on which keys happen to be
+      // in the dev .env (with ANTHROPIC_API_KEY present this returns
+      // 'anthropic', which is correct behaviour).
+      //
+      // Two different sources have to be cleared. Most providers check the
+      // config captured by config/automation.js at require time, so deleting
+      // process.env alone does nothing. NvidiaProvider is the exception: its
+      // isAvailable() calls nvidiaKeys(), which reads process.env live to
+      // support key rotation. Clear both.
+      const cfg = require('../config/automation');
+      const saved = {};
+      Object.keys(cfg.providers).forEach((name) => {
+        if (name === 'ollama' || !cfg.providers[name] || typeof cfg.providers[name] !== 'object') return;
+        saved[name] = cfg.providers[name].apiKey;
+        cfg.providers[name].apiKey = undefined;
+      });
+
+      const nvidiaEnvKeys = Object.keys(process.env).filter((k) => /^NVIDIA_API_KEY/.test(k));
+      const savedEnv = {};
+      nvidiaEnvKeys.forEach((k) => { savedEnv[k] = process.env[k]; delete process.env[k]; });
+
+      try {
+        factory.clearCache();
+        expect(factory.getProvider().name).toBe('ollama');
+      } finally {
+        Object.keys(saved).forEach((name) => { cfg.providers[name].apiKey = saved[name]; });
+        nvidiaEnvKeys.forEach((k) => { process.env[k] = savedEnv[k]; });
+        factory.clearCache();
+      }
     });
   });
 
@@ -296,9 +330,11 @@ describe('NVIDIA NIM Migration', () => {
       latencyOptimizer = require('../ai/runtime-v2/latencyOptimizer');
     });
 
-    test('LATENCY_PROFILES includes nvidia', () => {
-      expect(latencyOptimizer.LATENCY_PROFILES.nvidia).toBeDefined();
-      expect(latencyOptimizer.LATENCY_PROFILES.nvidia.tier).toBe('fast');
+    test('PROVIDER_LATENCY_PROFILES includes nvidia', () => {
+      // Renamed from LATENCY_PROFILES when per-model profiles were split out
+      // into MODEL_LATENCY_PROFILES.
+      expect(latencyOptimizer.PROVIDER_LATENCY_PROFILES.nvidia).toBeDefined();
+      expect(latencyOptimizer.PROVIDER_LATENCY_PROFILES.nvidia.tier).toBe('fast');
     });
 
     test('estimateLatency for nvidia returns 600ms', () => {

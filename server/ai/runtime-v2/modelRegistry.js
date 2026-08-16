@@ -573,6 +573,12 @@ function scoreModelForIntent(modelKey, intent) {
   return Math.round(score);
 }
 
+// Ranked by `capabilityScore`, NOT `score`. The two differ deliberately:
+// `capabilityScore` applies a 0.3 penalty to models that do not declare the
+// capability, so it is the one that reflects "can this model actually do the
+// job"; `score` is a plain weighted blend kept for diagnostics. The returned
+// list is therefore monotonic in `capabilityScore` and unordered in `score` —
+// sort or assert on `capabilityScore`.
 function rankModelsForCapability(capability, count = 3) {
   const scored = Object.keys(MODELS).map((key) => ({
     key,
