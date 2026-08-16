@@ -51,6 +51,7 @@ router.put('/meta', async (req, res, next) => {
 
 const SubscriptionRequest = require('../models/SubscriptionRequest');
 const User = require('../models/User');
+const notificationService = require('../notifications/NotificationService');
 
 const { TIERS } = require('../subscription/tierHierarchy');
 
@@ -63,18 +64,40 @@ const oneMonthFromNow = () => {
   return d;
 };
 const sevenDaysFromNow = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+const { expiryFor, monthlyEquivalent } = require('../subscription/pricing');
 
 // List all subscription requests
 router.get('/subscriptions', async (req, res, next) => {
   try {
     const status = req.query.status; // pending | approved | rejected | (all)
     const filter = status ? { status } : {};
+    // Pending queue is worked oldest-first (FIFO) so nobody waits longer than necessary.
+    const sort = status === 'pending' ? { createdAt: 1 } : { createdAt: -1 };
     const requests = await SubscriptionRequest.find(filter)
-      .sort({ createdAt: -1 })
+      .sort(sort)
       .limit(200)
       .populate('user', 'name email tier')
       .lean();
-    res.json(requests);
+
+    // Flag payment refs that were already used on a different, already-approved
+    // request — a reused/stolen UTR is the main fraud risk in a manual-UPI flow.
+    const refs = requests.map((r) => r.paymentRef);
+    const reused = refs.length
+      ? await SubscriptionRequest.find({
+          paymentRef: { $in: refs },
+          status: 'approved',
+        }).select('paymentRef user').lean()
+      : [];
+    const approvedRefOwners = new Map(); // paymentRef -> user id string that already used it
+    reused.forEach((r) => approvedRefOwners.set(r.paymentRef, String(r.user)));
+
+    const withFlags = requests.map((r) => {
+      const owner = approvedRefOwners.get(r.paymentRef);
+      const duplicateRef = owner && owner !== String(r.user?._id || r.user);
+      return duplicateRef ? { ...r, duplicateRef: true } : r;
+    });
+
+    res.json(withFlags);
   } catch (err) { next(err); }
 });
 
@@ -102,7 +125,8 @@ router.patch('/subscriptions/users/:id/tier', async (req, res, next) => {
     if (tierExpiresAt) patch.tierExpiresAt = new Date(tierExpiresAt);
     else if (tier === 'free') patch.tierExpiresAt = null; // free never expires
     else if (tier === 'trial') patch.tierExpiresAt = sevenDaysFromNow();
-    else patch.tierExpiresAt = oneMonthFromNow(); // pro/max default to one month
+    else if (tier === 'placement') patch.tierExpiresAt = expiryFor('placement', 'onetime');
+    else patch.tierExpiresAt = oneMonthFromNow(); // manual Pro grant defaults to one month
 
     const user = await User.findByIdAndUpdate(req.params.id, { $set: patch }, { new: true })
       .select('name email tier tierExpiresAt subscriptionRef')
@@ -144,9 +168,27 @@ router.patch('/subscriptions/:id/review', async (req, res, next) => {
 
     // If approved, upgrade the user's tier automatically
     if (action === 'approve') {
-      const expiresAt = oneMonthFromNow(); // paid plans run for exactly one month
+      // Duration follows what was actually bought — a yearly Pro purchase used
+      // to be granted one month, and the Placement Pass runs three.
+      const expiresAt = expiryFor(sr.tier, sr.billing);
       await User.findByIdAndUpdate(sr.user._id, {
         $set: { tier: sr.tier, subscriptionRef: sr.paymentRef, tierExpiresAt: expiresAt },
+      });
+      await notificationService.send(sr.user._id, {
+        type: 'billing',
+        title: 'Subscription activated! 🎉',
+        body: `Your ${sr.tier} plan is now active — valid until ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+        link: '/subscribe',
+      });
+    } else {
+      // Payment rejected — notify user
+      await notificationService.send(sr.user._id, {
+        type: 'billing',
+        title: 'Payment review update',
+        body: reviewNote
+          ? `Your payment was not approved: ${reviewNote}`
+          : 'Your payment request was not approved. Please submit a new payment reference.',
+        link: '/subscribe',
       });
     }
 
@@ -204,8 +246,8 @@ router.get('/subscriptions/analytics', async (req, res, next) => {
           activeCount[user.tier]++;
 
           // Estimate MRR
-          if (user.tier === 'pro') estimatedMrr += proAnnualPrice / 12;
-          if (user.tier === 'max') estimatedMrr += maxAnnualPrice / 12;
+          if (user.tier === 'pro') estimatedMrr += monthlyEquivalent('pro', 'yearly');
+          if (user.tier === 'placement') estimatedMrr += monthlyEquivalent('placement', 'onetime');
         }
       }
 
@@ -345,6 +387,169 @@ router.post('/programs/:approvalId/reject', async (req, res, next) => {
 });
 
 
-// Public meta — any member can read the placement date for the countdown.
+// ── Placement Outcome Management (Outcome Vault) ─────────────────────────
+const PlacementOutcome = require('../models/PlacementOutcome');
+
+// GET /admin/outcomes — list all outcomes, with optional filters
+router.get('/outcomes', async (req, res, next) => {
+  try {
+    const { company, outcome, verified, userId, limit = 100 } = req.query;
+    const filter = {};
+    if (company) filter.company = new RegExp(company, 'i');
+    if (outcome) filter.outcome = outcome;
+    if (verified === 'true') filter.verified = true;
+    if (verified === 'false') filter.verified = false;
+    if (userId) filter.user = userId;
+
+    const outcomes = await PlacementOutcome.find(filter)
+      .sort({ placementDate: -1 })
+      .limit(Math.min(Number(limit), 500))
+      .populate('user', 'name email rollNumber')
+      .lean();
+
+    res.json({ outcomes, count: outcomes.length });
+  } catch (err) { next(err); }
+});
+
+// POST /admin/outcomes — create a placement outcome record
+router.post('/outcomes', async (req, res, next) => {
+  try {
+    const { userId, company, role, stageReached, outcome, offerAccepted, package: pkg, notes, drive } = req.body;
+
+    if (!userId || !company || !role || !stageReached || !outcome) {
+      return res.status(400).json({ message: 'userId, company, role, stageReached, and outcome are required' });
+    }
+
+    const record = await PlacementOutcome.create({
+      user: userId,
+      company,
+      role,
+      stageReached,
+      outcome,
+      offerAccepted: offerAccepted || false,
+      package: pkg || '',
+      notes: notes || '',
+      drive: drive || null,
+      verified: true,
+      verifiedBy: req.user.userId,
+    });
+
+    res.status(201).json({ outcome: record });
+  } catch (err) { next(err); }
+});
+
+// PATCH /admin/outcomes/:id — update a placement outcome
+router.patch('/outcomes/:id', async (req, res, next) => {
+  try {
+    const allowed = ['stageReached', 'outcome', 'offerAccepted', 'package', 'notes', 'verified'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    if (req.body.verified === true) {
+      update.verifiedBy = req.user.userId;
+    }
+
+    const record = await PlacementOutcome.findByIdAndUpdate(
+      req.params.id,
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+    if (!record) return res.status(404).json({ message: 'Outcome not found' });
+    res.json({ outcome: record });
+  } catch (err) { next(err); }
+});
+
+// ── Cohort Intelligence ──────────────────────────────────────────────────
+const UserMemory = require('../models/UserMemory');
+const PivotPlan = require('../models/PivotPlan');
+const AiUsage = require('../models/AiUsage');
+
+// GET /admin/insights/cohort — aggregate cohort intelligence
+router.get('/insights/cohort', async (req, res, next) => {
+  try {
+    const [readiness, skillGaps, activity, plans] = await Promise.all([
+      // Average readiness score across students
+      UserMemory.aggregate([
+        { $match: { readinessScore: { $exists: true } } },
+        { $group: { _id: null, avg: { $avg: '$readinessScore' }, count: { $sum: 1 }, max: { $max: '$readinessScore' }, min: { $min: '$readinessScore' } } },
+      ]),
+      // Most common strengths and weaknesses across the cohort
+      UserMemory.aggregate([
+        { $project: { strengths: 1, weaknesses: 1 } },
+        { $unwind: { path: '$strengths', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: '$strengths', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 },
+      ]),
+      // Daily active AI users
+      AiUsage.aggregate([
+        { $group: { _id: '$dateKey', users: { $addToSet: '$user' }, totalCredits: { $sum: '$creditsUsed' } } },
+        { $sort: { _id: -1 } },
+        { $limit: 30 },
+      ]),
+      // Users with active skill roadmaps
+      PivotPlan.aggregate([
+        { $match: { 'skillGaps.0': { $exists: true } } },
+        { $group: { _id: null, count: { $sum: 1 }, avgGaps: { $avg: { $size: '$skillGaps' } } } },
+      ]),
+    ]);
+
+    res.json({
+      readiness: readiness[0] || null,
+      topStrengths: skillGaps.filter((s) => s._id).slice(0, 10),
+      topGaps: skillGaps.filter((s) => !s._id).slice(0, 10),
+      activity: activity.slice(0, 14),
+      roadmapAdoption: plans[0] || null,
+    });
+  } catch (err) { next(err); }
+});
+
+// GET /admin/outcomes/stats — aggregate outcome statistics
+router.get('/outcomes/stats', async (req, res, next) => {
+  try {
+    const stats = await PlacementOutcome.aggregate([
+      {
+        $group: {
+          _id: '$company',
+          total: { $sum: 1 },
+          offers: { $sum: { $cond: [{ $eq: ['$outcome', 'offer_received'] }, 1, 0] } },
+          rejections: { $sum: { $cond: [{ $eq: ['$outcome', 'rejected'] }, 1, 0] } },
+          inProgress: { $sum: { $cond: [{ $eq: ['$outcome', 'in_progress'] }, 1, 0] } },
+        },
+      },
+      { $sort: { total: -1 } },
+      { $limit: 50 },
+    ]);
+    res.json({ stats });
+  } catch (err) { next(err); }
+});
+
+// ── Institutional Dashboard ──────────────────────────────────────────────
+
+// GET /admin/institutions — per-institution readiness and analytics
+router.get('/institutions', async (req, res, next) => {
+  try {
+    const userPipeline = [
+      { $group: { _id: '$institution', count: { $sum: 1 } } },
+      { $match: { _id: { $ne: null, $ne: '' } } },
+      { $sort: { count: -1 } },
+    ];
+    const usersByInst = await User.aggregate(userPipeline);
+
+    // Readiness by institution
+    const readinessByInst = await User.aggregate([
+      { $match: { institution: { $ne: null, $ne: '' } } },
+      { $lookup: { from: 'usermemories', localField: '_id', foreignField: 'user', as: 'memory' } },
+      { $unwind: { path: '$memory', preserveNullAndEmptyArrays: true } },
+      { $match: { 'memory.readinessScore': { $exists: true } } },
+      { $group: { _id: '$institution', avgReadiness: { $avg: '$memory.readinessScore' }, count: { $sum: 1 } } },
+      { $sort: { avgReadiness: -1 } },
+    ]);
+
+    res.json({ institutions: usersByInst, readiness: readinessByInst });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 

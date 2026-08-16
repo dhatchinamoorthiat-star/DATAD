@@ -9,6 +9,8 @@ const daxService = require('../ai/daxService');
 const proposalService = require('../ai/proposalService');
 const UserModelPref = require('../models/UserModelPref');
 const { getAvailableModels, getDefaultModelId, parseModelId } = require('../ai/modelList');
+const { CHAT_QUOTAS } = require('../subscription/subscriptionService');
+const ChatMessage = require('../models/ChatMessage');
 
 router.use(verifyToken);
 router.use(refreshTier);
@@ -56,7 +58,7 @@ router.post('/', async (req, res, next) => {
     if (feature && !canAccessFeature(req.user, feature)) {
       const minTier = getMinimumTier(feature);
       return res.status(403).json({
-        message: `This feature requires ${minTier === 'max' ? 'Max' : minTier === 'pro' ? 'Pro' : minTier === 'trial' ? 'a trial' : 'an upgraded'} plan.`,
+        message: `This feature requires ${minTier === 'placement' ? 'the Placement Pass' : minTier === 'pro' ? 'Pro' : minTier === 'trial' ? 'a trial' : 'an upgraded'} plan.`,
         requiredTier: minTier,
         upgradeUrl: '/subscribe',
       });

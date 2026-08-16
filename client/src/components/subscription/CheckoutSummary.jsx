@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Loader2, ArrowLeft, Copy, ExternalLink } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { QRCodeSVG } from 'qrcode.react';
 import { submitPaymentRef, activateTrial } from '../../api/subscription';
-import { gstOf, totalWithGst, formatPrice, formatPriceDecimal, yearlySavings, monthlyEquivalent, dailyEquivalent } from '../../utils/pricing';
+import { formatPrice, formatPriceDecimal, yearlySavings, monthlyEquivalent, dailyEquivalent } from '../../utils/pricing';
 
 const UPI_VPA  = import.meta.env.VITE_UPI_VPA  || 'datad@upi';
 const UPI_NAME = import.meta.env.VITE_UPI_NAME || 'DATAD';
@@ -28,12 +28,15 @@ function yearlyRenewalDate() {
 
 export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
   const [step, setStep] = useState('summary');
-  const isYearly = billing === 'yearly';
-  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-  const gst = gstOf(price);
-  const total = totalWithGst(price);
-  const savings = isYearly && plan.monthlyPrice > 0 ? yearlySavings(plan.id) : 0;
-  const monthsFree = isYearly && plan.monthlyPrice > 0 ? Math.round((savings / plan.monthlyPrice) * 10) / 10 : 0;
+  // The Placement Pass is a one-time purchase, so the monthly/yearly toggle
+  // does not apply to it.
+  const isOneTime = Boolean(plan.oneTime);
+  const isYearly = !isOneTime && billing === 'yearly';
+  const price = isOneTime ? plan.monthlyPrice : (billing === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice);
+  // No GST: DATAD is not GST-registered, so the listed price is the total.
+  const total = price;
+  const savings = isYearly && plan.id === 'pro' ? yearlySavings(plan.id) : 0;
+  const monthsFree = isYearly && plan.id === 'pro' ? Math.round((savings / plan.monthlyPrice) * 10) / 10 : 0;
 
   if (plan.id === 'trial' || plan.id === 'free') {
     return (
@@ -74,7 +77,7 @@ export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
         <PriceSummary
           plan={plan}
           price={price}
-          gst={gst}
+          isOneTime={isOneTime}
           total={total}
           savings={savings}
           monthsFree={monthsFree}
@@ -87,7 +90,7 @@ export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
         <PaymentPanel
           plan={plan}
           price={price}
-          gst={gst}
+          isOneTime={isOneTime}
           total={total}
           isYearly={isYearly}
           onClose={onClose}
@@ -99,8 +102,9 @@ export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
   );
 }
 
-function PriceSummary({ plan, price, gst, total, savings, monthsFree, isYearly, onClose, onContinue }) {
+function PriceSummary({ plan, price, total, savings, monthsFree, isYearly, isOneTime, onClose, onContinue }) {
   const meq = isYearly ? monthlyEquivalent(price) : 0;
+  const cycleLabel = isOneTime ? 'One-time' : isYearly ? 'Yearly' : 'Monthly';
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
       <motion.div
@@ -114,7 +118,7 @@ function PriceSummary({ plan, price, gst, total, savings, monthsFree, isYearly, 
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-gray-400">Checkout</p>
-            <p className="text-base font-semibold text-gray-900 dark:text-white">{plan.label} — {isYearly ? 'Yearly' : 'Monthly'}</p>
+            <p className="text-base font-semibold text-gray-900 dark:text-white">{plan.label} — {cycleLabel}</p>
           </div>
           <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800">
             <X className="h-5 w-5" />
@@ -125,24 +129,18 @@ function PriceSummary({ plan, price, gst, total, savings, monthsFree, isYearly, 
           <div className="space-y-2 rounded-xl bg-gray-50 p-4 text-sm dark:bg-gray-800/50">
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Plan</span>
-              <span className="font-semibold text-gray-900 dark:text-white">{plan.label} {isYearly ? 'Yearly' : 'Monthly'}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">{plan.label} {cycleLabel}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Billing</span>
-              <span className="font-semibold text-gray-900 dark:text-white">{isYearly ? 'Annual' : 'Monthly'}</span>
+              <span className="font-semibold text-gray-900 dark:text-white">{isOneTime ? `${plan.durationMonths || 3} months, one payment` : isYearly ? 'Annual' : 'Monthly'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500 dark:text-gray-400">Price</span>
               <span className="font-semibold text-gray-900 dark:text-white">
-                {formatPrice(price)}{isYearly ? '/year' : '/month'}
+                {formatPrice(price)}{isOneTime ? '' : isYearly ? '/year' : '/month'}
               </span>
             </div>
-            {gst > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">GST (18%)</span>
-                <span className="font-semibold text-gray-900 dark:text-white">{formatPriceDecimal(gst)}</span>
-              </div>
-            )}
             {savings > 0 && (
               <div className="flex justify-between text-success-600 dark:text-success-400">
                 <span>Yearly savings</span>
@@ -170,7 +168,7 @@ function PriceSummary({ plan, price, gst, total, savings, monthsFree, isYearly, 
 
           <div className="rounded-xl bg-indigo-50 px-4 py-3 dark:bg-indigo-950/20">
             <p className="text-center text-xs text-indigo-600 dark:text-indigo-400">
-              Prices shown are exclusive of applicable GST.
+              This is the full amount payable — no additional taxes or fees.
             </p>
           </div>
 
@@ -188,13 +186,13 @@ function PriceSummary({ plan, price, gst, total, savings, monthsFree, isYearly, 
   );
 }
 
-function PaymentPanel({ plan, price, gst, total, isYearly, onClose, onBack, onSuccess }) {
+function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack, onSuccess }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
-  const upiUrl = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${total}&tn=${encodeURIComponent(`DATAD ${plan.label} ${isYearly ? 'Yearly' : 'Monthly'}`)}&cu=INR`;
+  const upiUrl = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${total}&tn=${encodeURIComponent(`DATAD ${plan.label}${isOneTime ? '' : isYearly ? ' Yearly' : ' Monthly'}`)}&cu=INR`;
 
   const onSubmit = async ({ paymentRef, upiId, note }) => {
     try {
-      await submitPaymentRef({ tier: plan.id, paymentRef, upiId, note, billing: isYearly ? 'yearly' : 'monthly', amount: total });
+      await submitPaymentRef({ tier: plan.id, paymentRef, upiId, note, billing: isOneTime ? 'onetime' : isYearly ? 'yearly' : 'monthly', amount: total });
       toast.success('Payment reference submitted! We will activate your plan within 24 hours.');
       onSuccess(plan);
     } catch (err) {
@@ -251,10 +249,6 @@ function PaymentPanel({ plan, price, gst, total, isYearly, onClose, onBack, onSu
             <div className="flex justify-between py-1">
               <span className="text-gray-500">Subtotal</span>
               <span className="font-medium text-gray-900 dark:text-white">{formatPrice(price)}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span className="text-gray-500">GST (18%)</span>
-              <span className="font-medium text-gray-900 dark:text-white">{formatPriceDecimal(gst)}</span>
             </div>
             <div className="flex justify-between border-t border-gray-200 py-1 font-semibold dark:border-gray-700">
               <span className="text-gray-900 dark:text-white">Total</span>

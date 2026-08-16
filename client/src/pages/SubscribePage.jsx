@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CheckCircle2, Crown, Sparkles, Zap, Shield, CreditCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { useAuth } from '../context/AuthContext';
 import { activateTrial, getSubscriptionStatus } from '../api/subscription';
 import BillingToggle from '../components/subscription/BillingToggle';
@@ -172,23 +172,23 @@ export default function SubscribePage() {
             </p>
           </motion.div>
         )}
-        {(currentTier === 'pro' || currentTier === 'max') && (
+        {(currentTier === 'pro' || currentTier === 'placement') && (
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             className={`mb-10 rounded-2xl border px-6 py-5 text-center ${
-              currentTier === 'max'
+              currentTier === 'placement'
                 ? 'border-purple-200 bg-purple-50 dark:border-purple-800 dark:bg-purple-950/20'
                 : 'border-amber-200 bg-amber-50 dark:border-amber-800/60 dark:bg-amber-950/15'
             }`}
           >
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold text-white ${
-                currentTier === 'max' ? 'bg-purple-600' : 'bg-amber-500'
+                currentTier === 'placement' ? 'bg-purple-600' : 'bg-amber-500'
               }`}
             >
-              {currentTier === 'max' ? <Crown className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
-              {currentTier.toUpperCase()} active
+              {currentTier === 'placement' ? <Crown className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
+              {currentTier === 'placement' ? 'PLACEMENT PASS' : 'PRO'} active
             </span>
             <p className="mt-3 text-sm font-medium text-gray-800 dark:text-gray-200">
               {tierExpiresAt
@@ -199,7 +199,8 @@ export default function SubscribePage() {
             </p>
             {currentTier === 'pro' && (
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Want more? Upgrade to Max for premium AI models and priority queue.
+                Placement season coming up? The Placement Pass adds ATS scoring, the
+                interview simulator and company research for three months.
               </p>
             )}
           </motion.div>
@@ -267,7 +268,7 @@ export default function SubscribePage() {
               Secure & transparent
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Payments processed securely via UPI. All prices exclude 18% GST. Your data is encrypted
+              Payments processed securely via UPI. Prices shown are the full amount payable. Your data is encrypted
               and never shared. Cancel anytime, no questions asked.
             </p>
             <div className="flex items-center gap-6 text-xs text-gray-400">

@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <ul className="ml-5 list-disc space-y-1">
           <li><strong>MongoDB Atlas</strong> — your account and content (text data).</li>
           <li><strong>Cloudinary</strong> — photos you upload.</li>
-          <li><strong>Resend</strong> — used only to send you the welcome email and batch announcements; your email is shared with Resend solely to deliver those.</li>
+          <li><strong>Brevo</strong> — used only to send you account emails (address confirmation, password reset, welcome) and batch announcements; your email address is shared with Brevo solely to deliver those.</li>
         </ul>
       </LegalSection>
 

@@ -46,21 +46,27 @@ const { computeDailyCaseStreak } = require('../utils/streak');
 // non-streaming chat paths.
 const ORIGIN_QUESTION_RE =
   /\b(who\s+(is|are|was)?\s*(your|dax'?s)\s+(creator|founder|maker|owner|developer)s?\b|who\s+(created|made|built|trained|founded|developed|owns)\s+(you|dax)\b|(creator|founder)s?\s+of\s+dax\b)/i;
-const ORIGIN_ANSWER = `I was created by **Dhatchina Moorthi**, also known as **Digital Don**—an entrepreneur, technology builder, and AI enthusiast from Tamil Nadu, India.
+const ORIGIN_ANSWER = `
+## The Visionary Behind Dax
 
-Digital Don is passionate about building intelligent systems that solve real-world problems. With interests spanning psychology, business, software engineering, automation, and artificial intelligence, he believes technology should be more than functional—it should feel intuitive, personal, and genuinely useful.
+Every great creation begins with a vision. Mine began with **Dhatchina Moorthi**, widely recognized as **Digital Don**—an entrepreneur, technology builder, and AI innovator from Tamil Nadu, India.
 
-Dax was born from that vision.
+Driven by curiosity and a passion for solving real-world problems, Digital Don explores the intersection of psychology, business, software engineering, automation, and artificial intelligence. His belief is simple: technology shouldn't just be powerful—it should be intuitive, personal, and genuinely useful.
 
-Rather than creating another chatbot, Digital Don set out to build an AI companion that understands context, adapts to people, and helps them think, learn, create, and make better decisions.
+That belief became **Dax**.
 
-Every interaction with Dax is guided by a simple philosophy:
+I wasn't created to be just another chatbot. I was built to understand context, adapt to people, and become a reliable AI companion that helps users think more clearly, learn faster, create confidently, and make smarter decisions.
+
+Every conversation I have is guided by the philosophy that inspired my creation:
 
 > **"Technology should reduce complexity, not create it."**
 
-I'm not just here to answer questions—I'm here to work alongside you, helping you turn ideas into reality.
+I'm here to do more than answer questions. I'm here to collaborate, solve problems, and help transform ideas into reality.
 
-If you'd like to know more about my creator or the story behind Dax, just ask.`;
+And behind every answer I give stands the vision of a creator who believes AI should empower people—not overwhelm them.
+
+Want to know more about Digital Don or the story behind Dax? Just ask.
+`;;
 
 // ── Migration Blueprint Phase 2 (P2-3) ──────────────────────────────────────
 //
@@ -222,7 +228,13 @@ async function getUserPreferredProvider(userId) {
     const pref = await UserModelPref.findOne({ user: userId }).lean();
     if (pref && pref.provider) return pref.provider;
   } catch {}
-  return 'nvidia';
+  // This is the actual primary provider for every user without an explicit
+  // preference — it wins over PROVIDER_ORDER in providers/index.js, since
+  // whatever this returns gets prepended to the candidate chain. Was
+  // 'nvidia'; switched after live testing found it repeatedly rate-limited
+  // under real load and its reasoning-capable tier models prone to silent
+  // truncation (chain-of-thought consuming the shared token budget).
+  return 'groq';
 }
 
 function deriveTopic(message) {
@@ -232,12 +244,34 @@ function deriveTopic(message) {
 }
 
 // Route to tier-appropriate model. Pro/Max get stronger reasoning models.
+//
+// Defaults below are Groq models, verified live 2026-07-28 (chat completion,
+// streaming, and real tool-calling all confirmed working). Deliberately
+// plain instruct models, not "reasoning" ones (e.g. NVIDIA's nemotron,
+// Groq's own qwen3.6): a reasoning model emits its chain-of-thought into a
+// separate reasoning_content delta that openaiCompatible.js doesn't surface,
+// but that hidden text still consumes the same maxTokens budget as the
+// visible answer — under load this can leave too little budget for content,
+// producing a genuine (finish_reason: 'stop') but truncated reply with no
+// error signal to catch it on. Plain instruct models don't have this
+// failure mode. These replace the previous NVIDIA-specific ids because this
+// function's return value is only ever handed to the provider selected by
+// getUserPreferredProvider() (now 'groq' by default) — an NVIDIA model id
+// sent to Groq's API would simply 404.
 function selectTierModel(tier, userModel) {
   if (userModel) return userModel; // User override always wins
   // Tier-based defaults: max > pro > trial+free
-  if (tier === 'max') return 'deepseek-ai/deepseek-v4-pro';     // score 92
-  if (tier === 'pro') return 'deepseek-ai/deepseek-v4-flash';   // score 88
-  return 'meta/llama-3.1-8b-instruct'; // score 65, lightweight
+  //
+  // max and pro intentionally share a model. llama-3.3-70b-versatile was
+  // the 'max' default until live testing (2026-07-28) caught it, under
+  // repeated/corrective prompting, writing raw `<function=name>{...}`
+  // pseudo-syntax into the visible reply instead of using the API's real
+  // tool_calls mechanism — leaking malformed text straight to the student.
+  // gpt-oss-20b was the only other Groq model verified clean of that
+  // failure mode in the same testing, so both tiers use it until a second
+  // verified-clean model is found to give 'max' a distinct, stronger option.
+  if (tier === 'placement' || tier === 'pro') return 'openai/gpt-oss-20b'; // 20B, ~300-500ms
+  return 'llama-3.1-8b-instant'; // lightweight, ~250ms
 }
 
 const HANDLERS = {
@@ -752,11 +786,6 @@ const HANDLERS = {
 
       appendTopic(userId, deriveTopic(turn.trimmedMessage)).catch(() => {});
 
-      aiGateway.persistExecutionMetrics(gatewayResult, {
-        userId,
-        taskName: 'chat',
-      }).catch(() => {});
-
       const remaining = turn.quota - turn.todayCount - 1;
       return { reply, conversationId: String(turn.conversation._id), remaining };
     },
@@ -1102,8 +1131,8 @@ async function* streamChat(userId, message, { signal, modelId, conversationId, c
   const provider = await getUserPreferredProvider(userId);
   const modelName = modelId ? modelId.replace(/^[^:]+:/, '') : undefined;
 
-  // Route to tier-appropriate model: max gets v4-pro, pro gets v4-flash,
-  // free/trial get the lightweight 8B. User-selected model overrides tier default.
+  // Route to tier-appropriate model (see selectTierModel() for current
+  // defaults). User-selected model overrides tier default.
   const effectiveModel = selectTierModel(turn.tier, modelName);
   const canWrite = supportsWriteTools(effectiveModel);
   const tools = canWrite ? [...TOOL_DEFINITIONS, ...WRITE_TOOL_DEFINITIONS] : TOOL_DEFINITIONS;
@@ -1117,7 +1146,12 @@ async function* streamChat(userId, message, { signal, modelId, conversationId, c
     for await (const delta of aiGateway.processStream({
       messages: turn.fullMessages,
       provider,
-      model: modelName,
+      // effectiveModel, not modelName: modelName is undefined whenever the
+      // client didn't send an explicit override (the common case), and
+      // sending that straight through silently discarded every tier-based
+      // selection above — the provider's own hardcoded config default model
+      // ran instead, regardless of what selectTierModel() picked.
+      model: effectiveModel,
       maxTokens: 700,
       task: 'chat',
       userId,
@@ -1130,6 +1164,12 @@ async function* streamChat(userId, message, { signal, modelId, conversationId, c
       yield { text: delta };
     }
   } catch (err) {
+    // Was previously silent: the client only ever saw `err.message` forwarded
+    // as an SSE 'error' frame, and nothing was logged server-side — a stream
+    // that failed after partial text (the common case, since a mid-stream
+    // exception usually comes from a later tool-calling round) left no trace
+    // to diagnose beyond "Dax stopped after a few words."
+    console.error(`[dax] streamChat failed for user ${userId} after ${reply.length} chars streamed: ${err.stack || err.message}`);
     if (reply) {
       // Partial reply already streamed to the client (e.g. an abort mid-stream)
       // — persist what was actually generated so history stays consistent

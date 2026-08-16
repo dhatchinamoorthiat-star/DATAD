@@ -3,7 +3,11 @@ const mongoose = require('mongoose');
 const subscriptionRequestSchema = new mongoose.Schema(
   {
     user:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    tier:         { type: String, enum: ['pro', 'max'], required: true },
+    tier:         { type: String, enum: ['pro', 'placement'], required: true },
+    // Which cycle was purchased. Without this the approver cannot know how long
+    // to grant, and every approval defaulted to one month — so a yearly Pro
+    // purchase delivered a twelfth of what it charged for.
+    billing:      { type: String, enum: ['monthly', 'yearly', 'onetime'], default: 'monthly' },
     amountPaid:   { type: Number, required: true },
     paymentRef:   { type: String, required: true, trim: true, maxlength: 100 },
     upiId:        { type: String, trim: true, maxlength: 60 },  // payer UPI (optional)

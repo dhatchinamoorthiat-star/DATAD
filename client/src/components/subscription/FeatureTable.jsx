@@ -28,12 +28,12 @@ const BG_COLORS = {
   free: '',
   trial: 'bg-indigo-50/30 dark:bg-indigo-950/10',
   pro: 'bg-amber-50/30 dark:bg-amber-950/10',
-  max: 'bg-purple-50/30 dark:bg-purple-950/10',
+  placement: 'bg-purple-50/30 dark:bg-purple-950/10',
 };
 
 export default function FeatureTable({ features, billing, selectedPlan }) {
   const isYearly = billing === 'yearly';
-  const columns = ['free', 'trial', 'pro', 'max'];
+  const columns = ['free', 'trial', 'pro', 'placement'];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
@@ -62,7 +62,7 @@ export default function FeatureTable({ features, billing, selectedPlan }) {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.02, duration: 0.2 }}
-            className={`grid grid-cols-6 px-5 py-3 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${selectedPlan === 'pro' ? 'bg-amber-50/20 dark:bg-amber-950/5' : selectedPlan === 'max' ? 'bg-purple-50/20 dark:bg-purple-950/5' : ''}`}
+            className={`grid grid-cols-6 px-5 py-3 text-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30 ${selectedPlan === 'pro' ? 'bg-amber-50/20 dark:bg-amber-950/5' : selectedPlan === 'placement' ? 'bg-purple-50/20 dark:bg-purple-950/5' : ''}`}
           >
             <span className="col-span-2 text-gray-700 dark:text-gray-300">
               {row.label}

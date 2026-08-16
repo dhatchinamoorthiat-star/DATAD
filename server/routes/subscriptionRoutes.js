@@ -7,15 +7,29 @@ const { notify } = require('../controllers/notificationController');
 const { getSubscriptionStatus, getRemainingAiQuota } = require('../subscription/subscriptionService');
 const { getEffectiveTier } = require('../subscription/permissionEngine');
 
-const PRICES = { pro: 299, max: 499 };
+const { priceFor, cyclesFor } = require('../subscription/pricing');
 
 // POST /api/subscription/request — submit a payment reference for review
 router.post('/request', verifyToken, heavyLimiter, async (req, res, next) => {
   try {
     const { tier, paymentRef, upiId, note } = req.body;
 
-    if (!['pro', 'max'].includes(tier)) {
-      return res.status(400).json({ message: 'Invalid tier. Must be pro or max.' });
+    if (!['pro', 'placement'].includes(tier)) {
+      return res.status(400).json({ message: 'Invalid plan. Must be pro or placement.' });
+    }
+
+    // Default per tier rather than trusting the client: placement is only ever
+    // sold as a one-time pass, Pro only as monthly or yearly.
+    const allowedCycles = cyclesFor(tier);
+    const billing = allowedCycles.includes(req.body.billing)
+      ? req.body.billing
+      : allowedCycles[0];
+
+    // Price comes from the server's table, never from the request body — the
+    // amount a client claims to have paid is not evidence of anything.
+    const amountPaid = priceFor(tier, billing);
+    if (amountPaid === null) {
+      return res.status(400).json({ message: 'That plan and billing combination is not available.' });
     }
     if (!paymentRef?.trim()) {
       return res.status(400).json({ message: 'Payment reference number is required.' });
@@ -33,7 +47,8 @@ router.post('/request', verifyToken, heavyLimiter, async (req, res, next) => {
     const request = await SubscriptionRequest.create({
       user: req.user.userId,
       tier,
-      amountPaid: PRICES[tier],
+      billing,
+      amountPaid,
       paymentRef: paymentRef.trim(),
       upiId: upiId?.trim() || undefined,
       note: note?.trim() || undefined,

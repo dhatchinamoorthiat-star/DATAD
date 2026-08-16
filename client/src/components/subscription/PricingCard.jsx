@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Crown, Sparkles, Zap, Check } from 'lucide-react';
-import { PRICES, yearlySavings, yearlySavingsPercent, monthlyEquivalent, dailyEquivalent, formatPrice } from '../../utils/pricing';
+import { yearlySavings, yearlySavingsPercent, monthlyEquivalent, dailyEquivalent, formatPrice } from '../../utils/pricing';
 
 const CARD_COLORS = {
   gray: {
@@ -38,9 +38,12 @@ const ICON_MAP = { Crown, Sparkles, Zap };
 export default function PricingCard({ plan, billing, onSelect, currentTier, trialUsed, trialLoading }) {
   const colors = CARD_COLORS[plan.color];
   const Icon = ICON_MAP[plan.icon] || Sparkles;
-  const isYearly = billing === 'yearly';
-  const price = isYearly ? plan.yearlyPrice : plan.monthlyPrice;
-  const isProOrMax = plan.id === 'pro' || plan.id === 'max';
+  // A one-time plan ignores the monthly/yearly toggle entirely — the Placement
+  // Pass costs the same whichever way the switch happens to be set.
+  const isOneTime = Boolean(plan.oneTime);
+  const isYearly = !isOneTime && billing === 'yearly';
+  const price = isOneTime ? plan.monthlyPrice : (billing === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice);
+  const isRecurringPaid = plan.id === 'pro';
 
   const isCurrent = currentTier === plan.id;
   const isTrialActive = plan.id === 'trial' && currentTier === 'trial';
@@ -52,11 +55,15 @@ export default function PricingCard({ plan, billing, onSelect, currentTier, tria
     onSelect(plan);
   };
 
-  const savings = isProOrMax && isYearly ? yearlySavings(plan.id) : 0;
-  const savingsPct = isProOrMax && isYearly ? yearlySavingsPercent(plan.id) : 0;
-  const monthsFree = isProOrMax && isYearly ? Math.round((savings / plan.monthlyPrice) * 10) / 10 : 0;
-  const meq = isProOrMax && isYearly ? monthlyEquivalent(price) : 0;
-  const deq = isProOrMax ? dailyEquivalent(price, isYearly ? 365 : 30) : 0;
+  const savings = isRecurringPaid && isYearly ? yearlySavings(plan.id) : 0;
+  const savingsPct = isRecurringPaid && isYearly ? yearlySavingsPercent(plan.id) : 0;
+  const monthsFree = isRecurringPaid && isYearly ? Math.round((savings / plan.monthlyPrice) * 10) / 10 : 0;
+  const meq = isRecurringPaid && isYearly ? monthlyEquivalent(price) : 0;
+  const deq = isRecurringPaid
+    ? dailyEquivalent(price, isYearly ? 365 : 30)
+    : isOneTime
+      ? dailyEquivalent(price, (plan.durationMonths || 3) * 30)
+      : 0;
 
   const features = plan.id === 'free'
     ? ['Notes & Journal', 'Planner & Reminders', 'Community Access', 'Finance Tracker', 'No AI Access']
@@ -112,10 +119,20 @@ export default function PricingCard({ plan, billing, onSelect, currentTier, tria
                   {formatPrice(price)}
                 </span>
                 <span className="text-sm font-medium text-gray-400 dark:text-gray-500">
-                  /{isYearly ? 'year' : 'month'}
+                  {isOneTime ? 'one-time' : `/${isYearly ? 'year' : 'month'}`}
                 </span>
               </div>
-              {isProOrMax && isYearly && (
+              {isOneTime && (
+                <div className="mt-1 space-y-0.5">
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {plan.durationMonths || 3} months access · does not renew
+                  </p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    ≈ {formatPrice(deq)}/day
+                  </p>
+                </div>
+              )}
+              {isRecurringPaid && isYearly && (
                 <div className="mt-1 space-y-0.5">
                   <p className="text-xs text-gray-400 dark:text-gray-500">
                     {formatPrice(meq)}/month
@@ -125,12 +142,12 @@ export default function PricingCard({ plan, billing, onSelect, currentTier, tria
                   </p>
                 </div>
               )}
-              {isProOrMax && !isYearly && (
+              {isRecurringPaid && !isYearly && (
                 <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
                   ≈ {formatPrice(deq)} per day
                 </p>
               )}
-              {isProOrMax && !isYearly && (
+              {isRecurringPaid && !isYearly && (
                 <p className="text-xs text-gray-400 dark:text-gray-500">Billed monthly</p>
               )}
             </div>

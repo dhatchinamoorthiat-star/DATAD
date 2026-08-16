@@ -2,13 +2,17 @@ const AiUsage = require('../models/AiUsage');
 const AiUsageEvent = require('../models/AiUsageEvent');
 const User = require('../models/User');
 const { getCreditCost } = require('./runtime-v2/costOptimizer');
+const notificationService = require('../notifications/NotificationService');
 const logger = require('../utils/logger');
 
-// Daily credit allowances per tier. Roughly the old count limits
-// (DAILY_AI_LIMITS = 0/10/75/250) scaled by an average model weight of ~3,
-// so a student who only ever uses cheap models gets MORE actions than
-// before, and one who leans on premium models gets fewer.
-const CREDIT_LIMITS = { free: 0, trial: 500, pro: 500, max: 2000 };
+// Daily credit allowances per tier. A request costs 1-5 credits depending on
+// which model serves it.
+//
+// These are the authoritative numbers — client/src/utils/pricing.js must state
+// exactly these, and previously did not: it advertised 30/250/800 against
+// actual limits of 500/500/2000. Worse, trial and pro were both 500, so the
+// paid tier offered no credit advantage at all over the free trial.
+const CREDIT_LIMITS = { free: 0, trial: 150, pro: 500, placement: 1500 };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
@@ -76,13 +80,43 @@ async function checkCredits(userId, tier) {
 
   const usage = await AiUsage.findOne({ user: userId, dateKey: todayKey() }).select('creditsUsed').lean();
   const used = usage?.creditsUsed || 0;
+  const remaining = Math.max(0, limit - used);
   return {
     used,
     limit,
-    remaining: Math.max(0, limit - used),
+    remaining,
     blocked: used >= limit,
     tier: effectiveTier,
   };
 }
 
-module.exports = { chargeCredits, checkCredits, CREDIT_LIMITS };
+/**
+ * Notify user when credits are running low or exhausted.
+ * Call after charging credits so the most recent usage is reflected.
+ */
+async function checkAndNotifyCredits(userId, tier) {
+  try {
+    const status = await checkCredits(userId, tier);
+    if (!status.limit || status.tier === 'free') return;
+
+    if (status.blocked) {
+      await notificationService.send(userId, {
+        type: 'credit_alert',
+        title: 'AI credits exhausted',
+        body: `You've used all ${status.limit} daily AI credits. Upgrade to Pro for more, or come back tomorrow.`,
+        link: '/subscribe',
+      });
+    } else if (status.remaining <= Math.ceil(status.limit * 0.1)) {
+      await notificationService.send(userId, {
+        type: 'credit_alert',
+        title: 'AI credits running low',
+        body: `${status.remaining} of ${status.limit} daily AI credits remaining`,
+        link: '/subscribe',
+      });
+    }
+  } catch (err) {
+    logger.warn('[usageMeter] Failed to notify credits', { error: err.message, userId: String(userId) });
+  }
+}
+
+module.exports = { chargeCredits, checkCredits, checkAndNotifyCredits, CREDIT_LIMITS };

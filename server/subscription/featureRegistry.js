@@ -60,33 +60,41 @@ const FEATURE_ACCESS = {
   [FEATURE.WELLBEING]: 'free',
   [FEATURE.AI_CHAT]: 'free',
 
+  // Trial band — the study tools. These are what the 14-day trial exists to
+  // demonstrate, so they are also what Pro is bought for.
   [FEATURE.AI_SUMMARISE]: 'trial',
   [FEATURE.AI_RESUME_REVIEW]: 'trial',
   [FEATURE.AI_PLANNER_SUGGEST]: 'trial',
-  [FEATURE.SEMANTIC_SEARCH]: 'trial',
   [FEATURE.BRIEFING]: 'trial',
   [FEATURE.DAILY_CASE]: 'trial',
   [FEATURE.STUDY_TOOLS]: 'trial',
-
-  [FEATURE.INTERVIEW_QUESTIONS]: 'pro',
-  [FEATURE.COMPANY_PREMIUM]: 'pro',
-  [FEATURE.AI_INTERVIEW_SIMULATOR]: 'max',
-  [FEATURE.AI_COMPARE_COMPANIES]: 'max',
-  [FEATURE.AI_CAREER_ADVICE]: 'max',
-  [FEATURE.RESUME_ATS]: 'pro',
   [FEATURE.FLASHCARD_GENERATE]: 'trial',
   [FEATURE.QUIZ_GENERATE]: 'trial',
-  [FEATURE.FINANCE_ASSIST]: 'pro',
-  [FEATURE.DASHBOARD_INSIGHTS]: 'trial',
-  [FEATURE.COMPANY_RESEARCH]: 'pro',
-  [FEATURE.READINESS_SCORE]: 'pro',
 
-  [FEATURE.KNOWLEDGE_GRAPH]: 'max',
-  [FEATURE.ADVANCED_AI_MEMORY]: 'max',
-  [FEATURE.MULTI_WORKSPACE]: 'max',
-  [FEATURE.AUTONOMOUS_AI]: 'max',
-  [FEATURE.MARKET_INTELLIGENCE]: 'max',
-  [FEATURE.CASE_GENERATOR]: 'max',
+  // Pro adds depth on top of the trial band, so converting buys something
+  // beyond a bigger quota.
+  [FEATURE.SEMANTIC_SEARCH]: 'pro',
+  [FEATURE.DASHBOARD_INSIGHTS]: 'pro',
+  [FEATURE.FINANCE_ASSIST]: 'pro',
+
+  // Placement Pass — everything whose value is tied to landing a job. This is
+  // the band students have real willingness to pay for, and it is deliberately
+  // the band a general-purpose chatbot cannot substitute for, because it runs
+  // on DATAD's own campus/company data.
+  [FEATURE.INTERVIEW_QUESTIONS]: 'placement',
+  [FEATURE.COMPANY_PREMIUM]: 'placement',
+  [FEATURE.COMPANY_RESEARCH]: 'placement',
+  [FEATURE.RESUME_ATS]: 'placement',
+  [FEATURE.READINESS_SCORE]: 'placement',
+  [FEATURE.AI_INTERVIEW_SIMULATOR]: 'placement',
+  [FEATURE.AI_COMPARE_COMPANIES]: 'placement',
+  [FEATURE.AI_CAREER_ADVICE]: 'placement',
+  [FEATURE.KNOWLEDGE_GRAPH]: 'placement',
+  [FEATURE.ADVANCED_AI_MEMORY]: 'placement',
+  [FEATURE.MULTI_WORKSPACE]: 'placement',
+  [FEATURE.AUTONOMOUS_AI]: 'placement',
+  [FEATURE.MARKET_INTELLIGENCE]: 'placement',
+  [FEATURE.CASE_GENERATOR]: 'placement',
 
   [FEATURE.ADMIN_STUDIO]: 'admin',
   [FEATURE.ADMIN_USERS]: 'admin',

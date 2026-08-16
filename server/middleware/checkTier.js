@@ -6,7 +6,7 @@ const TIER_FEATURE_MAP = {
   free:  FEATURE.AI_CHAT,
   trial: FEATURE.AI_SUMMARISE,
   pro:   FEATURE.INTERVIEW_QUESTIONS,
-  max:   FEATURE.KNOWLEDGE_GRAPH,
+  placement: FEATURE.KNOWLEDGE_GRAPH,
 };
 
 function checkTier(minTier) {

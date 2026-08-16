@@ -4,7 +4,8 @@ import { getSubscriptionStatus } from '../api/subscription';
 
 const SubscriptionContext = createContext(null);
 
-const TIER_RANK = { free: 0, trial: 1, pro: 2, max: 3 };
+// Mirrors server/subscription/tierHierarchy.js.
+const TIER_RANK = { free: 0, trial: 1, pro: 2, placement: 3 };
 
 export function SubscriptionProvider({ children }) {
   const { user } = useAuth();

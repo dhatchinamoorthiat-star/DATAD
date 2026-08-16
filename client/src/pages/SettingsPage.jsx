@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Clock } from 'lucide-react';
+import toast from '../utils/toast';
+import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Clock, Laptop } from 'lucide-react';
 import { usePWA } from '../context/PWAContext';
-import { changePassword, deleteAccount, getMe, updateProfile, uploadAvatar } from '../api/auth';
+import { changePassword, deleteAccount, getMe, listDevices, revokeDevice, updateProfile, uploadAvatar } from '../api/auth';
 import { whatsappInviteUrl } from '../components/common/InviteCard';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -12,7 +12,7 @@ import { useSubscription } from '../context/SubscriptionContext';
 import { Link } from 'react-router-dom';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
-import DaxMemoryPanel from '../components/common/DaxMemoryPanel';
+import DaxProfilePanel from '../components/common/DaxProfilePanel';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 
 const fmtDate = (d) =>
@@ -22,14 +22,14 @@ const TIER_META = {
   free:  { label: 'Free',  icon: Star,         color: 'gray',   badge: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' },
   trial: { label: 'Trial', icon: Zap,           color: 'indigo', badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' },
   pro:   { label: 'Pro',   icon: Zap,           color: 'amber',  badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
-  max:   { label: 'Max',   icon: Crown,         color: 'purple', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+  placement: { label: 'Placement Pass', icon: Crown, color: 'purple', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
 };
 
 const TIER_BENEFITS = {
   free:  ['Notes (create & read)', 'Resume builder (manual)', 'Planner & journal', 'Finance tracker', 'Company list (browse)', 'Community & gallery'],
   trial: ['Everything in Pro for 7 days', 'Dax Summaries', 'Dax Resume Review', 'Company prep cards', 'Dax Research', 'Dax Planner'],
   pro:   ['Dax Summaries', 'Dax Resume Review & feedback', 'Company prep cards (full detail)', 'Daily personalized Dax briefing', 'Interview question bank', 'Daily case studies', 'Dax Planner', 'Dax Research', 'Career readiness score'],
-  max:   ['Everything in Pro', 'Dax Career Coach (deep strategy)', 'Priority Dax processing', 'Dax Research across notes + companies', 'Multi-company comparison', 'Priority support'],
+  placement: ['Everything in Pro', 'Resume ATS scoring', 'Interview simulator', 'Company research & prep cards', 'Multi-company comparison', 'Career readiness score'],
 };
 
 function SubscriptionCard() {
@@ -60,7 +60,7 @@ function SubscriptionCard() {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               {tier === 'free' ? 'Basic access — Dax not included' :
                tier === 'trial' ? 'Full Pro access for 7 days' :
-               tier === 'pro' ? 'Dax for placement prep' : 'All of Dax + priority access'}
+               tier === 'pro' ? 'Dax for everyday study' : 'Full placement toolkit — 3 months'}
             </p>
           </div>
         </div>
@@ -164,6 +164,115 @@ function SubscriptionCard() {
           {tier === 'free' ? 'View upgrade plans' : 'Manage subscription'}
         </Link>
       </div>
+    </section>
+  );
+}
+
+function relativeTime(date) {
+  const mins = Math.round((Date.now() - new Date(date)) / 60000);
+  if (mins < 2) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+/**
+ * Active sessions. Primarily a security feature — spotting a session you do
+ * not recognise — which also makes the device cap visible rather than something
+ * users only discover by being mysteriously signed out.
+ */
+function DevicesCard() {
+  const [devices, setDevices] = useState(null);
+  const [max, setMax] = useState(null);
+  const [unlimited, setUnlimited] = useState(false);
+  const [busy, setBusy] = useState(null);
+
+  const load = async (signal) => {
+    try {
+      const res = await listDevices();
+      if (signal?.cancelled) return;
+      setDevices(res.data.devices);
+      setMax(res.data.max);
+      setUnlimited(Boolean(res.data.unlimited));
+    } catch {
+      if (!signal?.cancelled) setDevices([]);
+    }
+  };
+
+  useEffect(() => {
+    const signal = { cancelled: false };
+    // The rule prefers data fetching to live outside effects, which needs a
+    // query library this project does not use. The cancellation guard covers
+    // the failure mode the rule protects against (a resolved fetch setting
+    // state on an unmounted component).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load(signal);
+    return () => { signal.cancelled = true; };
+  }, []);
+
+  const onRevoke = async (id) => {
+    setBusy(id);
+    try {
+      await revokeDevice(id);
+      toast.success('Device signed out');
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not sign that device out');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section className="rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
+      <h2 className="mb-1 flex items-center gap-2 font-semibold">
+        <Laptop className="h-4 w-4" /> Your devices
+      </h2>
+      <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+        {unlimited
+          ? 'This account is not subject to the device limit. Sessions are still listed here so you can sign out any you do not recognise.'
+          : max
+            ? `You can be signed in on ${max} devices at once. Signing in on a new one signs out the device you have not used in longest.`
+            : 'Devices currently signed in to your account.'}
+      </p>
+
+      {devices === null && <p className="text-sm text-gray-400">Loading…</p>}
+      {devices?.length === 0 && (
+        <p className="text-sm text-gray-400">No other devices signed in.</p>
+      )}
+
+      <ul className="space-y-2">
+        {(devices || []).map((d) => (
+          <li
+            key={d.id}
+            className="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2.5 dark:border-gray-800"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900 dark:text-white">
+                {d.label}
+                {d.current && (
+                  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    This device
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-gray-400">Last active {relativeTime(d.lastSeenAt)}</p>
+            </div>
+            {!d.current && (
+              <button
+                type="button"
+                onClick={() => onRevoke(d.id)}
+                disabled={busy === d.id}
+                className="shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+              >
+                {busy === d.id ? 'Signing out…' : 'Sign out'}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -394,8 +503,13 @@ export default function SettingsPage() {
 
   const onChangePassword = async (data) => {
     try {
-      await changePassword(data);
-      toast.success('Password updated');
+      const res = await changePassword(data);
+      // Changing the password revokes every token issued before it — including
+      // this tab's. The server hands back a replacement so the session that
+      // made the change survives while all the others are evicted; without
+      // adopting it here, the next request 401s and logs the user out.
+      if (res.data?.token) login(res.data.token);
+      toast.success('Password updated — other devices have been signed out');
       pwForm.reset();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update password');
@@ -510,7 +624,7 @@ export default function SettingsPage() {
 
         {/* Dax brings its own Card chrome so it can render its own empty and
             loading states while the memory loads. */}
-        <DaxMemoryPanel />
+        <DaxProfilePanel />
 
         <Card title="Referral code" icon={Gift}>
           <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
@@ -553,6 +667,8 @@ export default function SettingsPage() {
             <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
           )}
         </Card>
+
+        <DevicesCard />
 
         <Card title="Change password" icon={KeyRound}>
           <form onSubmit={pwForm.handleSubmit(onChangePassword)} className="space-y-3">

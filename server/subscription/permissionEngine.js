@@ -32,7 +32,7 @@ function requireFeature(feature) {
     if (canAccessFeature(req.user, feature)) return next();
 
     const minTier = getMinimumTier(feature);
-    const label = minTier === 'max' ? 'Max'
+    const label = minTier === 'placement' ? 'the Placement Pass'
       : minTier === 'pro' ? 'Pro'
       : minTier === 'trial' ? 'a trial'
       : 'an upgraded';
