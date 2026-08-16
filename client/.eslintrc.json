@@ -6,6 +6,7 @@
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
     "plugin:jsx-a11y/recommended"
   ],
   "parserOptions": {
@@ -17,10 +18,17 @@
   },
   "plugins": [
     "react",
+    "react-hooks",
     "jsx-a11y"
   ],
   "rules": {
-    // You can customize rules here
-    "react/react-in-jsx-scope": "off"
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   }
 }

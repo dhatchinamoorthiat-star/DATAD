@@ -46,7 +46,11 @@ module.exports = {
     openrouter: {
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: 'https://openrouter.ai/api/v1',
-      model: process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct',
+      // The previous default, meta-llama/llama-3.3-70b-instruct, is billed
+      // per-token on OpenRouter. This is one of OpenRouter's ~18 genuinely
+      // $0 ":free"-suffixed models (verified live 2026-07-28) — same family,
+      // no cost, and faster in testing (2.0s vs 3.3s for the paid variant).
+      model: process.env.OPENROUTER_MODEL || 'google/gemma-4-31b-it:free',
       maxTokens: 2048,
       temperature: 0.7,
     },
@@ -104,6 +108,7 @@ module.exports = {
   schedules: {
     newsRefresh:        process.env.CRON_NEWS_REFRESH        || '*/30 * * * *',   // every 30 min
     marketRefresh:      process.env.CRON_MARKET_REFRESH      || '*/15 * * * *',   // every 15 min
+    stockRefresh:       process.env.CRON_STOCK_REFRESH        || '0 1 * * *',      // 1am daily
     dailyCase:          process.env.CRON_DAILY_CASE          || '0 5 * * *',      // 5am daily
     dailyBriefing:      process.env.CRON_DAILY_BRIEFING      || '0 6 * * *',      // 6am daily
     dailyReflection:    process.env.CRON_DAILY_REFLECTION    || '0 6 * * *',      // 6am daily

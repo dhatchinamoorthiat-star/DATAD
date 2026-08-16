@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { id: 'directory',   title: 'Directory',   subtitle: 'Find classmates',   url: '/community/directory',      icon: 'AddressBook',    priority: 50 },
   { id: 'memories',    title: 'Memories',    subtitle: 'Archive',           url: '/community/memories',       icon: 'History',        priority: 45 },
   { id: 'announcements', title: 'Announcements', subtitle: 'Official news', url: '/community/announcements',  icon: 'Megaphone',      priority: 44 },
+  { id: 'roadmap',       title: 'Skill Roadmap',  subtitle: '3-month upskilling plan', url: '/career/roadmap',          icon: 'Map',         priority: 41 },
   { id: 'opportunities', title: 'Opportunities', subtitle: 'Jobs & internships', url: '/career/opportunities', icon: 'Target',       priority: 40 },
   { id: 'skill-exchange', title: 'Skill Exchange', subtitle: 'Peer learning', url: '/community/skills',       icon: 'Handshake',      priority: 35 },
 ];
@@ -48,6 +49,7 @@ const COMMANDS = [
   { id: 'open-finance',     title: 'Open Finance',        keywords: ['money', 'budget', 'expenses'],   url: '/finance' },
   { id: 'open-community',   title: 'Open Community',      keywords: ['feed', 'social', 'network'],     url: '/community' },
   { id: 'open-settings',    title: 'Open Settings',       keywords: ['preferences', 'config'],         url: '/me/settings' },
+  { id: 'open-roadmap',     title: 'Open Skill Roadmap',  keywords: ['roadmap', 'skill gap', 'upskill'], url: '/career/roadmap' },
   { id: 'open-admin',       title: 'Open Admin',          keywords: ['admin', 'manage', 'control'],    url: '/admin' },
   { id: 'review-resume',    title: 'Review Resume',       keywords: ['ai review', 'feedback', 'ats'],  url: '/career/resume' },
   { id: 'summarize-notes',  title: 'Summarize Notes',     keywords: ['ai summary', 'dax summary'],     url: '/study/notes' },

@@ -2,14 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, PenSquare, Sparkles } from 'lucide-react';
 import DailyCaseCard from '../../components/dashboard/DailyCaseCard';
+import TodayFocus from '../../components/dashboard/TodayFocus';
 import { listNotes } from '../../api/notes';
 import { listTasks } from '../../api/tasks';
+import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil } from '../../utils/dateUtils';
 import { Skeleton } from '../../components/common/Skeleton';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { Page } from '../../components/common/motion';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import { track } from '../../utils/analytics';
 
 const ACADEMIC_TYPES = ['case-study', 'exam', 'deadline'];
 
@@ -77,6 +80,7 @@ function formatDateShort(date) {
 
 export default function StudyHubPage() {
   useDocumentTitle('Study');
+  useEffect(() => { track('study_hub_viewed'); }, []);
   const { hash } = useLocation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -90,9 +94,10 @@ export default function StudyHubPage() {
   }, [hash, data]);
 
   useEffect(() => {
-    Promise.allSettled([listNotes(), listTasks()]).then(([notesRes, tasksRes]) => {
+    Promise.allSettled([listNotes(), listTasks(), getRoadmapProgress()]).then(([notesRes, tasksRes, roadmapRes]) => {
       const notes = notesRes.status === 'fulfilled' ? notesRes.value.data : [];
       const tasks = tasksRes.status === 'fulfilled' ? tasksRes.value.data : [];
+      const roadmapProgress = roadmapRes.status === 'fulfilled' ? roadmapRes.value.data : null;
 
       const subjects = {};
       notes.forEach((n) => {
@@ -110,6 +115,10 @@ export default function StudyHubPage() {
         .filter((t) => t.status !== 'done' && daysUntil(t.dueDate) >= -7)
         .sort((a, b) => daysUntil(a.dueDate) - daysUntil(b.dueDate));
 
+      // Compute roadmap props for TodayFocus
+      const roadmapPending = roadmapProgress?.total ? roadmapProgress.total - roadmapProgress.completed : 0;
+      const roadmapNext = roadmapProgress?.items?.find((g) => g.status !== 'done')?.skill || null;
+
       setData({
         recentNote: sortedNotes[0] || null,
         notes: sortedNotes.slice(0, 4),
@@ -118,6 +127,10 @@ export default function StudyHubPage() {
         subjectCount: sortedSubjects.length,
         notesCount: notes.length,
         nextAssignment: upcomingTasks[0] || null,
+        // Roadmap data for TodayFocus
+        roadmapPending,
+        roadmapNext,
+        canCreateRoadmap: !roadmapProgress?.hasRoadmap && roadmapProgress !== null,
       });
       setLoading(false);
     });
@@ -181,6 +194,9 @@ export default function StudyHubPage() {
           </Button>
         </Link>
       </div>
+
+      {/* TODAY'S FOCUS — roadmap suggestion (if applicable) */}
+      {data && <div className="mt-6"><TodayFocus data={data} /></div>}
 
       {/* CONTINUE WHERE YOU LEFT OFF — the card IS the hero */}
       <div className="mt-6">

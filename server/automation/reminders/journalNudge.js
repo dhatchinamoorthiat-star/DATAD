@@ -15,7 +15,17 @@ async function sendJournalNudges() {
   const toNudge = users.filter((u) => !recentSet.has(String(u._id)));
 
   for (const user of toNudge) {
-    await notify({ user: user._id, type: 'general', title: "You haven't journaled in 3 days", body: 'Take 2 minutes to reflect — it helps more than you think', link: '/me/journal' }).catch(() => {});
+    // `dedupUnread` so a user who never opened yesterday's nudge doesn't
+    // accumulate an identical one every night. Once they read it (or clear
+    // it), a fresh nudge is allowed through again.
+    await notify({
+      user: user._id,
+      type: 'general',
+      title: "You haven't journaled in 3 days",
+      body: 'Take 2 minutes to reflect — it helps more than you think',
+      link: '/me/journal',
+      dedupUnread: true,
+    }).catch(() => {});
   }
 
   console.log(`[journal-nudge] Nudged ${toNudge.length} user(s)`);

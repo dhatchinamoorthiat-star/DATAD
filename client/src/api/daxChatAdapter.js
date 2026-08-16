@@ -66,8 +66,39 @@ async function* streamDaxChat(prompt, signal, modelId, conversationId, clientCon
   const decoder = new TextDecoder();
   let buffer = '';
 
+  // The backend's provider fallback chain can stall completely — no token,
+  // no error frame, no closed connection — if every candidate model times
+  // out without one of them raising a catchable error server-side. Without
+  // a client-side ceiling, reader.read() then just never resolves and the
+  // UI is stuck "typing" forever with no way for the user to recover short
+  // of a page reload. Reset on every frame received, not just tokens, so a
+  // genuinely slow-but-alive stream isn't cut off early.
+  const STALL_TIMEOUT_MS = 30000;
+  async function readWithStallTimeout() {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(async () => {
+        try { await reader.cancel(); } catch { /* already closed */ }
+        reject(new Error('Dax is taking longer than usual to respond. Please try again.'));
+      }, STALL_TIMEOUT_MS);
+    });
+    try {
+      return await Promise.race([reader.read(), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  // The server's only clean way to end this stream is a 'done' frame — set
+  // right before res.end() in daxRoutes.js. If the underlying connection
+  // drops for any other reason (server restart, proxy hiccup, network
+  // blip), reader.read() resolves { done: true } with no such frame ever
+  // having arrived. Without this flag that looked identical to a normal
+  // finished reply — whatever text had streamed so far got marked 'done'
+  // and shown as Dax's complete answer, silently truncated mid-sentence.
+  let sawTerminalFrame = false;
+
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await readWithStallTimeout();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const frames = buffer.split('\n\n');
@@ -83,8 +114,9 @@ async function* streamDaxChat(prompt, signal, modelId, conversationId, clientCon
       const data = JSON.parse(dataLine.slice('data: '.length));
 
       if (type === 'token') yield data.text;
-      if (type === 'error') throw new Error(data.message);
+      if (type === 'error') { sawTerminalFrame = true; throw new Error(data.message); }
       if (type === 'done' && data._error) {
+        sawTerminalFrame = true;
         throw Object.assign(new Error(data.message), { response: { status: data._error, data } });
       }
       // A turn sent without a conversationId (a brand-new local chat) makes
@@ -95,10 +127,15 @@ async function* streamDaxChat(prompt, signal, modelId, conversationId, clientCon
       // Emitted just before 'done', so a confirmation card attaches to the
       // finished reply rather than appearing mid-sentence.
       if (type === 'proposal' && data.proposal) onProposal?.(data.proposal);
-      if (type === 'done' && data.conversationId) {
-        onConversationId?.(data.conversationId);
+      if (type === 'done') {
+        sawTerminalFrame = true;
+        if (data.conversationId) onConversationId?.(data.conversationId);
       }
     }
+  }
+
+  if (!sawTerminalFrame) {
+    throw new Error('Connection to Dax was lost before the reply finished. Please try again.');
   }
 }
 

@@ -1,5 +1,6 @@
 const Task = require('../models/Task');
 const { notify } = require('./notificationController');
+const events = require('../events/domainEvents');
 
 exports.listTasks = async (req, res, next) => {
   try {
@@ -47,6 +48,7 @@ exports.createTask = async (req, res, next) => {
         link: '/me/planner',
         actor: req.user.userId,
       }).catch(() => {});
+      events.planner.taskAssigned(resolvedAssignee, { title, dueDate, by: req.user.name, actorUserId: req.user.userId }).catch(() => {});
     }
     res.status(201).json(task);
   } catch (err) {
@@ -81,6 +83,7 @@ exports.updateTask = async (req, res, next) => {
         link: '/me/planner',
         actor: req.user.userId,
       }).catch(() => {});
+      events.planner.taskCompleted(task.createdBy, { title: task.title, by: req.user.name, actorUserId: req.user.userId }).catch(() => {});
     }
     res.json(task);
   } catch (err) {

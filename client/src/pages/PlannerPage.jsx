@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { CalendarDays, Check, Pencil, Plus, Trash2, Sparkles, Loader2, RefreshCw } from 'lucide-react';
 import { listTasks, createTask, updateTask, deleteTask } from '../api/tasks';
 import { useAuth } from '../context/AuthContext';

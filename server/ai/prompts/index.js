@@ -285,6 +285,67 @@ Return ONLY valid JSON:
     system: withDaxIdentity(`You are a career counsellor. Give personalised, actionable advice grounded in the student's profile and the job market.`),
     user: `Question: ${question}\n\nStudent context:\n${studentContext || 'Not provided'}\n\nReturn ONLY valid JSON:\n{"answer":"detailed 2-4 sentence answer","options":["option 1","option 2","option 3"],"nextSteps":["step 1","step 2","step 3"],"resources":["resource 1","resource 2"]}`,
   }),
+
+  // ── Skill Roadmap Generation ────────────────────────────────────────────
+  // Business logic (skill gap computation, role requirements) is handled by
+  // roadmapService.js before calling this prompt. The prompt only reasons
+  // about what courses, projects, and resources best address the identified
+  // gaps for THIS specific student's context.
+  skillRoadmap: ({ student, gap, existingPlan, learning, career, additionalContext }) => ({
+    system: withDaxIdentity(`You are a career coach building personalised 3-month upskilling roadmaps for students. For each skill gap, recommend ONE specific resource.
+
+Rules:
+- Only reason about the gaps handed to you — do not add new ones.
+- Each recommendation must be concrete (a real course platform, project idea, or certification).
+- Keep rationales brief (1-2 sentences).
+- Prefer free or low-cost resources.
+- Recommend in a logical learning order.
+- Use the student's learning style and goals to tailor your suggestions.`),
+    user: `Build a 3-month skill roadmap from this student's data.
+
+## Student Profile
+- Current skills: ${(student.currentSkills || []).join(', ') || 'None reported'}
+- Target role: ${student.targetRole || 'Not specified'}
+- Learning style: ${student.learningStyle || 'Not specified'}
+- Favourite subjects: ${(student.favouriteSubjects || []).join(', ') || 'None'}
+- Challenging subjects: ${(student.difficultSubjects || []).join(', ') || 'None'}
+- Goals: ${(student.goals || []).join(', ') || 'Not specified'}
+- Specialization: ${student.specialization || 'Not specified'}
+- Preferred industries: ${(student.preferredIndustries || []).join(', ') || 'Any'}
+
+## Identified Skill Gaps
+The following skills are missing compared to the target role requirements:
+${(gap.identifiedMissing || []).map((s, i) => `${i + 1}. ${s}`).join('\n') || 'No specific gaps identified — the roadmap can focus on depth and specialisation.'}
+
+Overall profile match: ${gap.currentMatchPct || 0}% (${gap.closed || 0}/${gap.totalRequired || 0} required skills present)
+
+## Learning Context
+- Average daily study: ${learning?.avgDailyMinutes || 0} min
+- Current streak: ${learning?.streak || 0} days
+- Consistency: ${learning?.consistencyPct || 0}%
+
+## Career Context
+${career ? `- Has resume: ${career.hasResume ? 'Yes' : 'No'}\n- Experience: ${career.experienceYears || 0} years\n- Applications submitted: ${career.applications || 0}` : 'No career data available'}
+
+${existingPlan ? `## Existing Plan\n- Current target role: ${existingPlan.targetRole}\n- Pending gaps: ${(existingPlan.skillGaps || []).filter(g => g.status !== 'done').map(g => g.skill).join(', ') || 'None'}\n- Target companies: ${(existingPlan.targetCompanies || []).join(', ') || 'None'}` : ''}
+
+${additionalContext ? `## Additional Context\n${additionalContext}` : ''}
+
+## Output Format
+Return ONLY valid JSON with this exact schema:
+{
+  "items": [
+    {
+      "skill": "the specific skill being addressed",
+      "recommendationType": "course|project|mentorship|certification|reading|practice",
+      "description": "1-2 sentence description of the recommendation",
+      "rationale": "why this fits this student's profile and context (1 sentence)",
+      "resourceLink": "optional URL to the resource (e.g. Coursera, Kaggle, free tutorial)",
+      "suggestedOrder": 0
+    }
+  ]
+}`,
+  }),
 };
 
 module.exports = PROMPTS;

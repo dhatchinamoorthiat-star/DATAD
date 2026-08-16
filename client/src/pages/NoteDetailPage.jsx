@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { ArrowLeft, Pencil, Trash2, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { getNote, deleteNote } from '../api/notes';
 import { useAuth } from '../context/AuthContext';

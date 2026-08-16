@@ -71,7 +71,7 @@ function CompoundCalculator() {
   const [rate, setRate]     = useState(12);
   const value = (Number(amount) || 0) * (1 + (Number(rate) || 0) / 100) ** (Number(years) || 0);
   return (
-    <CalcCard title="One-time investment compounding" icon={Sprout}
+    <CalcCard title="Lumpsum" icon={Sprout}
       result={<Result lines={[['You invest once', inr(Number(amount) || 0)], ['Growth', inr(value - (Number(amount) || 0))], [`Value after ${years || 0} years`, inr(value)]]} />}>
       <Field label="Amount invested today" value={amount} onChange={setAmount} suffix="₹" />
       <div className="grid grid-cols-2 gap-2.5">

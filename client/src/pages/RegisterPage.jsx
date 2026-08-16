@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { MailCheck } from 'lucide-react';
 import Button from '../components/common/Button';
 import AuthShell from '../components/layout/AuthShell';
@@ -58,6 +58,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState('');
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -121,7 +122,11 @@ export default function RegisterPage() {
         },
       };
       const res = await registerApi(payload);
-      if (res.data.pending) { setPending(true); return; }
+      if (res.data.pending) {
+        setPendingMessage(res.data.message || '');
+        setPending(true);
+        return;
+      }
       login(res.data.token);
       toast.success('Welcome to DATAD!');
       navigate('/dashboard');
@@ -137,10 +142,9 @@ export default function RegisterPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
             <MailCheck className="h-8 w-8" />
           </div>
-          <h2 className="text-xl font-bold">Account created — pending approval</h2>
+          <h2 className="text-xl font-bold">Check your email</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            An admin will verify your details and approve your account shortly. You'll receive an
-            email the moment you're in. Have a referral code? Register again with it to skip the queue.
+            {pendingMessage || 'Account created — check your email to confirm your address before logging in.'}
           </p>
           <Link
             to="/login"

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { Newspaper, RefreshCw, Sparkles, LineChart, Bookmark, SlidersHorizontal, Star } from 'lucide-react';
 import Button from '../components/common/Button';
 import {

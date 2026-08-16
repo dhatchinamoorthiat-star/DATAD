@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Building2, MessageSquare, ArrowRight, ExternalLink, Lock } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import { track } from '../../utils/analytics';
 import { useSubscription } from '../../context/SubscriptionContext';
 import { listCompanies, getCompanyNews } from '../../api/companies';
 import ReadinessCard from '../../components/common/ReadinessCard';
@@ -32,6 +33,7 @@ export default function CareerHubPage() {
   const [readiness, setReadiness] = useState(null);
 
   useEffect(() => {
+    track('career_hub_viewed');
     getReadiness().then((r) => setReadiness(r.data)).catch(() => {});
     listCompanies()
       .then((res) => {

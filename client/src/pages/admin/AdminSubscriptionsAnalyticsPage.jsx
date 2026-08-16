@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TrendingUp, Users, DollarSign, ZapOff, CheckCircle2, Clock } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { getSubscriptionAnalytics } from '../../api/admin';
 import { Page } from '../../components/common/motion';

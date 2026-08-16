@@ -50,6 +50,7 @@ const JOB_MAP = {
   'moderation':        () => require('../automation/moderation/moderatePosts').moderatePosts(),
   'news-refresh':      () => require('../services/newsFetcher').refreshNews(),
   'market-refresh':    () => require('../services/marketFetcher').refreshMarket(),
+  'stock-refresh':     () => require('../services/stockFetcher').refreshStocks(),
 };
 
 router.post('/trigger/:job', ...guard, async (req, res, next) => {
@@ -214,26 +215,26 @@ router.get('/cost-trends', ...guard, async (req, res, next) => {
 });
 
 // ── GET /api/automation/gateway-mode — View/change gateway execution mode ──
+// V2/hybrid/shadow modes were removed in the Sprint 2 AI consolidation.
+// The gateway now always uses V1-only execution. This endpoint returns a
+// fixed response for backwards compatibility.
 
 router.get('/gateway-mode', ...guard, async (req, res, next) => {
   try {
-    const gateway = require('../ai/aiGateway');
     res.json({
-      mode: gateway.getMode(),
-      availableModes: gateway.getAllModes(),
-      hybridV2Intents: gateway.HYBRID_V2_INTENTS,
+      mode: 'v1_only',
+      availableModes: ['v1_only'],
+      hybridV2Intents: [],
+      message: 'Gateway mode is permanently v1_only as of Sprint 2 AI consolidation (July 2026). V2/hybrid/shadow modes were removed.',
     });
   } catch (err) { next(err); }
 });
 
 router.put('/gateway-mode', ...guard, async (req, res, next) => {
   try {
-    const gateway = require('../ai/aiGateway');
-    const { mode } = req.body;
-    if (!mode) return res.status(400).json({ message: 'Mode is required' });
-    const ok = gateway.setMode(mode);
-    if (!ok) return res.status(400).json({ message: `Invalid mode. Must be one of: ${gateway.getAllModes().join(', ')}` });
-    res.json({ mode: gateway.getMode(), message: `Gateway mode set to "${mode}"` });
+    res.status(400).json({
+      message: 'Gateway mode changes are no longer supported. The gateway always uses v1_only after the Sprint 2 AI consolidation (July 2026).',
+    });
   } catch (err) { next(err); }
 });
 

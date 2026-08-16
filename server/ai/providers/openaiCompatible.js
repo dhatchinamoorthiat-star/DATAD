@@ -3,6 +3,7 @@
  * Groq, OpenAI, Gemini, OpenRouter, NVIDIA NIM, Ollama
  */
 const OpenAI = require('openai');
+const { withStreamIdleTimeout } = require('./streamIdleTimeout');
 
 // Per-request ceiling for any single provider call. Overridable so a slow
 // self-hosted backend can be given more room without a code change.
@@ -98,7 +99,7 @@ class OpenAICompatibleProvider {
     const stream = await this._getClient().chat.completions.create(params, { signal });
     const pending = new Map();
 
-    for await (const chunk of stream) {
+    for await (const chunk of withStreamIdleTimeout(stream)) {
       const choice = chunk.choices?.[0];
       if (!choice) continue;
 

@@ -1,6 +1,7 @@
 const SkillListing = require('../models/SkillListing');
 const SkillRating = require('../models/SkillRating');
 const { notify } = require('./notificationController');
+const events = require('../events/domainEvents');
 
 exports.listListings = async (req, res, next) => {
   try {
@@ -70,6 +71,7 @@ exports.addRating = async (req, res, next) => {
     const listing = await SkillListing.findById(req.params.id).select('user skill').lean();
     if (listing && String(listing.user) !== req.user.userId) {
       notify({ user: listing.user, type: 'reaction', title: `${req.user.name} rated your skill: ${listing.skill}`, body: `${rating}/5${comment ? ` — ${comment.slice(0, 60)}` : ''}`, link: '/community/skills', actor: req.user.userId }).catch(() => {});
+      events.social.skillRated(listing.user, { by: req.user.name, skill: listing.skill, rating: data.rating }).catch(() => {});
     }
     res.json(r);
   } catch (err) { next(err); }

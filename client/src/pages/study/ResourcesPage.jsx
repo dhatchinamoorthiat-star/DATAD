@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Link } from 'react-router-dom';
 import {
   FileText, FileSpreadsheet, Link2, Video, Download, Search,

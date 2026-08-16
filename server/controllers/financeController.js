@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
 const Expense = require('../models/Expense');
 const Budget = require('../models/Budget');
+const StockQuote = require('../models/StockQuote');
 const { notify } = require('./notificationController');
+const events = require('../events/domainEvents');
 
 const monthRange = (month) => {
   // month is 'YYYY-MM'; defaults to current month
@@ -39,6 +41,7 @@ exports.createExpense = async (req, res, next) => {
       date: date || Date.now(),
       user: req.user.userId,
     });
+    events.finance.expenseAdded(req.user.userId, { amount, category, kind, entryId: entry._id }).catch(() => {});
     // Budget exceeded alert — only on expenses, only on first crossing
     if (entry.kind === 'expense') {
       const { start, end } = monthRange();
@@ -54,6 +57,7 @@ exports.createExpense = async (req, res, next) => {
         const prev = total - Number(amount);
         if (total >= budget.monthlyAmount && prev < budget.monthlyAmount) {
           notify({ user: req.user.userId, type: 'general', title: 'Monthly budget exceeded', body: `Spent ₹${total.toLocaleString('en-IN')} of ₹${budget.monthlyAmount.toLocaleString('en-IN')} budget`, link: '/finance' }).catch(() => {});
+          events.finance.budgetExceeded(req.user.userId, { spent: total, budget: budget.monthlyAmount }).catch(() => {});
         }
       }
     }
@@ -100,6 +104,15 @@ exports.getSummary = async (req, res, next) => {
       byCategory: byCategory.map((c) => ({ category: c._id, total: c.total })),
       budget: budget ? budget.monthlyAmount : null,
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.listStockQuotes = async (req, res, next) => {
+  try {
+    const quotes = await StockQuote.find().sort({ symbol: 1 });
+    res.json(quotes);
   } catch (err) {
     next(err);
   }

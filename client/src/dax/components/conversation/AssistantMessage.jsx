@@ -40,7 +40,7 @@ export default function AssistantMessage({
           <div className="mt-1.5 opacity-0 transition-opacity group-hover:opacity-100">
             <MessageToolbar
               onCopy={!isError ? () => onCopy?.(message.content) : undefined}
-              onRegenerate={!isError ? onRegenerate : undefined}
+              onRegenerate={onRegenerate}
               onContinue={!isError ? onContinue : undefined}
               onShare={!isError ? onShare : undefined}
               onExport={!isError ? onExport : undefined}

@@ -91,7 +91,7 @@ export default function DaxTransition({ mode, userName, brandName = 'Dax', onDon
           style={{ background: 'var(--dax-bg)' }}
           initial={{ opacity: mode === 'outro' ? 0 : 1 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.45, ease: 'easeInOut' } }}
+          exit={{ opacity: 0, pointerEvents: 'none', transition: { duration: 0.45, ease: 'easeInOut' } }}
           transition={{ duration: 0.3 }}
           onClick={handleSkip}
           role="status"

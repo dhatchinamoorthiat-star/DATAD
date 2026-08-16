@@ -7,7 +7,7 @@ import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import DateInput from '../../components/common/DateInput';
 import { Page } from '../../components/common/motion';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { TASK_TYPES } from '../../utils/constants';
 
 const ACADEMIC_TYPES = ['case-study', 'exam', 'deadline', 'other'];

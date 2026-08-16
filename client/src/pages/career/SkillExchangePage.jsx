@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { GraduationCap, Star, Users, Search, Plus, Phone } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listSkills, createSkill, deleteSkill, rateSkill } from '../../api/skills';
@@ -64,14 +64,14 @@ export default function SkillExchangePage() {
       toast.success('Rating submitted');
       setRateCard(null);
       load();
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not submit rating'); }
   };
 
   const onDelete = async (id) => {
     try {
       await deleteSkill(id);
       setSkills((prev) => prev.filter((s) => s._id !== id));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not delete skill listing'); }
   };
 
   return (

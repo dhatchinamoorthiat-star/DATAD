@@ -28,6 +28,11 @@ exports.getNote = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id).populate('author', 'name');
     if (!note) return res.status(404).json({ message: 'Note not found' });
+    // ⭐ Scope check: notes are scoped to programs when the user has a program
+    const programId = req.user?.program?.id;
+    if (note.program && programId && note.program !== programId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
     res.json(note);
   } catch (err) {
     next(err);

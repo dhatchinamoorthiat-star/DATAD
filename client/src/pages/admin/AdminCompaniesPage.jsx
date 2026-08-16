@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Briefcase, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { listCompanies, createCompany, deleteCompany } from '../../api/companies';
 import { SECTORS } from '../../utils/companies';

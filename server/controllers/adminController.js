@@ -10,6 +10,8 @@ const { sendAnnouncementEmail, sendAccountApprovedEmail, sendWelcomeEmail } = re
 const { notify } = require('./notificationController');
 const ActivityLog = require('../models/ActivityLog');
 const logActivity = require('../utils/logActivity');
+const sessionVersion = require('../services/sessionVersion');
+const events = require('../events/domainEvents');
 const publishService = require('../services/publishing/publishService');
 const logger = require('../utils/logger');
 const StudentIdentity = require('../models/StudentIdentity');
@@ -126,6 +128,9 @@ exports.approveStudent = async (req, res, next) => {
 
     user.status = 'approved';
     await user.save();
+    // verifyToken reads status from the cached session record; drop it so the
+    // approval takes effect on the student's very next request.
+    sessionVersion.invalidate(user._id);
 
     // Approving the person also provisions their program. These were two
     // separate admin actions; forgetting the second one let a student in with
@@ -153,6 +158,7 @@ exports.approveStudent = async (req, res, next) => {
     sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', err.message));
     notify({ user: user._id, type: 'general', title: `Welcome to DATAD, ${user.name.split(' ')[0]}! Your account has been approved.`, link: '/' }).catch(() => {});
     logActivity('approved', `Admin approved ${user.name}'s account`, user);
+    events.admin.accountApproved(user._id, { name: user.name, email: user.email }).catch(() => {});
     res.json({ message: `${user.name} approved`, user });
   } catch (err) {
     next(err);
@@ -167,6 +173,9 @@ exports.rejectStudent = async (req, res, next) => {
       return res.status(400).json({ message: 'Only pending accounts can be rejected' });
     }
     await User.deleteOne({ _id: user._id });
+    // Otherwise a cached record could keep a rejected account's token working
+    // for the remainder of the TTL.
+    sessionVersion.invalidate(user._id);
     logActivity('rejected', `Admin rejected ${user.name}'s pending signup`, user);
     res.json({ message: 'Pending account removed' });
   } catch (err) {
@@ -225,6 +234,7 @@ exports.createAnnouncement = async (req, res, next) => {
         notify({ user: u._id, type: 'announcement', title: announcement.title, body: body.slice(0, 120), link: '/community/announcements', actor: req.user.userId })
       );
       Promise.allSettled(notifPromises).catch(() => {});
+      events.admin.announcementPosted(req.user.userId, { title: announcement.title, body }).catch(() => {});
     }).catch(() => {});
 
     if (sendEmail) {

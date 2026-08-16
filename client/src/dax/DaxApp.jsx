@@ -15,6 +15,7 @@ import { storage } from './lib/storage';
 import { generateId } from './lib/id';
 import { migrateLocalConversationsToServer } from './lib/migrateToServer';
 import { TEXT_LIKE_EXTENSIONS, TEXT_ATTACHMENT_MAX_BYTES } from './constants';
+import toast from '../utils/toast';
 import {
   getAvailableModels, getModelPreference, setModelPreference,
   deleteConversationRemote, updateConversationRemote,
@@ -116,7 +117,7 @@ export default function DaxApp({ adapter, config = {} }) {
   const bootstrappedRef = useRef(false);
   const modelBootstrappedRef = useRef(false);
 
-  const { phase, send, stop, regenerate, continueMessage, editAndResend } = useDaxChat({
+  const { phase, error, send, stop, regenerate, continueMessage, editAndResend } = useDaxChat({
     conversation: activeConversation,
     adapter,
     appendMessage,
@@ -124,6 +125,20 @@ export default function DaxApp({ adapter, config = {} }) {
     modelId: selectedModelId,
     onConversationLinked: linkServerId,
   });
+
+  // The failure itself is already shown inline as the assistant's reply
+  // (AssistantMessage renders message.error). A quota error additionally
+  // carries an upgradeUrl with nowhere else to go — that CTA only surfaces
+  // here, via a toast action button, so hitting the daily cap doesn't
+  // silently dead-end without a path to upgrade.
+  useEffect(() => {
+    if (error?.status === 429 && error.upgradeUrl) {
+      toast.warning(error.message, {
+        id: 'dax:quota-exceeded',
+        action: { label: 'Upgrade', onClick: () => navigate(error.upgradeUrl) },
+      });
+    }
+  }, [error, navigate]);
 
   // Load available models and user's preference on mount
   useEffect(() => {

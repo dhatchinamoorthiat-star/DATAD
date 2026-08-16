@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Plus, Trash2, Wallet, TrendingUp, Download } from 'lucide-react';
 import { listExpenses, createExpense, deleteExpense } from '../../api/finance';
 import { formatDate } from '../../utils/dateUtils';

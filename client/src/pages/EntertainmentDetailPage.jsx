@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Sparkles, Clock, MapPin, Tv, BookOpen, ArrowLeft, Quote, Heart, Bookmark } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import NostalgiaMeter from '../components/entertainment/NostalgiaMeter';
 import PsychologySection from '../components/entertainment/PsychologySection';
 import TriviaQuiz from '../components/entertainment/TriviaQuiz';

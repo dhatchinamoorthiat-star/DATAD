@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Clapperboard, Plus, ExternalLink, Trash2 } from 'lucide-react';
 import { listItems, createItem, deleteItem } from '../../api/entertainment';
 import { AdminShell, inputClass } from './shared';

@@ -24,7 +24,7 @@ import { useLocation } from 'react-router-dom';
 import { WORKSPACES } from '../../utils/workspaces';
 import CommandPalette from '../common/CommandPalette';
 import NotificationBell from '../common/NotificationBell';
-import ChatBot from '../chat/ChatBot';
+import DaxPanel from '../chat/DaxPanel';
 import Footer from './Footer';
 
 const AdminIcon = Crown;
@@ -132,6 +132,20 @@ function AvatarMenu() {
       )}
     </div>
   );
+}
+
+// Map the current route to a Dax context string so the embedded panel
+// knows which workspace the student is in.
+function routeContext(pathname) {
+  if (pathname.startsWith('/study/notes')) return 'notes';
+  if (pathname.startsWith('/study')) return 'study';
+  if (pathname.startsWith('/career/resume')) return 'resume';
+  if (pathname.startsWith('/career')) return 'career';
+  if (pathname.startsWith('/me/planner') || pathname.startsWith('/planner')) return 'planner';
+  if (pathname.startsWith('/community')) return 'community';
+  if (pathname.startsWith('/finance')) return 'finance';
+  if (pathname.startsWith('/me')) return 'planner';
+  return undefined;
 }
 
 export default function AppShell({ children }) {
@@ -251,7 +265,7 @@ export default function AppShell({ children }) {
         <Footer />
       </div>
 
-      <ChatBot />
+      <DaxPanel context={routeContext(location.pathname)} />
 
       {/* Mobile bottom tab bar — sits above the iOS home indicator */}
       <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),8px)] dark:border-gray-800/70 lg:hidden print:hidden">

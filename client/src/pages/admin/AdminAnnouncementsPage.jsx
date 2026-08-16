@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Link } from 'react-router-dom';
 import { Megaphone, Pin, Mail, Trash2, Sparkles } from 'lucide-react';
 import { listAnnouncements, createAnnouncement, deleteAnnouncement } from '../../api/admin';

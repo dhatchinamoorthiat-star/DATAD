@@ -1,4 +1,5 @@
 const OpenAI = require('openai');
+const { withStreamIdleTimeout } = require('./streamIdleTimeout');
 
 const NVIDIA_BASE_URL = 'https://integrate.api.nvidia.com/v1';
 
@@ -343,7 +344,7 @@ class NvidiaProvider {
 
     const pending = new Map(); // index -> { id, name, arguments }
 
-    for await (const chunk of stream) {
+    for await (const chunk of withStreamIdleTimeout(stream)) {
       const choice = chunk.choices?.[0];
       if (!choice) continue;
 

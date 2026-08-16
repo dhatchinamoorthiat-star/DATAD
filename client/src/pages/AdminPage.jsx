@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { Link } from 'react-router-dom';
 import {
   BookLock,
@@ -213,6 +213,12 @@ export default function AdminPage() {
       icon: Cpu,
       title: 'AI Runtime',
       description: 'Live AI observability, provider health, model registry',
+    },
+    {
+      to: '/admin/cohort',
+      icon: Users,
+      title: 'Cohort Intel',
+      description: 'Aggregate readiness, strengths, and gaps across students',
     },
     {
       to: '/admin/subscriptions',

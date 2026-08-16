@@ -18,16 +18,14 @@ export default function WorkspaceLayout({ workspace, title, extraTabs = [] }) {
   const tabs = [...(WORKSPACE_TABS[workspace] || []), ...extraTabs];
   return (
     <>
-      <div className="border-b border-gray-100 bg-white print:hidden dark:border-gray-800/70 dark:bg-gray-950">
-        <div className={`scroll-ios flex items-center gap-4 overflow-x-auto py-3 ${CONTAINER}`}>
+      <div className="sticky top-[53px] z-30 border-b border-gray-100 bg-white/90 backdrop-blur-md print:hidden dark:border-gray-800/70 dark:bg-gray-950/90">
+        <div className="scroll-ios flex items-center justify-center gap-2 overflow-x-auto px-4 py-3">
           <span className="hidden shrink-0 text-sm font-semibold text-gray-900 dark:text-gray-100 sm:block">{title}</span>
-          <div className="flex gap-1">
-            {tabs.map((t) => (
-              <NavLink key={t.to} to={t.to} end={t.end} className={tabClass}>
-                {t.label}
-              </NavLink>
-            ))}
-          </div>
+          {tabs.map((t) => (
+            <NavLink key={t.to} to={t.to} end={t.end} className={tabClass}>
+              {t.label}
+            </NavLink>
+          ))}
         </div>
       </div>
       <Outlet />

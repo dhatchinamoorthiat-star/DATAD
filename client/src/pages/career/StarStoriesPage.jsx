@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen, Edit2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import PageHeader from '../../components/common/PageHeader';
 import Modal from '../../components/common/Modal';
 import { Page } from '../../components/common/motion';

@@ -6,6 +6,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PWAProvider } from './context/PWAContext';
 import { ProgramProvider } from './context/ProgramContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './context/ToastContext';
 import InstallPrompt from './components/pwa/InstallPrompt';
 import OfflineBanner from './components/pwa/OfflineBanner';
 import UpdateBanner from './components/pwa/UpdateBanner';
@@ -16,6 +18,7 @@ import Loader from './components/common/Loader';
 import SectionTransition from './components/common/SectionTransition';
 import RouteBeacon from './components/common/RouteBeacon';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import PitchGate from './components/common/PitchGate';
 
 
 // Route-level code splitting: each page loads on demand, keeping the initial
@@ -34,6 +37,7 @@ const PlannerPage = lazy(() => import('./pages/PlannerPage'));
 const FinanceHubPage        = lazy(() => import('./pages/me/FinanceHubPage'));
 const FinanceTrackerPage    = lazy(() => import('./pages/me/FinanceTrackerPage'));
 const FinanceCalculatorPage = lazy(() => import('./pages/me/FinanceCalculatorPage'));
+const FinanceStocksPage = lazy(() => import('./pages/me/FinanceStocksPage'));
 const FinanceLearnPage      = lazy(() => import('./pages/me/FinanceLearnPage'));
 const IntelligencePage = lazy(() => import('./pages/IntelligencePage'));
 const ResumePage = lazy(() => import('./pages/ResumePage'));
@@ -61,6 +65,7 @@ const EntertainmentDetailPage = lazy(() => import('./pages/EntertainmentDetailPa
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const SubscribePage = lazy(() => import('./pages/SubscribePage'));
+const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
 const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptionsPage'));
 const AdminSubscriptionsAnalyticsPage = lazy(() => import('./pages/admin/AdminSubscriptionsAnalyticsPage'));
 const CalendarPage = lazy(() => import('./pages/me/CalendarPage'));
@@ -90,11 +95,13 @@ const StudyToolsPage    = lazy(() => import('./pages/study/StudyToolsPage'));
 const SkillExchangePage = lazy(() => import('./pages/career/SkillExchangePage'));
 const AdminAICenterPage = lazy(() => import('./pages/admin/AdminAICenterPage'));
 const AdminAIDashboardPage = lazy(() => import('./pages/admin/AdminAIDashboardPage'));
+const AdminCohortPage = lazy(() => import('./pages/admin/AdminCohortPage'));
 const PivotPage         = lazy(() => import('./pages/career/PivotPage'));
 const StarStoriesPage   = lazy(() => import('./pages/career/StarStoriesPage'));
 const FinanceROIPage    = lazy(() => import('./pages/me/FinanceROIPage'));
 const ReflectionPage    = lazy(() => import('./pages/ReflectionPage'));
 const DaxPage           = lazy(() => import('./pages/DaxPage'));
+const PSWPage           = lazy(() => import('./pages/psw/PSWPage'));
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -140,17 +147,34 @@ export default function App() {
     <PWAProvider>
       <ThemeProvider>
         <AuthProvider>
+          <NotificationProvider>
+            <ToastProvider>
           <BrowserRouter>
             <OfflineBanner />
             <UpdateBanner />
             <SectionTransition />
             <Toaster
-              position="top-center"
+              position="top-right"
+              gutter={12}
+              containerStyle={{ top: 60, right: 16 }}
               toastOptions={{
                 className: 'datad-toast',
                 duration: 3500,
-                success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-                error: { iconTheme: { primary: '#f43f5e', secondary: '#fff' } },
+                style: {
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                },
+                success: {
+                  iconTheme: { primary: '#10b981', secondary: '#fff' },
+                  style: { borderLeft: '4px solid #10b981' },
+                },
+                error: {
+                  iconTheme: { primary: '#f43f5e', secondary: '#fff' },
+                  style: { borderLeft: '4px solid #f43f5e' },
+                },
               }}
             />
           <Suspense fallback={<Loader />}>
@@ -164,6 +188,7 @@ export default function App() {
               <Route path="/verify-email" element={<VerifyEmailPage />} />
               <Route path="/creator" element={<CreatorPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/psw" element={<PSWPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               {/* "/" is reserved for the public landing page — always, logged in or not. */}
@@ -180,9 +205,10 @@ export default function App() {
               />
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/roadmap" element={<Navigate to="/career/roadmap" replace />} />
                 <Route path="/briefing" element={<IntelligencePage />} />
 
-                <Route path="/study" element={<WorkspaceLayout workspace="study" title="Study" />}>
+                <Route path="/study" element={<PitchGate title="Study"><WorkspaceLayout workspace="study" title="Study" /></PitchGate>}>
                   <Route index element={<StudyHubPage />} />
                   <Route path="notes" element={<NotesListPage />} />
                   <Route path="notes/new" element={<NoteEditorPage />} />
@@ -209,27 +235,28 @@ export default function App() {
                   <Route path="companies" element={<CompaniesPage />} />
                   <Route path="companies/:slug" element={<CompanyDetailPage />} />
                   <Route path="questions" element={<InterviewQuestionsPage />} />
-                  <Route path="opportunities" element={<OpportunitiesPage />} />
+                  <Route path="opportunities" element={<PitchGate title="Opportunities"><OpportunitiesPage /></PitchGate>} />
                   {/* Merged/moved tabs — old URLs keep working */}
                   <Route path="readiness" element={<Navigate to="/career" replace />} />
                   <Route path="placements" element={<Navigate to="/career/opportunities" replace />} />
                   <Route path="internships" element={<Navigate to="/career/opportunities?view=internships" replace />} />
                   <Route path="skills" element={<Navigate to="/community/skills" replace />} />
-                  <Route path="pivot" element={<PivotPage />} />
-                  <Route path="stories" element={<StarStoriesPage />} />
+                  <Route path="roadmap" element={<PitchGate title="Roadmap"><PivotPage mode="roadmap" /></PitchGate>} />
+                  <Route path="pivot" element={<PitchGate title="Pivot"><PivotPage /></PitchGate>} />
+                  <Route path="stories" element={<PitchGate title="STAR Stories"><StarStoriesPage /></PitchGate>} />
                 </Route>
 
                 <Route path="/community" element={<WorkspaceLayout workspace="community" title="Community" />}>
                   <Route index element={<CommunityHubPage />} />
                   <Route path="announcements" element={<AnnouncementsPage />} />
                   <Route path="feed" element={<StreamPage />} />
-                  <Route path="memories" element={<MemoriesPage />} />
+                  <Route path="memories" element={<PitchGate title="BatchVault"><MemoriesPage /></PitchGate>} />
                   <Route path="archive/:category/:slug" element={<EntertainmentDetailPage />} />
-                  <Route path="directory" element={<DirectoryPage />} />
-                  <Route path="events" element={<EventsPage />} />
+                  <Route path="directory" element={<PitchGate title="Directory"><DirectoryPage /></PitchGate>} />
+                  <Route path="events" element={<PitchGate title="Events"><EventsPage /></PitchGate>} />
                   {/* No top tab — reachable from the Community overview */}
-                  <Route path="marketplace" element={<MarketplacePage />} />
-                  <Route path="skills" element={<SkillExchangePage />} />
+                  <Route path="marketplace" element={<PitchGate title="Marketplace"><MarketplacePage /></PitchGate>} />
+                  <Route path="skills" element={<PitchGate title="Skills"><SkillExchangePage /></PitchGate>} />
                   {/* Merged tabs — old URLs keep working */}
                   <Route path="discussions" element={<Navigate to="/community/feed?view=discussions" replace />} />
                   <Route path="gallery" element={<Navigate to="/community/memories" replace />} />
@@ -241,30 +268,32 @@ export default function App() {
                   <Route path="planner" element={<PlannerPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="program" element={<ProgramSettingsPage />} />
-                  <Route path="journal" element={<JournalPage />} />
-                  <Route path="reflection" element={<ReflectionPage />} />
-                  <Route path="calendar" element={<CalendarPage />} />
+                  <Route path="journal" element={<PitchGate title="Journal"><JournalPage /></PitchGate>} />
+                  <Route path="reflection" element={<PitchGate title="Reflection"><ReflectionPage /></PitchGate>} />
+                  <Route path="calendar" element={<PitchGate title="Calendar"><CalendarPage /></PitchGate>} />
                 </Route>
 
                 <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Finance" />}>
                   <Route index element={<FinanceHubPage />} />
                   <Route path="tracker" element={<FinanceTrackerPage />} />
                   <Route path="calculator" element={<FinanceCalculatorPage />} />
+                  <Route path="stocks" element={<FinanceStocksPage />} />
                   <Route path="learn" element={<FinanceLearnPage />} />
-                  <Route path="roi" element={<FinanceROIPage />} />
+                  <Route path="roi" element={<PitchGate title="ROI"><FinanceROIPage /></PitchGate>} />
                 </Route>
 
                 <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Wellbeing" />}>
                   <Route index element={<WellbeingPage />} />
                   <Route path="study" element={<WellbeingStudyPage />} />
-                  <Route path="memory" element={<WellbeingMemoryPage />} />
-                  <Route path="routines" element={<WellbeingRoutinesPage />} />
+                  <Route path="memory" element={<PitchGate title="Memory"><WellbeingMemoryPage /></PitchGate>} />
+                  <Route path="routines" element={<PitchGate title="Routines"><WellbeingRoutinesPage /></PitchGate>} />
                   <Route path="support" element={<WellbeingSupportPage />} />
                 </Route>
 
-                <Route path="/search" element={<SearchPage />} />
+                <Route path="/search" element={<PitchGate title="Search"><SearchPage /></PitchGate>} />
 
-                <Route path="/subscribe" element={<SubscribePage />} />
+                <Route path="/subscribe" element={<PitchGate title="Subscribe"><SubscribePage /></PitchGate>} />
+                <Route path="/developer" element={<PitchGate title="Developer"><DeveloperPage /></PitchGate>} />
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                 <Route path="/admin/students" element={<AdminRoute><AdminStudentsPage /></AdminRoute>} />
@@ -279,6 +308,7 @@ export default function App() {
                 <Route path="/admin/automation" element={<AdminRoute><AdminAutomationPage /></AdminRoute>} />
                 <Route path="/admin/ai-center" element={<AdminRoute><AdminAICenterPage /></AdminRoute>} />
                 <Route path="/admin/ai-runtime" element={<AdminRoute><AdminAIDashboardPage /></AdminRoute>} />
+                <Route path="/admin/cohort" element={<AdminRoute><AdminCohortPage /></AdminRoute>} />
                 <Route path="/admin/subscriptions" element={<AdminRoute><AdminSubscriptionsPage /></AdminRoute>} />
                 <Route path="/admin/subscriptions/analytics" element={<AdminRoute><AdminSubscriptionsAnalyticsPage /></AdminRoute>} />
 
@@ -302,6 +332,8 @@ export default function App() {
           </Suspense>
           <InstallPrompt />
           </BrowserRouter>
+            </ToastProvider>
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </PWAProvider>

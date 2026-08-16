@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { ShoppingBag, Tag, Search, Plus, Phone } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listListings, createListing, markSold, deleteListing } from '../../api/marketplace';
@@ -60,14 +60,14 @@ export default function MarketplacePage() {
       await markSold(id);
       setItems((prev) => prev.map((i) => i._id === id ? { ...i, sold: true } : i));
       toast.success('Marked as sold');
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not mark as sold'); }
   };
 
   const onDelete = async (id) => {
     try {
       await deleteListing(id);
       setItems((prev) => prev.filter((i) => i._id !== id));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not delete listing'); }
   };
 
   return (

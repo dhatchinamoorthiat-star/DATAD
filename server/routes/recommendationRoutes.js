@@ -6,6 +6,7 @@ const workspace = require('../ai/recommendation-engine/workspace');
 const intelligenceLayer = require('../ai/intelligence-layer');
 const lifecycleManager = require('../ai/recommendation-engine/lifecycleManager');
 const feedbackEngine = require('../ai/recommendation-engine/feedbackEngine');
+const learningLoop = require('../ai/recommendation-engine/learningLoop');
 const { generateDailyMission } = require('../ai/recommendation-engine/dailyMission');
 const weeklyReview = require('../ai/recommendation-engine/weeklyReview');
 const goalProgress = require('../ai/recommendation-engine/goalProgress');
@@ -105,6 +106,8 @@ router.post('/:id/feedback', async (req, res, next) => {
     const result = await feedbackEngine.recordFeedback(uid, req.params.id, type);
     if (!result) return res.status(404).json({ message: 'Recommendation not found' });
     if (result.error) return res.status(400).json(result);
+    // Fire the learning loop — analyzes patterns and adjusts generator weights
+    learningLoop.processFeedback(uid).catch(() => {});
     res.json({ applied: true });
   } catch (err) { next(err); }
 });

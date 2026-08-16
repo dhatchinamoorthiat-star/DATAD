@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import Button from '../components/common/Button';
 import AuthShell from '../components/layout/AuthShell';
 import { resetPassword } from '../api/auth';

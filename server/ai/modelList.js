@@ -2,34 +2,42 @@ const cfg = require('../config/automation');
 const { buildProvider } = require('./providers');
 
 // Every id here is verified against NVIDIA's live catalogue
-// (GET https://integrate.api.nvidia.com/v1/models). Model names that don't
-// exist upstream fail the request outright and make the picker look broken,
-// so re-check this list against that endpoint before adding entries.
-// Only models confirmed to actually answer on this NVIDIA account. Every id
-// is in the live catalogue AND returned a real completion when probed.
+// (GET https://integrate.api.nvidia.com/v1/models) AND confirmed to return
+// a real completion when probed directly against this account's key.
+// Being in the catalogue is necessary but NOT sufficient — some listed
+// models 404/410 for this key, and some large ones never return in time.
+// Both make the picker look broken, so re-probe before adding an entry.
 //
-// Re-check with: node scripts/verifyModelRegistry.js  (catalogue presence)
-// Being in the catalogue is necessary but NOT sufficient — some listed models
-// 404 for a given key, and some very large ones never return in time. Both
-// make the picker look broken, so probe before adding.
+// Re-check with: node scripts/verifyModelRegistry.js
 //
-// Deliberately excluded (verified failing on this key, 2026-07-20):
-//   404 / not enabled  → mistralai/codestral-22b-instruct-v0.1
-//                        nvidia/llama-3.1-nemotron-70b-instruct
-//                        nvidia/llama-3.1-nemotron-ultra-253b-v1
-//   hangs (>45s)       → meta/llama-3.3-70b-instruct
-//                        meta/llama-4-maverick-17b-128e-instruct
-//                        qwen/qwen3.5-397b-a17b
-//                        mistralai/mistral-large-3-675b-instruct-2512
-//                        z-ai/glm-5.2
+// Full sweep of all 30 previously-registered NVIDIA models, run
+// 2026-07-27 against this account's (rotated) key — only these 7 answered:
+//   410 Gone (retired)   → meta/llama-4-maverick-17b-128e-instruct
+//                          qwen/qwen3-next-80b-a3b-instruct
+//                          qwen/qwen3.5-397b-a17b
+//                          mistralai/mistral-large-3-675b-instruct-2512
+//                          minimaxai/minimax-m2.7
+//                          google/gemma-2-2b-it
+//                          sarvamai/sarvam-m
+//   404 (wrong/stale id) → nvidia/llama-3.1-nemotron-70b-instruct
+//                          nvidia/nemotron-4-340b-instruct
+//                          mistralai/codestral-22b-instruct-v0.1
+//                          google/gemma-3-12b-it
+//                          meta/codellama-70b, nvidia/cosmos-reason2-8b
+//                          all 3 embedding-only ids (wrong endpoint shape)
+//                          bigcode/starcoder2-15b
+//   timed out (15-20s)   → deepseek-ai/deepseek-v4-pro
+//                          meta/llama-3.3-70b-instruct
+//                          google/gemma-4-31b-it, z-ai/glm-5.2
+//                          openai/gpt-oss-120b
 const NVIDIA_MODELS_DISPLAY = [
   { model: 'meta/llama-3.1-8b-instruct', label: 'Llama 3.1 8B', description: 'Fast, lightweight default' },
   { model: 'deepseek-ai/deepseek-v4-flash', label: 'DeepSeek V4 Flash', description: 'Fast reasoning' },
-  { model: 'deepseek-ai/deepseek-v4-pro', label: 'DeepSeek V4 Pro', description: 'High quality reasoning' },
-  { model: 'qwen/qwen3-next-80b-a3b-instruct', label: 'Qwen 3 Next', description: 'Efficient general model' },
+  { model: 'meta/llama-3.1-70b-instruct', label: 'Llama 3.1 70B', description: 'Balanced reasoning' },
   { model: 'nvidia/nemotron-3-super-120b-a12b', label: 'Nemotron 3 Super', description: 'NVIDIA flagship' },
-  { model: 'minimaxai/minimax-m2.7', label: 'MiniMax M2.7', description: 'Long-form generation' },
-  { model: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', description: 'Open-weight, broad knowledge' },
+  { model: 'nvidia/nemotron-3-nano-30b-a3b', label: 'Nemotron 3 Nano', description: 'Fast, lightweight' },
+  { model: 'nvidia/llama-3.3-nemotron-super-49b-v1.5', label: 'Nemotron Super 49B', description: 'Strong reasoning, fast' },
+  { model: 'openai/gpt-oss-20b', label: 'GPT-OSS 20B', description: 'Open-weight, broad knowledge' },
 ].map((m) => ({ ...m, id: `nvidia:${m.model}`, provider: 'nvidia' }));
 
 const HUMAN_LABELS = {

@@ -244,8 +244,7 @@ function _computeIntelligenceScore({ motivation, confidence, velocity, readiness
     velocity * 0.15 +
     readiness * 0.20 +
     contextQuality * 0.15 +
-    (100 - urgency) * 0.05 +
-    urgency * 0.15
+    (100 - urgency) * 0.20
   );
 }
 

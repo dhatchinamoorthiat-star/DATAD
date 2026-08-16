@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Briefcase, Calendar, Building2, Plus, ChevronRight, CheckCircle2, Clock, XCircle, TrendingUp } from 'lucide-react';
 import { listDrives, createDrive, updateDrive, deleteDrive, applyToDrive, listMyApplications, updateMyApplication } from '../../api/placements';
 import { FeedSkeleton } from '../../components/common/Skeleton';

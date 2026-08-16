@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Sparkles, FileSearch, FileText, MessageSquare, Search, Loader2, ChevronDown, ChevronUp, Mic, Scale } from 'lucide-react';
 import { DAX_CAPABILITY } from '../../utils/dax';
 import PageHeader from '../../components/common/PageHeader';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { summariseDoc, reviewResume, askCareerAdvice, semanticSearch, simulateInterview, compareCompanies } from '../../api/dax';
 import { listCompanies } from '../../api/companies';
 import TierGate from '../../components/common/TierGate';

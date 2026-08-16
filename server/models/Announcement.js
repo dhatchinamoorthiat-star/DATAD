@@ -13,4 +13,6 @@ const announcementSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+announcementSchema.index({ pinned: -1, createdAt: -1 });
+
 module.exports = mongoose.model('Announcement', announcementSchema);

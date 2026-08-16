@@ -18,6 +18,7 @@ const interviewGen = require('./generators/interviewGenerator');
 const deadlineGen = require('./generators/deadlineGenerator');
 const plannerGen = require('./generators/plannerGenerator');
 const wellnessGen = require('./generators/wellnessGenerator');
+const learningLoop = require('./learningLoop');
 
 const GENERATORS = [
   { name: 'focus', gen: focusGen.generate },
@@ -33,13 +34,26 @@ const GENERATORS = [
   { name: 'wellness-suggestion', gen: wellnessGen.generate },
 ];
 
+// Generator weights, modulated by the learning loop.
+// Default weight is 1.0. The learning loop adjusts per-user based on feedback.
+function effectiveWeight(userId, name, defaultWeight = 1.0) {
+  return learningLoop.getGeneratorWeight(userId, name, defaultWeight);
+}
+
 async function generateRecommendations(userId, profile) {
   if (!userId || !profile) return [];
 
   const allRecs = [];
   for (const { name, gen } of GENERATORS) {
     try {
+      const weight = effectiveWeight(userId, name);
+      if (weight <= 0) continue; // fully suppressed by learning loop
       const recs = gen(profile);
+      // Apply weight to confidence and urgency scores
+      for (const rec of recs) {
+        if (rec.confidence) rec.confidence = Math.round(rec.confidence * weight);
+        if (rec.urgency) rec.urgency = Math.round(rec.urgency * weight);
+      }
       allRecs.push(...recs);
     } catch (err) {
       console.warn(`[recommendation-engine] Generator "${name}" failed:`, err.message);

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { KanbanSquare, Plus, Users, Calendar, ChevronRight, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listProjects, createProject, getProject, createProjectTask, updateProjectTask, deleteProjectTask } from '../../api/projects';
@@ -58,14 +58,14 @@ function KanbanView({ project, onRefresh }) {
     try {
       const res = await updateProjectTask(project._id, taskId, updates);
       setTasks((prev) => prev.map((t) => t._id === taskId ? res.data : t));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not update task'); }
   };
 
   const onDelete = async (taskId) => {
     try {
       await deleteProjectTask(project._id, taskId);
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not delete task'); }
   };
 
   return (

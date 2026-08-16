@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Gift, Copy, MessageCircle } from 'lucide-react';
 import { getMe } from '../../api/auth';
 

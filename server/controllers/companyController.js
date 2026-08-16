@@ -4,6 +4,10 @@ const User = require('../models/User');
 const { canAccessFeature } = require('../subscription/permissionEngine');
 const { FEATURE } = require('../subscription/featureRegistry');
 const { mergeWithProgramsFilter, getProgramsFilter } = require('../utils/programFilter');
+const cache = require('../utils/cache');
+
+const LIST_CACHE_TTL = 5 * 60 * 1000;
+const NEWS_CACHE_TTL = 10 * 60 * 1000;
 
 const PREMIUM_FIELDS = ['interviewQuestions', 'prepTips', 'rounds', 'salaryRange'];
 
@@ -23,11 +27,18 @@ exports.listCompanies = async (req, res, next) => {
     // Recruiters the program sync tagged for this student, plus untagged
     // companies that are relevant to everyone.
     const filter = mergeWithProgramsFilter(req.user, base);
+
+    // Companies are the same for all users — cache heavily.
+    const cacheKey = `companies:list:${JSON.stringify(filter)}`;
+    const cached = cache.get(cacheKey);
+    if (cached) return res.json(cached);
+
     const companies = await Company.find(filter)
       .select('name slug sector logoUrl salaryRange roles views')
       .sort({ views: -1, name: 1 })
       .limit(100)
       .lean();
+    cache.set(cacheKey, companies, LIST_CACHE_TTL);
     res.json(companies);
   } catch (err) {
     next(err);

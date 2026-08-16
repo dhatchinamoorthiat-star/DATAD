@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Building2, ExternalLink, MapPin, Clock, Plus, Search } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listInternships, createInternship, deleteInternship } from '../../api/internships';
@@ -51,7 +51,7 @@ export default function InternshipsPage() {
       await deleteInternship(id);
       setItems((prev) => prev.filter((i) => i._id !== id));
       toast.success('Removed');
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not remove internship'); }
   };
 
   return (

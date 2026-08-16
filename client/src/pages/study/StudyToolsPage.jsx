@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import {
   Timer, CheckSquare, Flame, BarChart2, Play, Pause, RotateCcw,
   Coffee, Zap, Brain, BookOpen, ChevronDown, ChevronUp, Music2, Target,

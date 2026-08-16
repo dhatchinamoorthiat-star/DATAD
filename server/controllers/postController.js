@@ -2,6 +2,7 @@ const Post = require('../models/Post');
 const Reply = require('../models/Reply');
 const User = require('../models/User');
 const { notify } = require('./notificationController');
+const events = require('../events/domainEvents');
 
 async function notifyMentions(text, actorId, actorName, link) {
   const handles = [...new Set((text.match(/@(\w+)/g) || []).map((m) => m.slice(1).toLowerCase()))];
@@ -116,6 +117,7 @@ exports.toggleLikePost = async (req, res, next) => {
     await post.save();
     if (idx === -1 && String(post.author) !== uid) {
       notify({ user: post.author, type: 'reaction', title: `${req.user.name} liked your post`, body: (post.title || post.body || '').slice(0, 80), link: '/community/feed', actor: uid }).catch(() => {});
+      events.social.reaction(post.author, { by: req.user.name, reaction: 'liked', contentType: 'post', contentId: post._id, actorUserId: uid }).catch(() => {});
     }
     res.json({ likes: post.likes.length, liked: idx === -1 });
   } catch (err) { next(err); }
@@ -133,6 +135,7 @@ exports.createReply = async (req, res, next) => {
     await Post.findByIdAndUpdate(post._id, { $inc: { replyCount: 1 } });
     if (String(post.author) !== uid) {
       notify({ user: post.author, type: 'reaction', title: `${req.user.name} replied to your post`, body: req.body.body.slice(0, 80), link: '/community/feed', actor: uid }).catch(() => {});
+      events.social.reply(post.author, { by: req.user.name, contentType: 'post', contentId: post._id, actorUserId: uid }).catch(() => {});
     }
     notifyMentions(req.body.body, uid, req.user.name, '/community/feed').catch(() => {});
     res.status(201).json(reply);
@@ -163,6 +166,7 @@ exports.toggleLikeReply = async (req, res, next) => {
     await reply.save();
     if (idx === -1 && String(reply.author) !== uid) {
       notify({ user: reply.author, type: 'reaction', title: `${req.user.name} liked your reply`, body: reply.body.slice(0, 80), link: '/community/feed', actor: uid }).catch(() => {});
+      events.social.reaction(reply.author, { by: req.user.name, reaction: 'liked', contentType: 'reply', contentId: reply._id, actorUserId: uid }).catch(() => {});
     }
     res.json({ likes: reply.likes.length, liked: idx === -1 });
   } catch (err) { next(err); }

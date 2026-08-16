@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight, ArrowUpRight, Sparkles, Send, Loader2, FileText, Wallet,
   CalendarDays, BookOpen, Briefcase, Newspaper, Flame, GraduationCap, Bot,
+  Map,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getReadiness } from '../../api/experience';
@@ -13,13 +14,16 @@ import { getTodayCase } from '../../api/dailyCase';
 import { getMyResume } from '../../api/resume';
 import { listInternships } from '../../api/internships';
 import { daxChat, dashboardInsights } from '../../api/dax';
+import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import { track } from '../../utils/analytics';
 import { Page } from '../common/motion';
 import { Skeleton } from '../common/Skeleton';
 import Card from '../common/Card';
 import Button from '../common/Button';
 import UsageSummary from '../dashboard/UsageSummary';
+import TodayFocus from '../dashboard/TodayFocus';
 import { ProgramHeader } from '../program/ProgramHeader';
 
 // ── 1. Arrival — a personalised morning briefing, not a chat window ────────
@@ -362,6 +366,7 @@ function Discover({ reflection }) {
 
 export default function LivingSurface() {
   useDocumentTitle('Dashboard');
+  useEffect(() => { track('dashboard_viewed'); }, []);
   const { user } = useAuth();
 
   const [readiness, setReadiness] = useState(null);
@@ -376,6 +381,7 @@ export default function LivingSurface() {
   const [internshipsLoading, setInternshipsLoading] = useState(true);
   const [brief, setBrief] = useState('');
   const [briefLoading, setBriefLoading] = useState(true);
+  const [roadmapProgress, setRoadmapProgress] = useState(null);
 
   useEffect(() => {
     getReadiness()
@@ -405,10 +411,32 @@ export default function LivingSurface() {
       })
       .catch(() => setBrief("Let's see what today looks like."))
       .finally(() => setBriefLoading(false));
+
+    getRoadmapProgress()
+      .then((res) => setRoadmapProgress(res.data))
+      .catch(() => {});
   }, []);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const streak = caseData?.streak || 0;
+
+  // Roadmap props for TodayFocus
+  const roadmapTotal = roadmapProgress?.total || 0;
+  const roadmapDone = roadmapProgress?.completed || 0;
+  const roadmapPending = roadmapProgress?.hasRoadmap ? roadmapTotal - roadmapDone : 0;
+  const roadmapNext = roadmapProgress?.items?.find((g) => g.status !== 'done')?.skill || null;
+  const canCreateRoadmap = roadmapProgress !== null && !roadmapProgress?.hasRoadmap;
+
+  const todayFocusData = useMemo(() => ({
+    today: tasks.filter((t) => t.status !== 'done' && t.dueDate && daysUntil(t.dueDate) === 0),
+    earlier: tasks.filter((t) => t.status !== 'done' && t.dueDate && daysUntil(t.dueDate) < 0),
+    streak: caseData?.streak || 0,
+    caseSolved: caseData?.solved || false,
+    caseTitle: caseData?.case?.title || null,
+    roadmapPending,
+    roadmapNext,
+    canCreateRoadmap,
+  }), [tasks, caseData, roadmapPending, roadmapNext, canCreateRoadmap]);
 
   return (
     <Page>
@@ -417,6 +445,30 @@ export default function LivingSurface() {
         <ProgramHeader />
         <Arrival firstName={firstName} brief={brief} briefLoading={briefLoading} />
         <UsageSummary />
+
+        {/* Today's Focus — from the rich rules engine */}
+        <TodayFocus data={todayFocusData} />
+
+        {/* Onboarding card — invite to create a roadmap */}
+        {canCreateRoadmap && (
+          <Link to="/roadmap" className="group block">
+            <div className="flex items-start gap-4 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-5 transition-all hover:border-indigo-300 hover:shadow-sm dark:border-indigo-900/30 dark:from-indigo-950/30 dark:to-gray-900">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-900/40">
+                <Map className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                  Build your skill roadmap
+                </p>
+                <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                  Set a target role and get a 3-month plan of courses, projects, and resources to get there.
+                </p>
+              </div>
+              <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-indigo-400 transition-transform group-hover:translate-x-0.5" />
+            </div>
+          </Link>
+        )}
+
         <TodaysFocus tasks={tasks} loading={tasksLoading} />
         <StudentSnapshot readiness={readiness} tasks={tasks} resume={resume} streak={streak} loading={readinessLoading || tasksLoading} />
         <AskDax />

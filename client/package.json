@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .js,.jsx --max-warnings 50"
   },
   "dependencies": {
+    "@sentry/browser": "^10.67.0",
+    "@sentry/react": "^10.67.0",
     "@tanstack/react-virtual": "^3.14.6",
     "axios": "^1.16.1",
     "date-fns": "^4.4.0",
@@ -21,7 +24,7 @@
     "react-hook-form": "^7.76.1",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^9.1.0",
-    "react-router-dom": "^7.15.1",
+    "react-router-dom": "^7.11.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1"
   },
@@ -31,6 +34,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "postcss": "^8.5.15",
     "sharp": "^0.35.3",
     "tailwindcss": "^3.4.19",

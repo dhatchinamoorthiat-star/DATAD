@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Target, Flame, Sparkles, Leaf, ArrowRight } from 'lucide-react';
+import { Target, Flame, Sparkles, Leaf, ArrowRight, BookOpen } from 'lucide-react';
 
 // Daily Habit Engine — derives the single suggested action from pre-loaded
 // dashboard data. Rules run in priority order; first match wins. Copy stays
@@ -31,6 +31,22 @@ const RULES = [
     message: 'Today’s case study is ready when you are.',
     sub: d.caseTitle,
     to: '/study#daily-case',
+    severity: 'indigo',
+  },
+  // Roadmap pending items — the beachhead product focus
+  (d) => d.roadmapPending > 0 && {
+    icon: BookOpen,
+    message: `You have ${d.roadmapPending} skill${d.roadmapPending === 1 ? '' : 's'} to work on in your roadmap.`,
+    sub: d.roadmapNext || 'Pick up where you left off',
+    to: '/roadmap',
+    severity: 'amber',
+  },
+  // No roadmap yet — create one
+  (d) => d.canCreateRoadmap && {
+    icon: Sparkles,
+    message: 'Build your skill roadmap — know exactly what to learn next.',
+    sub: 'Set a target role and generate a 3-month plan',
+    to: '/roadmap',
     severity: 'indigo',
   },
   () => ({

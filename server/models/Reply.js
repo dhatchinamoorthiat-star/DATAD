@@ -10,4 +10,6 @@ const replySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+replySchema.index({ post: 1, createdAt: 1 });
+
 module.exports = mongoose.model('Reply', replySchema);

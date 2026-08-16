@@ -7,15 +7,39 @@ const chatMessageSchema = new mongoose.Schema(
     // Null only for messages written before conversations existed. The import
     // in scripts/migrateConversations.js adopts those into a single "Earlier
     // chats" conversation, after which every message is scoped.
+    //
+    // Polymorphic: a message belongs to either a Dax `Conversation` or a
+    // `TalentConversation`, resolved by conversationModel via refPath. ChatMessage
+    // is deliberately the ONE shared Message model across both surfaces; the
+    // conversation containers stay separate so Dax's sidebar/import semantics and
+    // Talent's engagement/participant semantics never bleed into each other.
     conversation: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Conversation',
+      refPath: 'conversationModel',
       default: null,
       index: true,
     },
+    // Which conversation collection `conversation` points at. Defaults to
+    // 'Conversation' so every pre-existing Dax message resolves correctly with
+    // no backfill.
+    conversationModel: {
+      type: String,
+      enum: ['Conversation', 'TalentConversation'],
+      default: 'Conversation',
+    },
 
+    // For a Dax message: 'user' (student) or 'assistant' (model).
+    // For a Talent message: always 'user' — both parties are human; the sender
+    // is identified by `user`. Kept required so the Dax path is unchanged.
     role: { type: String, enum: ['user', 'assistant'], required: true },
     content: { type: String, required: true, maxlength: 8000 },
+
+    // 'dax' (default) preserves every existing message and keeps the AI-quota
+    // count (role:'user', channel:'dax') and Dax history reads unchanged.
+    // 'talent' marks a peer message in an engagement thread; those MUST be
+    // excluded from the AI-chat quota and Dax context by filtering channel:'dax'
+    // (see subscription/subscriptionService.getRemainingChatQuota — Phase 2 wiring).
+    channel: { type: String, enum: ['dax', 'talent'], default: 'dax', index: true },
   },
   { timestamps: true }
 );

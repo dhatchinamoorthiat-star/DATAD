@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { CalendarRange, MapPin, Video, Users, Check, Clock, Plus } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listEvents, createEvent, rsvpEvent, getMyRSVPs, getEventAttendees } from '../../api/events';
@@ -29,12 +29,12 @@ function EventCard({ event, myRsvp, onRsvp, onViewAttendees }) {
     try {
       await onRsvp(event._id, status);
       setRsvp(status);
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not RSVP'); }
   };
 
   return (
     <div className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
-      <div className="mb-3 flex gap-4">
+        <div className="mb-3 flex gap-4">
         <div className="flex-shrink-0 text-center rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
           <p className="text-xs font-medium text-gray-400 uppercase">{date.toLocaleDateString('en', { month: 'short' })}</p>
           <p className="text-2xl font-bold">{date.getDate()}</p>
@@ -102,7 +102,7 @@ export default function EventsPage() {
       reset();
       listEvents({ upcoming: 'true' }).then((r) => setEvents(r.data)).catch(() => {});
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed');
+      toast.error(err.response?.data?.message || 'Could not create event');
     }
   };
 
@@ -120,7 +120,7 @@ export default function EventsPage() {
       const res = await getEventAttendees(eventId);
       setAttendees(res.data);
       setAttendeesModal(eventId);
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not load attendees'); }
   };
 
   const getRsvpStatus = (eventId) => myRsvps.find((r) => (r.event?._id || r.event) === eventId)?.status || null;

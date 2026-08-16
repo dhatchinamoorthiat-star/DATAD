@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Users, Search, Edit2, ExternalLink, Link2 } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import SmartSelect from '../../components/common/SmartSelect';
@@ -59,7 +59,7 @@ export default function DirectoryPage() {
       toast.success('Profile updated');
       setEditOpen(false);
       loadDirectory();
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not update profile'); }
   };
 
   const openEdit = () => {

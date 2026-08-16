@@ -55,7 +55,10 @@ describe('NVIDIA NIM Migration', () => {
     });
 
     test('scores models for a specific intent', () => {
-      const score = registry.scoreModelForIntent('meta/llama-3.3-70b-instruct', 'coding');
+      // meta/llama-3.3-70b-instruct was removed from the registry after a
+      // live sweep found it consistently times out on this NVIDIA account
+      // (see modelRegistry.js). Using a model still in the registry.
+      const score = registry.scoreModelForIntent('meta/llama-3.1-70b-instruct', 'coding');
       expect(score).toBeGreaterThan(0);
     });
 

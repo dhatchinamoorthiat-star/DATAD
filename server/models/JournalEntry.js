@@ -17,4 +17,6 @@ const journalEntrySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+journalEntrySchema.index({ user: 1, entryDate: -1 });
+
 module.exports = mongoose.model('JournalEntry', journalEntrySchema);

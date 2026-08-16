@@ -72,8 +72,13 @@ const TOOL_DEFINITIONS = [
         type: 'object',
         properties: {
           onlyOverdue: {
-            type: 'boolean',
-            description: 'Return only tasks already past their due date.',
+            // Accepts boolean or string: some models (observed on Groq's
+            // strict schema validation) send "true"/"false" as a string and
+            // get the whole tool call rejected before it ever reaches our
+            // asBool() coercion below. Widening the schema lets those calls
+            // through; asBool() still normalizes the value either way.
+            type: ['boolean', 'string'],
+            description: 'Return only tasks already past their due date. true or false.',
           },
         },
       },

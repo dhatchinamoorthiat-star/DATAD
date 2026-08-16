@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { CreditCard, CheckCircle2, XCircle, Clock, Users, ChevronDown } from 'lucide-react';
+import toast from '../../utils/toast';
+import { CreditCard, CheckCircle2, XCircle, Clock, Users, ChevronDown, AlertTriangle } from 'lucide-react';
 import {
   listSubscriptionUsers,
   listSubscriptionRequests,
@@ -141,6 +141,11 @@ function RequestCard({ req, onUpdated }) {
           <span className="text-xs text-gray-400">{req.user?.email}</span>
           <TierBadge tier={req.tier} />
           <span className="text-xs text-gray-400">₹{req.amountPaid}</span>
+          {req.duplicateRef && (
+            <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300">
+              <AlertTriangle className="h-3 w-3" /> ref already used by another approved request
+            </span>
+          )}
         </div>
         <p className="mt-1 text-xs text-gray-500">
           Ref: <span className="font-mono font-semibold text-gray-700 dark:text-gray-300">{req.paymentRef}</span>
@@ -161,23 +166,22 @@ function RequestCard({ req, onUpdated }) {
             Reject
           </button>
           <button
-            onClick={() => setPendingAction('approve')}
+            onClick={() => review('approve')}
             disabled={loading}
-            className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+            title={req.duplicateRef ? 'Warning: this payment ref was already used on another approved request' : undefined}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 ${req.duplicateRef ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
           >
-            Approve & Activate
+            {loading ? 'Approving…' : 'Approve & Activate'}
           </button>
         </div>
         <ConfirmModal
           open={!!pendingAction}
           onClose={() => setPendingAction(null)}
           onConfirm={() => review(pendingAction)}
-          title={pendingAction === 'approve' ? 'Approve payment?' : 'Reject request?'}
-          message={pendingAction === 'approve'
-            ? `Activate ${req.tier?.toUpperCase()} for ${req.user?.name || 'this user'} for 1 month. Payment ref: ${req.paymentRef}.`
-            : `Reject this ${req.tier?.toUpperCase()} request from ${req.user?.name || 'this user'}. No tier change will be made.`}
-          confirmLabel={pendingAction === 'approve' ? 'Approve & Activate' : 'Reject'}
-          danger={pendingAction === 'reject'}
+          title="Reject request?"
+          message={`Reject this ${req.tier?.toUpperCase()} request from ${req.user?.name || 'this user'}. No tier change will be made.`}
+          confirmLabel="Reject"
+          danger
         />
         </>
       )}

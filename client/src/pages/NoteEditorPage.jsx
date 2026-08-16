@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { Paperclip, Link2, X, Upload, FileText, FileSpreadsheet, File, Loader2 } from 'lucide-react';
 import Button from '../components/common/Button';
 import { getNote, createNote, updateNote } from '../api/notes';

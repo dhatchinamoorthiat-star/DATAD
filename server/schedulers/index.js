@@ -26,6 +26,8 @@ const { checkStreakMilestones }     = require('../automation/reminders/streakMil
 // Existing services (kept running via cron instead of setInterval)
 const { refreshNews }   = require('../services/newsFetcher');
 const { refreshMarket } = require('../services/marketFetcher');
+const { refreshStocks } = require('../services/stockFetcher');
+const StockQuote = require('../models/StockQuote');
 
 function safe(name, fn) {
   return async () => {
@@ -39,6 +41,12 @@ function register() {
 
   // ── Every 15 min: market data ───────────────────────────────────────────────
   cron.schedule(s.marketRefresh, safe('market-refresh', refreshMarket));
+
+  // ── 1am daily: stock watchlist quotes ───────────────────────────────────────
+  cron.schedule(s.stockRefresh, safe('stock-refresh', refreshStocks));
+  // Prime the collection immediately so the Stocks page isn't empty until 1am
+  // on a fresh deploy — subsequent runs stay on the daily cron above.
+  StockQuote.countDocuments().then((n) => { if (n === 0) safe('stock-refresh-initial', refreshStocks)(); });
 
   // ── Every 30 min: news RSS + enhancement ────────────────────────────────────
   cron.schedule(s.newsRefresh, safe('news-refresh', refreshNews));

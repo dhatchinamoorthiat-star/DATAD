@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { Eye, Plus, Save, Trash2, Sparkles, ChevronDown, ChevronUp, Loader2, Layout } from 'lucide-react';
 import { DAX_CAPABILITY } from '../utils/dax';
 import { getMyResume, saveResume } from '../api/resume';

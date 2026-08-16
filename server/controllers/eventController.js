@@ -2,6 +2,7 @@ const Event = require('../models/Event');
 const EventRSVP = require('../models/EventRSVP');
 const User = require('../models/User');
 const { notify, notifyBulk } = require('./notificationController');
+const events = require('../events/domainEvents');
 
 exports.listEvents = async (req, res, next) => {
   try {
@@ -42,6 +43,7 @@ exports.createEvent = async (req, res, next) => {
         actor: req.user.userId,
       });
     }).catch(() => {});
+    events.social.eventCreated(req.user.userId, { title: req.body.title, date: req.body.date }).catch(() => {});
     res.status(201).json(event);
   } catch (err) { next(err); }
 };
@@ -89,6 +91,7 @@ exports.rsvpEvent = async (req, res, next) => {
           body: event.title,
           link: '/community/events',
         }).catch(() => {});
+      events.social.eventRsvp(event.createdBy, { by: req.user.name, status: 'going', eventId: event._id, actorUserId: req.user.userId }).catch(() => {});
       }
     }
     res.json(rsvp);

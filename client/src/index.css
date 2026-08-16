@@ -130,9 +130,14 @@
     animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Toast surface (react-hot-toast). */
+  /* Toast surface (react-hot-toast) — the NotificationContext applies
+     inline styles per type (success/error/info/warning/ai), so this
+     class is a fallback for direct toast() calls. */
   .datad-toast {
-    @apply !rounded-xl !border !border-gray-200 !bg-white !text-sm !font-medium !text-gray-900 !shadow-lg !shadow-black/5 dark:!border-gray-800 dark:!bg-gray-900 dark:!text-gray-100;
+    @apply !rounded-xl !border !text-sm !font-medium !shadow-lg;
+    background: #1f2937 !important;
+    color: #ffffff !important;
+    border-color: #374151 !important;
   }
 }
 

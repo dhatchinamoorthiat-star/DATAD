@@ -7,4 +7,8 @@ router.get('/', c.get);
 router.put('/', c.upsert);
 router.patch('/gaps/:gapId', c.updateGap);
 
+// Roadmap endpoints
+router.post('/generate-roadmap', c.generateRoadmap);
+router.get('/progress', c.getProgress);
+
 module.exports = router;

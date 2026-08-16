@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { listStudents, approveStudent, rejectStudent } from '../../api/admin';
 import { formatDate } from '../../utils/dateUtils';

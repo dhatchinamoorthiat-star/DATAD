@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import {
   TrendingUp, TrendingDown, Pencil, Plus, Download, ArrowRight,
-  List, Calculator, BookOpen,
+  List, Calculator, BookOpen, LineChart,
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { listExpenses, createExpense, getSummary, setBudget } from '../../api/finance';
@@ -45,6 +45,7 @@ const exportCSV = (expenses, month) => {
 const QUICK_LINKS = [
   { to: '/finance/tracker',    icon: List,       label: 'All transactions' },
   { to: '/finance/calculator', icon: Calculator,  label: 'Calculators' },
+  { to: '/finance/stocks',     icon: LineChart,   label: 'Stocks' },
   { to: '/finance/learn',      icon: BookOpen,    label: 'Learn' },
   { to: '/finance/roi',        icon: TrendingUp,  label: 'ROI' },
 ];
@@ -182,7 +183,7 @@ export default function FinanceHubPage() {
             <p className="text-sm text-gray-400 text-center py-8">No transactions yet. Add your first income or expense.</p>
           )}
 
-          <div className="mt-6 grid grid-cols-4 gap-3">
+          <div className="mt-6 grid grid-cols-5 gap-3">
             {QUICK_LINKS.map((l) => (
               <Link key={l.to} to={l.to} className="flex flex-col items-center gap-1.5 rounded-xl border border-gray-100 py-3 text-xs font-medium text-gray-500 hover:border-primary-200 hover:text-primary-600 dark:border-gray-800 dark:hover:border-primary-800/60">
                 <l.icon className="h-4 w-4" />

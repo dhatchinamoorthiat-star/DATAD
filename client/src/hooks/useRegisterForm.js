@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 
 // Validation utilities
 export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

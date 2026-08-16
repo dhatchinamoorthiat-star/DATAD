@@ -22,4 +22,6 @@ const noteSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+noteSchema.index({ author: 1, updatedAt: -1 });
+
 module.exports = mongoose.model('Note', noteSchema);

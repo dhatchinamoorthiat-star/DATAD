@@ -286,7 +286,11 @@ d('Write proposals — safety properties', () => {
 
     test('capable models are offered write tools', () => {
       const { supportsWriteTools } = require('../ai/tools');
-      expect(supportsWriteTools('meta/llama-3.3-70b-instruct')).toBe(true);
+      // meta/llama-3.3-70b-instruct was removed from the registry after a
+      // live sweep found it consistently times out on this NVIDIA account
+      // (see modelRegistry.js). Using a surviving model above the reasoning
+      // threshold (reasoningScore 80 >= MIN_WRITE_REASONING).
+      expect(supportsWriteTools('meta/llama-3.1-70b-instruct')).toBe(true);
     });
 
     test('an unknown model is treated as incapable', () => {

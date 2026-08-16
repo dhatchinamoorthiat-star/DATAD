@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import {
   MessageSquare, Heart, Reply, Pin, Trash2, ChevronDown, ChevronUp, Send, Plus, X, Pencil, Check,
 } from 'lucide-react';

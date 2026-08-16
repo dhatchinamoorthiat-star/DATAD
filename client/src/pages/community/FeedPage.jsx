@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../../utils/toast';
 import { Heart, MessageSquare, Trophy, Image, BarChart2, Bookmark, Plus, Loader2 } from 'lucide-react';
 import { getFeed, createPost, reactToPost, votePoll } from '../../api/feed';
 import { FeedSkeleton } from '../../components/common/Skeleton';
@@ -28,14 +28,14 @@ function PostCard({ post: initialPost }) {
       if (was) counts[was] = Math.max(0, (counts[was] || 0) - 1);
       if (was !== emoji) counts[emoji] = (counts[emoji] || 0) + 1;
       setPost((p) => ({ ...p, reactionCounts: counts, myReaction: was === emoji ? null : emoji }));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not react to post'); }
   };
 
   const vote = async (idx) => {
     try {
       const res = await votePoll(post._id, idx);
       setPost((p) => ({ ...p, pollOptions: res.data }));
-    } catch { toast.error('Failed'); }
+    } catch { toast.error('Could not submit vote'); }
   };
 
   const totalVotes = post.pollOptions?.reduce((s, o) => s + o.votes, 0) || 0;

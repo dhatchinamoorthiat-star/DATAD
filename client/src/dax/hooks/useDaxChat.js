@@ -166,7 +166,7 @@ export function useDaxChat({ conversation, adapter, appendMessage, updateMessage
         parentId: target.parentId,
         branchOf: target.id,
       });
-      appendMessage(conversation.id, branchMessage);
+      appendMessage(conv.id, branchMessage);
       runReply(parentUserMessage?.content || '', parentUserMessage?.attachments || [], target.parentId, newId);
     },
     [appendMessage, runReply]
@@ -189,7 +189,7 @@ export function useDaxChat({ conversation, adapter, appendMessage, updateMessage
         parentId: target.parentId,
         branchOf: target.id,
       });
-      appendMessage(conversation.id, branchMessage);
+      appendMessage(conv.id, branchMessage);
       runReply(DAX_CONTINUE_INTENT, [], target.parentId, newId);
     },
     [appendMessage, runReply]
@@ -211,7 +211,7 @@ export function useDaxChat({ conversation, adapter, appendMessage, updateMessage
         attachments: target.attachments,
         branchOf: target.id,
       });
-      appendMessage(conversation.id, editedMessage);
+      appendMessage(conv.id, editedMessage);
       runReply(newText, target.attachments, newUserId);
     },
     [appendMessage, runReply]

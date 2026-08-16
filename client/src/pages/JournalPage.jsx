@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { BookLock, Lock, PenLine, Pencil, Plus, Trash2 } from 'lucide-react';
 import {
   listJournal,

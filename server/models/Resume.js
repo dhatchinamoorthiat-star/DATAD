@@ -48,4 +48,8 @@ const resumeSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Resume', resumeSchema);
+// Removed resumeSchema.index({ user: 1 }); because unique: true already auto-indexes 'user'.
+
+const Resume = mongoose.models.Resume || mongoose.model('Resume', resumeSchema);
+
+module.exports = Resume;

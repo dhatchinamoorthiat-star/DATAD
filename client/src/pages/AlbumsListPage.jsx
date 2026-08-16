@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import { Camera, Plus, Image, Trash2, ExternalLink } from 'lucide-react';
 import Button from '../components/common/Button';
 import { listAlbums, createAlbum, deleteAlbum } from '../api/albums';

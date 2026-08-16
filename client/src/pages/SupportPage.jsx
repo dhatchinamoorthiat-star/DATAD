@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import {
   Copy, Cpu, Server, Database, Lock, Globe, Wrench, Ban, ShieldCheck, Compass,
   CheckCircle2, Circle, CircleDot, ArrowRight, Zap, Sparkles,
