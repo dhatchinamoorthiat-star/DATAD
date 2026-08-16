@@ -4,3 +4,22 @@ dist/
 .DS_Store
 audit/
 .claude/worktrees/
+
+# Generated knowledge-graph output (~173 MB across the three copies). Rebuilt
+# from source by `graphify update`, so committing it adds size without adding
+# information — and would put the repo past GitHub's size warnings.
+graphify-out/
+
+# Vendored second project. odysseus/ has its own .git directory, so adding it
+# here would create a broken gitlink rather than committing its contents.
+odysseus/
+
+# Local tooling state
+.wrangler/
+
+# Working backups. Keeping these out of history is what stops a stale copy
+# being edited by mistake months later.
+*.bak
+*.backup
+*.notifications-backup
+*.zip
