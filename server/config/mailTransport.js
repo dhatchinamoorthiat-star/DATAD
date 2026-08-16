@@ -30,7 +30,35 @@ const logger = require('../utils/logger');
 const MAX_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 500;
 const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email';
+const BREVO_EVENTS_ENDPOINT = 'https://api.brevo.com/v3/smtp/statistics/events';
 const BREVO_SMTP_HOST = 'smtp-relay.brevo.com';
+
+/**
+ * Brevo's HTTP API answers 201 with a messageId as soon as it has *queued* the
+ * mail, then rejects it asynchronously moments later if the sender is not a
+ * verified address on a verified domain. Reporting that 201 as `delivered` is
+ * exactly the silent failure this module was written to eliminate: it hid a
+ * resume confirmation that was never sent, and the student was told it was.
+ *
+ * So after a 2xx we look the messageId up in the event log. Two passes, because
+ * a single one cannot be both fast and reliable:
+ *
+ *   Inline    — a sub-second glance, purely to catch a rejection early enough
+ *               to report it in the response. This sits in the request path of
+ *               registration, so its budget stays tiny.
+ *   Background — the authoritative pass. The event log carries the rejection
+ *               timestamped identically to the request, but does not become
+ *               *queryable* for some seconds afterwards, so the inline glance
+ *               usually sees nothing. (Assuming those two were the same thing
+ *               is what made the first version of this check useless.) This
+ *               pass keeps looking after the response has gone out and logs
+ *               loudly, so a silently-rejected mail still surfaces.
+ *
+ * A caller therefore cannot treat `delivered` from the HTTP API as proof the
+ * mail left Brevo — only that Brevo took it and nothing had rejected it yet.
+ */
+const BREVO_INLINE_VERIFY_DELAYS_MS = [250, 600];
+const BREVO_BACKGROUND_VERIFY_DELAYS_MS = [3000, 10000, 30000];
 
 /** Reused across calls: building a pooled SMTP transport per message was bug #2. */
 let cached = null;
@@ -65,6 +93,9 @@ function resolveTransport() {
       from,
       sender: { email: brevoEmail, name: brevoName },
       apiKey: process.env.BREVO_API_KEY,
+      // Escape hatch for environments where the extra lookup is not wanted
+      // (and for tests, which would otherwise pay the poll delay per send).
+      verify: process.env.BREVO_VERIFY_SENDS !== 'false',
     };
   }
 
@@ -182,7 +213,99 @@ function parseRecipient(entry) {
   return { email: String(entry).trim() };
 }
 
-async function deliverViaBrevo(cfg, { toAddresses, subject, html }) {
+/**
+ * One look at Brevo's event log for a message.
+ *
+ * @returns {Promise<{status:'rejected', reason:string}|{status:'sent'}|{status:'unknown'}>}
+ *   `unknown` covers both "the log has not caught up" and "the log could not be
+ *   reached" — deliberately indistinguishable to callers, because neither is
+ *   evidence of failure and treating them as one would invent errors for mail
+ *   that is fine.
+ */
+async function readBrevoEvents(cfg, messageId) {
+  const url = `${BREVO_EVENTS_ENDPOINT}?limit=10&messageId=${encodeURIComponent(messageId)}`;
+
+  let events;
+  try {
+    const res = await fetch(url, {
+      headers: { 'api-key': cfg.apiKey, accept: 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return { status: 'unknown' };
+    ({ events } = await res.json());
+  } catch {
+    return { status: 'unknown' };
+  }
+
+  const rejected = (events || []).find((e) => e.event === 'error');
+  if (rejected) return { status: 'rejected', reason: rejected.reason || 'no reason given' };
+
+  // `requests` alone just echoes our own call back at us; anything else means
+  // the log has caught up and holds no rejection.
+  if (events?.some((e) => e.event !== 'requests')) return { status: 'sent' };
+  return { status: 'unknown' };
+}
+
+/**
+ * The sub-second glance. Only reports a rejection it can actually prove.
+ *
+ * @throws {Error} with `status` 400 when Brevo rejected the send, so the retry
+ *   logic treats it as permanent — re-sending from a rejected sender just gets
+ *   rejected twice more.
+ */
+async function confirmBrevoSend(cfg, messageId) {
+  for (const delay of BREVO_INLINE_VERIFY_DELAYS_MS) {
+    await sleep(delay);
+    const result = await readBrevoEvents(cfg, messageId);
+    if (result.status === 'rejected') {
+      const err = new Error(`Brevo rejected the message: ${result.reason}`);
+      err.status = 400;
+      throw err;
+    }
+    if (result.status === 'sent') return true;
+  }
+  return false; // inconclusive
+}
+
+/**
+ * The authoritative pass, run after the response has already gone out.
+ *
+ * Nothing can act on the result but the logs, and that is the point: without it
+ * a rejected mail leaves no trace anywhere, which is the failure mode this
+ * whole module exists to prevent.
+ */
+function scheduleBrevoVerification(cfg, messageId, subject) {
+  let i = 0;
+  const check = async () => {
+    const result = await readBrevoEvents(cfg, messageId);
+
+    if (result.status === 'rejected') {
+      logger.error('Mail was accepted by Brevo but then rejected — it was NOT sent', {
+        messageId,
+        subject,
+        reason: result.reason,
+        hint: 'Usually an unverified sender or unauthenticated sending domain',
+      });
+      return;
+    }
+    if (result.status === 'sent') return;
+
+    if (++i < BREVO_BACKGROUND_VERIFY_DELAYS_MS.length) {
+      schedule();
+    } else {
+      logger.warn('Could not confirm Brevo send; no rejection seen either', { messageId, subject });
+    }
+  };
+
+  const schedule = () => {
+    // unref so a pending check never holds the process (or a test run) open.
+    setTimeout(() => { check().catch(() => {}); }, BREVO_BACKGROUND_VERIFY_DELAYS_MS[i]).unref?.();
+  };
+
+  schedule();
+}
+
+async function deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind }) {
   const res = await fetch(BREVO_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -196,6 +319,13 @@ async function deliverViaBrevo(cfg, { toAddresses, subject, html }) {
       to: toAddresses.map(parseRecipient),
       subject,
       htmlContent: html,
+      // Brevo wants attachment content as base64, not raw bytes.
+      ...(attachments?.length && {
+        attachment: attachments.map((a) => ({
+          name: a.filename,
+          content: a.content.toString('base64'),
+        })),
+      }),
     }),
     signal: AbortSignal.timeout(15000),
   });
@@ -207,15 +337,31 @@ async function deliverViaBrevo(cfg, { toAddresses, subject, html }) {
     throw err;
   }
   const json = await res.json().catch(() => ({}));
-  return json.messageId || null;
+  const messageId = json.messageId || null;
+
+  // A 2xx here means "queued", not "sent" — see the two-pass note above.
+  //
+  // Transactional only. A bulk fan-out sends one message per recipient through
+  // this same path, so verifying those would add the inline delay to every one
+  // of them (serially) and fire three background lookups each — turning one
+  // announcement into hundreds of extra API calls for no one's benefit.
+  if (cfg.verify && messageId && kind === 'transactional') {
+    const settled = await confirmBrevoSend(cfg, messageId);
+    // Still unproven when the response goes out, so keep watching in the
+    // background rather than letting a rejection disappear.
+    if (!settled) scheduleBrevoVerification(cfg, messageId, subject);
+  }
+
+  return messageId;
 }
 
-async function deliverViaSmtp(cfg, { toAddresses, subject, html }) {
+async function deliverViaSmtp(cfg, { toAddresses, subject, html, attachments }) {
   const info = await cfg.transporter.sendMail({
     from: cfg.from,
     to: toAddresses.join(', '),
     subject,
     html,
+    ...(attachments?.length && { attachments }),
   });
   return info?.messageId || null;
 }
@@ -232,10 +378,11 @@ async function deliverViaSmtp(cfg, { toAddresses, subject, html }) {
  * @param {string}   msg.subject
  * @param {string}   msg.html
  * @param {'transactional'|'bulk'} [msg.kind]  affects log severity only
+ * @param {Array<{filename:string, content:Buffer, contentType?:string}>} [msg.attachments]
  * @returns {Promise<{delivered:boolean, provider:string|null, messageId?:string|null,
  *                    attempts:number, error?:string}>}
  */
-async function deliver({ toAddresses, subject, html, kind = 'transactional' }) {
+async function deliver({ toAddresses, subject, html, kind = 'transactional', attachments }) {
   const cfg = getTransport();
 
   if (!cfg) {
@@ -258,11 +405,12 @@ async function deliver({ toAddresses, subject, html, kind = 'transactional' }) {
     try {
       const messageId =
         cfg.kind === 'brevo'
-          ? await deliverViaBrevo(cfg, { toAddresses, subject, html })
-          : await deliverViaSmtp(cfg, { toAddresses, subject, html });
+          ? await deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind })
+          : await deliverViaSmtp(cfg, { toAddresses, subject, html, attachments });
 
       logger.info('Mail delivered', {
         provider: cfg.kind, kind, subject, recipients: toAddresses.length, messageId, attempts: attempt,
+        attachments: attachments?.length || 0,
       });
       return { delivered: true, provider: cfg.kind, messageId, attempts: attempt };
     } catch (err) {

@@ -1,6 +1,11 @@
 node_modules/
 dist/
+# Every .env variant, not just `.env` — a `.env.bak`, `.env.local` or a dated
+# copy made while debugging carries exactly the same live secrets, and a bare
+# `.env` rule silently lets those through to `git add -A`.
 .env
+.env.*
+!.env.example
 .DS_Store
 audit/
 .claude/worktrees/

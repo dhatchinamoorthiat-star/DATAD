@@ -33,6 +33,7 @@
     "nodemailer": "^9.0.3",
     "openai": "^6.46.0",
     "pdf-parse": "^2.4.5",
+    "pdfkit": "^0.19.1",
     "rss-parser": "^3.13.0",
     "uuid": "^14.0.1",
     "xlsx": "^0.18.5"

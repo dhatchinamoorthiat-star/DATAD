@@ -1,5 +1,6 @@
 const logger = require('../utils/logger');
 const mailTransport = require('./mailTransport');
+const { primaryClientUrl } = require('../utils/clientUrl');
 
 /**
  * Send one message. Provider selection, connection reuse and retries live in
@@ -8,9 +9,9 @@ const mailTransport = require('./mailTransport');
  * Returns the transport's delivery result rather than undefined, so a caller
  * that must not fail silently — registration, above all — can check it.
  */
-const send = async ({ to, subject, html, kind = 'transactional' }) => {
+const send = async ({ to, subject, html, kind = 'transactional', attachments }) => {
   const toAddresses = to.map((r) => (r.name ? `"${r.name}" <${r.email}>` : r.email));
-  return mailTransport.deliver({ toAddresses, subject, html, kind });
+  return mailTransport.deliver({ toAddresses, subject, html, kind, attachments });
 };
 
 exports.send = send;
@@ -114,6 +115,65 @@ exports.sendPasswordResetEmail = (user, link) =>
        <p>If you didn't request this, you can safely ignore this email.</p>`
     ),
   }).catch((err) => logger.error('Reset email failed:', { error: err.message }));
+
+/** Escape user-supplied text before it goes into an HTML mail body. */
+const esc = (value) =>
+  String(value ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+  );
+
+/**
+ * Confirmation that a resume was submitted, with the completeness score, the
+ * specific gaps still worth closing, and — when one could be rendered — the
+ * finished resume attached as a PDF. Returns the delivery result (rather than
+ * swallowing it) so the controller can tell the student whether it went out.
+ *
+ * @param {{filename:string, content:Buffer}} [pdf]  omitted if rendering failed;
+ *   a broken PDF renderer must not cost the student their confirmation mail.
+ */
+exports.sendResumeSubmittedEmail = (user, completeness = {}, pdf = null) => {
+  const { score = 0, missing = [], ready = false } = completeness;
+  const resumeUrl = `${primaryClientUrl()}/career/resume/preview`;
+
+  // A full bar reads as "done" even at 60% on a narrow phone screen, so the
+  // number is stated in text as well.
+  const bar = `
+    <div style="background:#e5e7eb;border-radius:999px;height:10px;margin:6px 0 4px">
+      <div style="background:${ready ? '#059669' : '#f59e0b'};width:${Math.max(score, 4)}%;height:10px;border-radius:999px"></div>
+    </div>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px">${score}% complete</p>`;
+
+  const gaps = missing.length
+    ? `<p style="margin-top:16px"><strong>To strengthen it further:</strong></p>
+       <ul>${missing.map((m) => `<li>${esc(m)}</li>`).join('')}</ul>`
+    : `<p style="margin-top:16px">Every section is filled in — this resume is ready to send to a recruiter.</p>`;
+
+  const attachmentNote = pdf
+    ? `<p style="font-size:13px;color:#6b7280">Your resume is attached to this email as <strong>${esc(pdf.filename)}</strong> — a clean, ATS-friendly PDF you can send to a recruiter as-is.</p>`
+    : `<p style="font-size:13px;color:#6b7280">From the preview you can export a clean, ATS-friendly PDF.</p>`;
+
+  return send({
+    to: [{ email: user.email, name: user.name }],
+    subject: ready
+      ? `Your resume is ready — ${score}% complete`
+      : `Resume saved — ${score}% complete`,
+    attachments: pdf ? [{ filename: pdf.filename, content: pdf.content, contentType: 'application/pdf' }] : undefined,
+    html: wrap(
+      `Resume submitted, ${esc(user.name)}`,
+      `<p>We've saved your resume and scored it against what recruiters screen for.</p>
+       ${bar}
+       ${gaps}
+       <p style="margin-top:20px"><a href="${resumeUrl}"
+         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">
+         View your resume
+       </a></p>
+       ${attachmentNote}`
+    ),
+  }).catch((err) => {
+    logger.error('Resume submission email failed:', { error: err.message });
+    return { delivered: false, error: err.message };
+  });
+};
 
 /**
  * Bulk fan-out. Marked `kind: 'bulk'` so an unconfigured mailer logs at warn

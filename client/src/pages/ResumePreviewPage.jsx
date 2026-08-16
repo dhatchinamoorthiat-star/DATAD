@@ -1,31 +1,72 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Download, Pencil } from 'lucide-react';
-import { getMyResume } from '../api/resume';
+import { getMyResume, downloadResumePdf } from '../api/resume';
 import Loader from '../components/common/Loader';
 import EmptyState from '../components/common/EmptyState';
+import toast from '../utils/toast';
 
 // ATS-friendly on purpose: single column, real selectable text, standard
 // section headings, no icons/graphics inside the document itself.
 const SectionHeading = ({ children }) => (
-  <h2 className="mb-1.5 mt-4 border-b border-gray-300 pb-0.5 text-[13px] font-bold uppercase tracking-wide">
+  <h2 className="mb-2 mt-5 border-b border-gray-400 pb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-800">
     {children}
   </h2>
 );
 
+// Role/title on the left, dates right-aligned — the scanning pattern every
+// recruiter already expects. `break-inside-avoid` keeps one entry from being
+// split across two printed pages.
+const EntryRow = ({ left, right, sub, subRight }) => (
+  <div className="mb-2 break-inside-avoid">
+    <div className="flex items-baseline justify-between gap-4">
+      <span className="font-semibold">{left}</span>
+      {right && <span className="shrink-0 text-[11px] text-gray-600">{right}</span>}
+    </div>
+    {(sub || subRight) && (
+      <div className="flex items-baseline justify-between gap-4 text-[11.5px] italic text-gray-700">
+        <span>{sub}</span>
+        {subRight && <span className="shrink-0 not-italic">{subRight}</span>}
+      </div>
+    )}
+  </div>
+);
+
+// Accepts both shapes: achievements/leadership were stored as bare strings
+// before they became {title, description} objects.
+const titleOf = (item) => (typeof item === 'string' ? item : item?.title || '');
+const descOf = (item) => (typeof item === 'string' ? '' : item?.description || '');
+
 export default function ResumePreviewPage() {
   const [resume, setResume] = useState();
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     getMyResume().then((res) => setResume(res.data));
   }, []);
 
-  const handleDownload = () => {
-    const prev = document.title;
-    const name = resume?.personal?.fullName?.trim().replace(/\s+/g, '-') || 'resume';
-    document.title = `${name}-Resume`;
-    window.print();
-    document.title = prev;
+  // The server renders the PDF so the file matches the one mailed on submit.
+  // If that call fails we fall back to the browser's own print-to-PDF rather
+  // than leaving the button dead.
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await downloadResumePdf();
+      const name = resume?.personal?.fullName?.trim().replace(/\s+/g, '-') || 'resume';
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}-Resume.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not build the PDF — opening your print dialog instead');
+      window.print();
+    } finally {
+      setDownloading(false);
+    }
   };
 
   if (resume === undefined) return <Loader />;
@@ -69,24 +110,27 @@ export default function ResumePreviewPage() {
           </Link>
           <button
             onClick={handleDownload}
-            className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            disabled={downloading}
+            className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            <Download className="h-4 w-4" /> Download PDF
+            <Download className="h-4 w-4" /> {downloading ? 'Preparing…' : 'Download PDF'}
           </button>
         </div>
       </div>
 
       {/* The sheet: always paper-white with black text, even in dark mode */}
-      <div className="rounded-lg bg-white p-8 text-[12.5px] leading-relaxed text-gray-900 shadow print:rounded-none print:p-0 print:shadow-none">
-        <header className="mb-2 text-center">
-          <h1 className="text-2xl font-bold tracking-wide">{p.fullName || 'Your Name'}</h1>
-          {contactLine && <p className="mt-1 text-[11.5px] text-gray-700">{contactLine}</p>}
+      <div className="rounded-lg bg-white p-10 text-[12px] leading-[1.5] text-gray-900 shadow print:rounded-none print:p-0 print:shadow-none">
+        <header className="mb-1 border-b-2 border-gray-800 pb-3 text-center">
+          <h1 className="text-[26px] font-bold uppercase tracking-[0.18em]">
+            {p.fullName || 'Your Name'}
+          </h1>
+          {contactLine && <p className="mt-1.5 text-[11px] text-gray-700">{contactLine}</p>}
         </header>
 
         {resume.summary && (
           <>
             <SectionHeading>Summary</SectionHeading>
-            <p>{resume.summary}</p>
+            <p className="text-justify">{resume.summary}</p>
           </>
         )}
 
@@ -94,16 +138,14 @@ export default function ResumePreviewPage() {
           <>
             <SectionHeading>Education</SectionHeading>
             {resume.education.map((e, i) => (
-              <div key={i} className="mb-1.5">
-                <div className="flex items-baseline justify-between">
-                  <span className="font-semibold">{e.degree}</span>
-                  <span className="text-gray-600">{e.years}</span>
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span>{e.institution}</span>
-                  {e.score && <span className="text-gray-600">{e.score}</span>}
-                </div>
-              </div>
+              <EntryRow
+                key={i}
+                left={e.degree}
+                // `years` is the pre-migration spelling of this field.
+                right={e.year || e.years}
+                sub={e.institution}
+                subRight={e.score}
+              />
             ))}
           </>
         )}
@@ -112,15 +154,10 @@ export default function ResumePreviewPage() {
           <>
             <SectionHeading>Experience</SectionHeading>
             {resume.experience.map((e, i) => (
-              <div key={i} className="mb-2">
-                <div className="flex items-baseline justify-between">
-                  <span className="font-semibold">
-                    {e.role}
-                    {e.organization && ` — ${e.organization}`}
-                  </span>
-                  <span className="text-gray-600">{e.duration}</span>
-                </div>
-                <ul className="ml-4 list-disc">
+              <div key={i} className="mb-2.5 break-inside-avoid">
+                {/* `company` is the pre-migration spelling of organization. */}
+                <EntryRow left={e.role} right={e.duration} sub={e.organization || e.company} />
+                <ul className="ml-4 list-outside list-disc space-y-0.5">
                   {bullets(e.description).map((b, j) => (
                     <li key={j}>{b}</li>
                   ))}
@@ -134,10 +171,15 @@ export default function ResumePreviewPage() {
           <>
             <SectionHeading>Projects</SectionHeading>
             {resume.projects.map((pr, i) => (
-              <div key={i} className="mb-1.5">
-                <span className="font-semibold">{pr.title}</span>
-                {pr.link && <span className="text-gray-600"> ({pr.link})</span>}
+              <div key={i} className="mb-2 break-inside-avoid">
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="font-semibold">{pr.title}</span>
+                  {pr.link && <span className="shrink-0 text-[11px] text-gray-600">{pr.link}</span>}
+                </div>
                 {pr.description && <p>{pr.description}</p>}
+                {pr.technologies && (
+                  <p className="text-[11.5px] italic text-gray-700">{pr.technologies}</p>
+                )}
               </div>
             ))}
           </>
@@ -153,10 +195,10 @@ export default function ResumePreviewPage() {
         {resume.certifications?.length > 0 && (
           <>
             <SectionHeading>Certifications</SectionHeading>
-            <ul className="ml-4 list-disc">
+            <ul className="ml-4 list-outside list-disc space-y-0.5">
               {resume.certifications.map((c, i) => (
                 <li key={i}>
-                  {c.name}
+                  <span className="font-semibold">{c.name}</span>
                   {c.issuer && ` — ${c.issuer}`}
                   {c.year && ` (${c.year})`}
                 </li>
@@ -168,9 +210,12 @@ export default function ResumePreviewPage() {
         {resume.achievements?.length > 0 && (
           <>
             <SectionHeading>Achievements</SectionHeading>
-            <ul className="ml-4 list-disc">
+            <ul className="ml-4 list-outside list-disc space-y-0.5">
               {resume.achievements.map((a, i) => (
-                <li key={i}>{a}</li>
+                <li key={i}>
+                  <span className="font-semibold">{titleOf(a)}</span>
+                  {descOf(a) && ` — ${descOf(a)}`}
+                </li>
               ))}
             </ul>
           </>
@@ -179,9 +224,12 @@ export default function ResumePreviewPage() {
         {resume.leadership?.length > 0 && (
           <>
             <SectionHeading>Leadership & Extracurricular</SectionHeading>
-            <ul className="ml-4 list-disc">
+            <ul className="ml-4 list-outside list-disc space-y-0.5">
               {resume.leadership.map((l, i) => (
-                <li key={i}>{l}</li>
+                <li key={i}>
+                  <span className="font-semibold">{titleOf(l)}</span>
+                  {descOf(l) && ` — ${descOf(l)}`}
+                </li>
               ))}
             </ul>
           </>
@@ -189,7 +237,7 @@ export default function ResumePreviewPage() {
       </div>
 
       <p className="mt-3 text-center text-xs text-gray-400 print:hidden">
-        Tip: in the print dialog choose "Save as PDF" as the destination.
+        Downloads a typeset A4 PDF — the same file we email you when you submit.
       </p>
     </div>
   );

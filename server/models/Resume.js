@@ -25,7 +25,7 @@ const resumeSchema = new mongoose.Schema(
     },
     summary: long(2000),
     education: {
-      type: [{ degree: short(), institution: short(), years: short(40), score: short(40) }],
+      type: [{ degree: short(), institution: short(), year: short(40), score: short(40) }],
       validate: cap(20),
     },
     experience: {
@@ -33,7 +33,7 @@ const resumeSchema = new mongoose.Schema(
       validate: cap(20),
     },
     projects: {
-      type: [{ title: short(), description: long(), link: short() }],
+      type: [{ title: short(), description: long(), technologies: short(300), link: short() }],
       validate: cap(20),
     },
     skills: { type: [short(60)], validate: cap(50) },
@@ -41,9 +41,27 @@ const resumeSchema = new mongoose.Schema(
       type: [{ name: short(), issuer: short(), year: short(20) }],
       validate: cap(30),
     },
-    achievements: { type: [short(300)], validate: cap(30) },
-    leadership: { type: [short(300)], validate: cap(30) },
+    // Objects rather than bare strings: the builder collects a headline and an
+    // optional detail line, and the preview renders them differently.
+    // controllers/resumeController.js coerces legacy string entries on write.
+    achievements: {
+      type: [{ title: short(300), description: long(600) }],
+      validate: cap(30),
+    },
+    leadership: {
+      type: [{ title: short(300), description: long(600) }],
+      validate: cap(30),
+    },
     priorExperienceSummary: long(1500),
+
+    // Set when the student explicitly submits (not on every draft save).
+    lastSubmittedAt: Date,
+
+    // Throttle key for the confirmation email, deliberately separate from
+    // lastSubmittedAt. When one field served both, every submit pushed the
+    // window forward — so a student who resubmitted every few minutes silently
+    // never received the mail at all.
+    lastEmailedAt: Date,
   },
   { timestamps: true }
 );
