@@ -29,6 +29,31 @@ const userSchema = new mongoose.Schema(
     resetTokenHash: { type: String, default: null },
     resetTokenExpires: { type: Date, default: null },
 
+    // Session revocation for stateless JWTs. Signed into every token and
+    // compared on each request (services/sessionVersion.js); incrementing it
+    // invalidates every token issued before the increment. Bumped on password
+    // change, password reset, and role/status change. Existing documents
+    // without the field read as 0, so no backfill is required.
+    tokenVersion: { type: Number, default: 0 },
+
+    // Active devices. A token is only accepted while its device is still in
+    // this list, which is what caps how many people can share one login.
+    // Capped and LRU-evicted atomically on sign-in — see services/deviceSessions.js.
+    sessions: {
+      type: [
+        {
+          _id: false,
+          deviceId: { type: String, required: true },
+          label: { type: String, default: '' },      // "Chrome on Android"
+          ip: { type: String, default: '' },
+          userAgent: { type: String, default: '', maxlength: 300 },
+          createdAt: { type: Date, default: Date.now },
+          lastSeenAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+
     // Email verification. Proving inbox ownership is what actually filters
     // bots — admin approval is for judging people, not for blocking scripts.
     // Only the hash is stored, same as the reset flow: a leaked DB must not
@@ -42,7 +67,7 @@ const userSchema = new mongoose.Schema(
     workExYears: { type: Number, min: 0, max: 40, default: null },
 
     // Subscription / tier
-    tier: { type: String, enum: ['free', 'trial', 'pro', 'max'], default: 'free' },
+    tier: { type: String, enum: ['free', 'trial', 'pro', 'placement'], default: 'free' },
     trialStartedAt: { type: Date, default: null },
     tierExpiresAt: { type: Date, default: null },    // null = never expires
     subscriptionRef: { type: String, default: null }, // last verified payment ref
@@ -84,4 +109,8 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('User', userSchema);
+
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+module.exports = User;

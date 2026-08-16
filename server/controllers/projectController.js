@@ -133,9 +133,29 @@ exports.updateTask = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Deleting a task is a modification of its parent project, so it takes the
+// same authorization as updateTask: caller must be a member of the project the
+// task actually belongs to. This previously deleted by id alone, which let any
+// authenticated user destroy any task in the database — and the delete is hard,
+// with no audit row to recover from.
 exports.deleteTask = async (req, res, next) => {
   try {
-    await ProjectTask.findByIdAndDelete(req.params.taskId);
+    const task = await ProjectTask.findById(req.params.taskId);
+    if (!task) return res.status(404).json({ message: 'Not found' });
+
+    // The task must belong to the project named in the path. Without this the
+    // :id segment is decorative, and a caller could pass a project they belong
+    // to alongside a taskId from someone else's project.
+    if (!task.project.equals(req.params.id)) {
+      return res.status(404).json({ message: 'Not found' });
+    }
+
+    const project = await Project.findById(task.project);
+    if (!project || !isMember(project, req.user.userId)) {
+      return res.status(403).json({ message: 'Not a member' });
+    }
+
+    await task.deleteOne();
     res.json({ message: 'Deleted' });
   } catch (err) { next(err); }
 };

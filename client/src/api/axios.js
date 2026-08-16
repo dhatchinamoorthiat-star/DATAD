@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { beginRequest, endRequest, isBackgroundRequest } from '../utils/inflight';
+import { getDeviceId } from '../utils/deviceId';
 
 // Default to a relative /api base: in dev Vite proxies it to the server,
 // and in production (or through an ngrok tunnel) the API is same-origin.
@@ -10,6 +11,9 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  // Sent on every request, including login, so the server can register and
+  // count devices without each call site having to thread it through.
+  config.headers['X-Device-Id'] = getDeviceId();
   const program = localStorage.getItem('activeProgram');
   if (program && program !== 'mba') config.headers['x-program'] = program;
 
