@@ -32,9 +32,16 @@ function detectType(file) {
   return null;
 }
 
+const { LIMITS } = require('./uploadGuards');
+
+// memoryStorage means every byte is heap, and the base64 data-URI built
+// downstream costs ~1.37x more on top. 100 MB x 10 files was ~1 GB of demand
+// per request — an OOM kill on any realistically-sized instance, taking every
+// concurrent request down with it. See uploadGuards.js for the arithmetic;
+// tune via UPLOAD_MAX_STUDIO_FILE_MB / UPLOAD_MAX_STUDIO_FILES.
 const studioUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024, files: 10 }, // 100 MB, 10 files/request
+  limits: { fileSize: LIMITS.studioFile, files: LIMITS.studioFiles },
   fileFilter: (req, file, cb) => {
     if (detectType(file)) return cb(null, true);
     cb(new Error(`Unsupported file type: ${file.mimetype}`));

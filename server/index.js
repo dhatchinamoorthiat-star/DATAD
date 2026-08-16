@@ -22,11 +22,12 @@ if (missing.length) {
 // Registration gates on an email verification link, so a disabled mailer in
 // production means no one can complete signup, with nothing in the logs
 // beyond one warning buried at the first send attempt.
-if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+if (!require('./config/mailTransport').isConfigured()) {
   logger.warn(
-    'Mailer NOT configured (GMAIL_USER / GMAIL_APP_PASSWORD) — ' +
-      'verification, welcome and password-reset emails will not be sent, ' +
-      'which blocks new registrations from completing'
+    'Mailer NOT configured — verification, welcome and password-reset emails ' +
+      'will not be sent, which blocks new registrations from completing. ' +
+      'Set RESEND_API_KEY + MAIL_FROM (preferred), or SMTP_HOST/SMTP_USER/SMTP_PASS, ' +
+      'or GMAIL_USER/GMAIL_APP_PASSWORD.'
   );
 }
 
@@ -49,11 +50,11 @@ const app = express();
 app.set('trust proxy', 1);
 
 // CLIENT_URL may be a comma-separated allow-list (e.g. prod + www + localhost).
-const allowedOrigins = process.env.CLIENT_URL.split(',').map((o) => o.trim());
-// ngrok tunnel URLs rotate on every restart (free tier) — allow the ngrok
-// domains by pattern so the tunnel works without editing CLIENT_URL each time.
-const NGROK_RE =
-  /^https:\/\/[a-z0-9-]+\.(ngrok-free\.app|ngrok-free\.dev|ngrok\.app|ngrok\.io)$/;
+// The ngrok tunnel exception lives in utils/clientUrl.js alongside the rule for
+// emailed links, so the two cannot drift apart — a host we would not accept as
+// a CORS origin is also a host we will not put in a password-reset email. Both
+// exceptions are development-only; in production only CLIENT_URL is trusted.
+const { isAllowedCorsOrigin } = require('./utils/clientUrl');
 
 app.use(
   helmet({
@@ -100,7 +101,7 @@ app.use(
       // No Origin header: same-origin navigation, curl, or a server-to-server
       // call. There is no cross-site request to protect against, so allow it.
       if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin) || NGROK_RE.test(origin)) {
+      if (isAllowedCorsOrigin(origin)) {
         return cb(null, true);
       }
       logger.warn('Blocked CORS origin', { origin });

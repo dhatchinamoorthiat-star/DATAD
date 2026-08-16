@@ -2,6 +2,7 @@ const express = require('express');
 const verifyToken = require('../middleware/verifyToken');
 const checkRole = require('../middleware/checkRole');
 const studioUpload = require('../middleware/studioUpload');
+const { checkRequestSize, verifyFileSignatures, LIMITS } = require('../middleware/uploadGuards');
 const { heavyLimiter } = require('../middleware/rateLimiters');
 const c = require('../controllers/studioController');
 
@@ -10,7 +11,14 @@ const router = express.Router();
 // Content Studio is admin-only.
 router.use(verifyToken, checkRole('admin'));
 
-router.post('/uploads', heavyLimiter, studioUpload.array('files', 10), c.upload);
+router.post(
+  '/uploads',
+  heavyLimiter,
+  checkRequestSize(LIMITS.studioRequest),
+  studioUpload.array('files', LIMITS.studioFiles),
+  verifyFileSignatures,
+  c.upload
+);
 router.get('/destinations', c.destinations);
 router.get('/items', c.list);
 router.get('/items/:id', c.get);

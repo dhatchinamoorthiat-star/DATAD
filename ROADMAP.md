@@ -10,7 +10,7 @@ MBA students open every day. Modules ship incrementally; nothing existing breaks
 - Finance (private): expenses, budget, category chart, EMI/SIP/savings calculators
 - Resume Builder (private): guided sections → ATS print-to-PDF
 - Photos: Google Photos shared-album links (no upload/storage cost)
-- Roles: admin superuser (by email) + members · admin Journal, Console, announcements (Resend email)
+- Roles: admin superuser (by email) + members · admin Journal, Console, announcements (Brevo email)
 - **Intelligence Center** (News): **live** business news auto-pulled from Economic Times RSS
   feeds (10 category feeds, refreshed every 30 min, cached in Mongo), 10 categories, bookmarks,
   topic personalization ("For you"), Top Story highlight, admin-updated market snapshot,

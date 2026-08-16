@@ -1,8 +1,42 @@
+# Sizing note (see DEPLOYMENT.md § Production resources for the full rationale).
+#
+# `free` is not a viable plan for this service, for two reasons that are not
+# about raw capacity:
+#
+#   1. Free instances spin down after ~15 minutes idle. All 14 cron jobs run
+#      in-process (server/schedulers/index.js) — daily briefings, case studies,
+#      moderation, and the trial-expiry job that is the ONLY thing downgrading
+#      lapsed paid tiers. A sleeping instance runs none of them.
+#   2. Free is 512 MB, and uploads are buffered in memory. The upload limits
+#      have been cut to fit (server/middleware/uploadGuards.js), but there is
+#      no headroom left for concurrency on top.
+#
+# Running on `free` deliberately until monetisation covers the upgrade. That is
+# a viable launch position ONLY with the two mitigations below; without them the
+# failure modes are silent, which is the dangerous kind.
+#
+#   1. Spin-down. Keep the instance warm by pinging /api/health every 10 minutes
+#      from an external scheduler (cron-job.org, UptimeRobot — both free). A
+#      sleeping instance runs no crons at all, and trialExpiryReminder is the
+#      only thing that downgrades lapsed paid tiers: without it, someone whose
+#      Pro month ended keeps Pro forever. Free gives 750 instance-hours/month,
+#      which covers one service running continuously.
+#   2. Memory. 512 MB total, and uploads are buffered in heap. The UPLOAD_MAX_*
+#      values below are set well under the defaults in
+#      server/middleware/uploadGuards.js for this reason.
+#
+# Move to `starter` the moment there is revenue: it is always-on, which removes
+# mitigation 1 entirely. Then `standard` (2 GB) if OOM restarts appear.
+#
+# Keep this at a single instance. The schedulers have no distributed lock, so
+# every additional instance re-runs every cron — duplicate briefings, duplicate
+# newsletters, duplicate reminder emails.
 services:
   - type: web
     name: datad
     runtime: node
     plan: free
+    numInstances: 1
     rootDir: .
     buildCommand: cd client && npm install && npm run build && cd ../server && npm install
     startCommand: cd server && npm start
@@ -24,9 +58,23 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-      # Mail goes out over Gmail SMTP (config/mailer.js). Without BOTH of
-      # these the mailer disables itself silently and email verification —
-      # which registration requires — never arrives, so nobody can sign up.
+      # Mail (config/mailTransport.js). Registration gates on a verification
+      # link, so with no transport configured nobody can sign up.
+      #
+      # Brevo is the production provider. Gmail SMTP caps out around 500
+      # recipients/day, and that cap stops signups platform-wide once reached —
+      # it is a development transport, not a launch one.
+      #
+      # BREVO_API_KEY is the HTTP API credential ("xkeysib-…"). Optionally set
+      # BREVO_SMTP_API_KEY ("xsmtpsib-…") instead to use the SMTP relay.
+      # BREVO_FROM_EMAIL must be on a domain verified in the Brevo account.
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_FROM_EMAIL
+        sync: false
+      - key: BREVO_FROM_NAME
+        sync: false
+      # Legacy Gmail fallback — used only when no Brevo credential is set.
       # GMAIL_APP_PASSWORD is a Google App Password, not the account password.
       - key: GMAIL_USER
         sync: false
@@ -36,6 +84,20 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      # Sized for a 512 MB free instance. multer buffers uploads in heap and
+      # three call sites then build a base64 data-URI from the buffer, so peak
+      # is ~2.4x the file size per concurrent upload. Raise these on `starter`
+      # or `standard`; see DEPLOYMENT.md § Production resources.
+      - key: UPLOAD_MAX_IMAGE_MB
+        value: 8
+      - key: UPLOAD_MAX_DOC_MB
+        value: 10
+      - key: UPLOAD_MAX_STUDIO_FILE_MB
+        value: 10
+      - key: UPLOAD_MAX_STUDIO_FILES
+        value: 3
+      - key: UPLOAD_MAX_STUDIO_REQUEST_MB
+        value: 25
       - key: NVIDIA_API_KEY
         sync: false
       - key: AI_PRIMARY_PROVIDER

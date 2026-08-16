@@ -39,8 +39,8 @@ open-signup platform for one MBA batch.
 ## Data protection
 
 - **Deletion / right to erasure**: users can delete their account from Settings; this cascades to all their notes, photos (incl. Cloudinary assets), tasks, expenses, budget, resume, journal, and announcements.
-- **Minimisation**: JWT carries only `{ userId, name, email, role }`. Email is shared with Resend solely to send welcome + announcement mail. No analytics, tracking, or ad identifiers.
-- **Transparency**: `/privacy` and `/terms` pages state what's stored, where (Atlas/Cloudinary/Resend), and who sees what.
+- **Minimisation**: JWT carries only `{ userId, name, email, role }`. Email is shared with Brevo solely to send account and announcement mail. No analytics, tracking, or ad identifiers.
+- **Transparency**: `/privacy` and `/terms` pages state what's stored, where (Atlas/Cloudinary/Brevo), and who sees what.
 
 ## Audit findings (pre-launch)
 
@@ -67,7 +67,7 @@ open-signup platform for one MBA batch.
 - [ ] Separate **production** MongoDB Atlas project (not shared with any other app).
 - [ ] Separate **production** Cloudinary account/folder.
 - [ ] Fresh, strong `JWT_SECRET` for production (never reuse the dev one).
-- [ ] Verify the admin sender address in Resend; set `MAIL_FROM` to it.
+- [ ] Verify the sending domain in Brevo; set `BREVO_FROM_EMAIL` to an address on it.
 - [ ] Admin registers first, before sharing the link.
 - [ ] `CLIENT_URL` set to the real domain(s); confirm CORS blocks others.
 - [ ] HTTPS enforced (handled by Render/Vercel).

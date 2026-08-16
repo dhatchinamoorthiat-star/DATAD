@@ -31,9 +31,14 @@ const MIME_TO_TYPE = {
   'video/webm': 'video',
 };
 
+const { LIMITS } = require('./uploadGuards');
+
+// Buffered in memory (see uploadGuards.js): 50 MB peaked around 120 MB of heap
+// per concurrent upload once the base64 data-URI was built alongside it.
+// Override with UPLOAD_MAX_DOC_MB.
 const docUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  limits: { fileSize: LIMITS.doc },
   fileFilter: (req, file, cb) => {
     if (ALLOWED_MIME.includes(file.mimetype)) return cb(null, true);
     cb(new Error('Unsupported file type'));
