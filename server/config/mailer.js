@@ -1,33 +1,20 @@
-const nodemailer = require('nodemailer');
 const logger = require('../utils/logger');
+const mailTransport = require('./mailTransport');
 
-const getTransporter = () => {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    logger.warn('Mailer disabled: GMAIL_USER or GMAIL_APP_PASSWORD not set');
-    return null;
-  }
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD.replace(/\s+/g, ''),
-    },
-  });
-};
-
-const send = async ({ to, subject, html }) => {
-  const transporter = getTransporter();
-  if (!transporter) return;
-
+/**
+ * Send one message. Provider selection, connection reuse and retries live in
+ * ./mailTransport; this file stays responsible for content only.
+ *
+ * Returns the transport's delivery result rather than undefined, so a caller
+ * that must not fail silently — registration, above all — can check it.
+ */
+const send = async ({ to, subject, html, kind = 'transactional' }) => {
   const toAddresses = to.map((r) => (r.name ? `"${r.name}" <${r.email}>` : r.email));
-
-  await transporter.sendMail({
-    from: `"DATAD" <${process.env.GMAIL_USER}>`,
-    to: toAddresses.join(', '),
-    subject,
-    html,
-  });
+  return mailTransport.deliver({ toAddresses, subject, html, kind });
 };
+
+exports.send = send;
+exports.isConfigured = mailTransport.isConfigured;
 
 const wrap = (heading, body) => `
   <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px">
@@ -128,22 +115,40 @@ exports.sendPasswordResetEmail = (user, link) =>
     ),
   }).catch((err) => logger.error('Reset email failed:', { error: err.message }));
 
+/**
+ * Bulk fan-out. Marked `kind: 'bulk'` so an unconfigured mailer logs at warn
+ * rather than error — a missing newsletter is not the same class of incident as
+ * a missing verification link — and so bulk volume is distinguishable from
+ * transactional volume in the logs.
+ *
+ * Still one message per recipient (never a shared To/Bcc header, which would
+ * disclose every student's address to every other student). The transport pools
+ * its connections, so this is no longer one handshake per message.
+ */
 exports.sendAnnouncementEmail = async (recipients, announcement) => {
-  const transporter = getTransporter();
-  if (!transporter) return;
+  if (!mailTransport.isConfigured()) {
+    logger.warn('Announcement skipped — no mail transport configured', {
+      recipients: recipients.length,
+    });
+    return { sent: 0, failed: 0, skipped: recipients.length };
+  }
 
   const subject = `📢 ${announcement.title}`;
   const html = wrap(announcement.title, `<p>${announcement.body.replace(/\n/g, '<br/>')}</p>`);
 
+  let sent = 0;
+  let failed = 0;
   for (const user of recipients) {
-    try {
-      await send({
-        to: [{ email: user.email, name: user.name }],
-        subject,
-        html,
-      });
-    } catch (err) {
-      logger.error('Announcement email failed for ' + user.email, { error: err.message });
-    }
+    const result = await send({
+      to: [{ email: user.email, name: user.name }],
+      subject,
+      html,
+      kind: 'bulk',
+    });
+    if (result?.delivered) sent += 1;
+    else failed += 1;
   }
+
+  logger.info('Announcement fan-out complete', { subject, sent, failed });
+  return { sent, failed, skipped: 0 };
 };

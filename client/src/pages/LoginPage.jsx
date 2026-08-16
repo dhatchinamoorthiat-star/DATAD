@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import toast from '../utils/toast';
 import Button from '../components/common/Button';
 import AuthShell from '../components/layout/AuthShell';
 import BinaryRainBackground from '../components/common/BinaryRainBackground';
-import { login as loginApi } from '../api/auth';
+import { login as loginApi, resendVerification } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 
 const inputClass =
@@ -19,14 +20,48 @@ export default function LoginPage() {
   const rawNext = searchParams.get('next') || '/dashboard';
   const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/dashboard';
 
+  // Set when the API says this account still needs confirming. Login is a hard
+  // gate on that, and the link expires, so the user needs a way to ask for a
+  // new one right here — a toast that disappears is not a recovery path.
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  const onResend = async () => {
+    if (!unverifiedEmail || resending) return;
+    setResending(true);
+    try {
+      const res = await resendVerification(unverifiedEmail);
+      setResent(true);
+      toast.success(res.data?.message || 'Check your inbox for a new confirmation link.');
+    } catch (err) {
+      if (err.response?.status === 429) {
+        toast.error('Too many attempts. Wait a few minutes before trying again.');
+      } else if (!err.response) {
+        toast.error('Network error — check your connection and try again.');
+      } else {
+        toast.error(err.response.data?.message || 'Could not resend right now. Try again shortly.');
+      }
+    } finally {
+      setResending(false);
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
       const res = await loginApi(data);
       login(res.data.token);
       navigate(next, { replace: true });
     } catch (err) {
+      if (err.response?.data?.needsEmailVerification) {
+        setUnverifiedEmail(data.email);
+        setResent(false);
+        toast.info(err.response.data.message, { icon: '📧', duration: 6000 });
+        return;
+      }
+      setUnverifiedEmail(null);
       if (err.response?.data?.pending) {
-        toast(err.response.data.message, { icon: '⏳', duration: 6000 });
+        toast.info(err.response.data.message, { icon: '⏳', duration: 6000 });
         return;
       }
       toast.error(err.response?.data?.message || 'Login failed');
@@ -73,6 +108,26 @@ export default function LoginPage() {
         >
           {formState.isSubmitting ? 'authenticating…' : 'run login()'}
         </Button>
+        {unverifiedEmail && (
+          <div
+            role="status"
+            className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center"
+          >
+            <p className="font-mono text-xs text-amber-300/90">
+              {resent
+                ? '> confirmation link sent — check inbox and spam'
+                : '> this account is not confirmed yet'}
+            </p>
+            <button
+              type="button"
+              onClick={onResend}
+              disabled={resending}
+              className="mt-2 font-mono text-xs font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300 disabled:cursor-not-allowed disabled:text-gray-600 disabled:no-underline"
+            >
+              {resending ? 'sending…' : resent ? 'send another link' : 'resend confirmation email'}
+            </button>
+          </div>
+        )}
         <p className="text-center font-mono text-sm text-gray-500">
           new here?{' '}
           <Link to="/register" className="font-medium text-emerald-400 hover:underline">
