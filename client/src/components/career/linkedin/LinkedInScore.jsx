@@ -9,10 +9,47 @@
  */
 
 import { useState } from 'react';
-import { ChevronDown, Check, Minus, X } from 'lucide-react';
+import { ChevronDown, Check, Minus, X, Info } from 'lucide-react';
 import ScoreRing from '../../common/ScoreRing';
 import Card from '../../common/Card';
 import { Meter } from './parts';
+
+// What each section is called when we have to tell a student we could not see
+// it. Keyed by the section names the scorer reports in `skippedBecause`.
+const SECTION_LABEL = {
+  recommendations: 'your recommendations',
+  featured: 'your Featured section',
+  projects: 'your projects',
+  skills: 'your full skills list',
+  volunteer: 'your volunteering',
+  activity: 'your posts and activity',
+};
+
+/**
+ * The honest footnote on a PDF-sourced score.
+ *
+ * LinkedIn's export leaves several sections out entirely, so those checks were
+ * skipped rather than failed. Saying so matters twice over: it stops the score
+ * reading as a judgement on sections we never saw, and it tells the student
+ * exactly what pasting their profile instead would add.
+ */
+function BlindSpots({ analysis }) {
+  const skipped = (analysis.checks || []).filter((c) => c.skippedBecause?.length);
+  if (!skipped.length) return null;
+
+  const sections = [...new Set(skipped.flatMap((c) => c.skippedBecause))];
+
+  return (
+    <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-indigo-200/70 bg-indigo-50/50 p-3.5 dark:border-indigo-800/50 dark:bg-indigo-950/20">
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-indigo-500" aria-hidden="true" />
+      <p className="text-xs leading-relaxed text-indigo-900 dark:text-indigo-200">
+        Your PDF export does not include {sections.map((s) => SECTION_LABEL[s] || s).join(', ')}, so{' '}
+        {skipped.length === 1 ? 'one check was' : `${skipped.length} checks were`} left out of this score rather
+        than counted against you. Paste your profile instead to have {sections.length === 1 ? 'it' : 'them'} assessed.
+      </p>
+    </div>
+  );
+}
 
 const STATUS = {
   pass:    { icon: Check, cls: 'text-emerald-500', label: 'Met' },
@@ -95,6 +132,8 @@ export default function LinkedInScore({ analysis, dimensionLabels }) {
           );
         })}
       </div>
+
+      <BlindSpots analysis={analysis} />
 
       <p className="mt-5 text-[11px] leading-relaxed text-gray-400">
         Scored by a fixed rule set (version {analysis.rulesVersion}), not by a language model — the same profile

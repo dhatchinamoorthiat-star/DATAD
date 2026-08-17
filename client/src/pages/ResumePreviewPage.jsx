@@ -42,7 +42,11 @@ export default function ResumePreviewPage() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    getMyResume().then((res) => setResume(res.data));
+    // `null` is the legitimate "no resume yet" state below, so a failed load
+    // must land there too rather than sitting on <Loader/> forever.
+    getMyResume()
+      .then((res) => setResume(res.data))
+      .catch(() => setResume(null));
   }, []);
 
   // The server renders the PDF so the file matches the one mailed on submit.

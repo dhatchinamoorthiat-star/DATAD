@@ -6,7 +6,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PWAProvider } from './context/PWAContext';
 import { ProgramProvider } from './context/ProgramContext';
-import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import InstallPrompt from './components/pwa/InstallPrompt';
 import OfflineBanner from './components/pwa/OfflineBanner';
@@ -148,7 +147,6 @@ export default function App() {
     <PWAProvider>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationProvider>
             <ToastProvider>
           <BrowserRouter>
             <OfflineBanner />
@@ -276,7 +274,7 @@ export default function App() {
                   <Route path="calendar" element={<CalendarPage />} />
                 </Route>
 
-                <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Finance" />}>
+                <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Life" />}>
                   <Route index element={<FinanceHubPage />} />
                   <Route path="tracker" element={<FinanceTrackerPage />} />
                   <Route path="calculator" element={<FinanceCalculatorPage />} />
@@ -285,7 +283,7 @@ export default function App() {
                   <Route path="roi" element={<FinanceROIPage />} />
                 </Route>
 
-                <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Wellbeing" />}>
+                <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Life" />}>
                   <Route index element={<WellbeingPage />} />
                   <Route path="study" element={<WellbeingStudyPage />} />
                   <Route path="memory" element={<WellbeingMemoryPage />} />
@@ -336,7 +334,6 @@ export default function App() {
           <InstallPrompt />
           </BrowserRouter>
             </ToastProvider>
-          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </PWAProvider>

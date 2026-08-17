@@ -28,7 +28,13 @@ export default function AdminCompaniesPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const { register, handleSubmit, reset, formState } = useForm();
 
-  const load = () => listCompanies().then((res) => setCompanies(res.data));
+  const load = () =>
+    listCompanies()
+      .then((res) => setCompanies(res.data))
+      .catch(() => {
+        setCompanies([]);
+        toast.error('Could not load companies');
+      });
   useEffect(() => {
     load();
   }, []);

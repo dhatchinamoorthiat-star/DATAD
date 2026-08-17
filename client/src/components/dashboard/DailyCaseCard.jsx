@@ -98,7 +98,7 @@ export default function DailyCaseCard() {
           <BookOpen className="h-4 w-4 text-primary-500 mt-0.5 shrink-0" />
           <div className="text-xs text-primary-700 dark:text-primary-300 space-y-0.5">
             <p className="font-semibold">How to use this case</p>
-            <p className="text-primary-600/80 dark:text-primary-400">Read the scenario → form your answer → then reveal the expert framework. Don't skip ahead — the learning is in the thinking.</p>
+            <p className="text-primary-600/80 dark:text-primary-400">Read the scenario → form your answer → then reveal the expert framework. Don&rsquo;t skip ahead — the learning is in the thinking.</p>
           </div>
         </div>
 

@@ -25,7 +25,7 @@ function StartCard() {
         <Gauge className="h-4 w-4 text-indigo-500" /> Placement Readiness
       </h2>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-        Your personalised placement score, built from what you've actually done.
+        Your personalised placement score, built from what you&rsquo;ve actually done.
       </p>
       <div className="flex flex-col items-center gap-4 py-4 text-center">
         <div className="relative h-28 w-28">

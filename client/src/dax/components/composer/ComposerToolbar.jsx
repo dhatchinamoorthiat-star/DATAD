@@ -5,7 +5,6 @@ import { CAPABILITY_CHIPS } from '../../constants';
 
 export default function ComposerToolbar({
   onAttachClick, activeCapability, onToggleCapability,
-  models = [], selectedModelId, onModelSelect, modelDisabled,
 }) {
   return (
     <div className="dax-scrollbar flex items-center gap-1 overflow-x-auto pb-0.5">

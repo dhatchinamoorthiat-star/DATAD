@@ -61,6 +61,49 @@ exports.saveProfile = handle(async (req, res) => {
   });
 });
 
+/**
+ * POST /api/linkedin/profile/pdf — import LinkedIn's own PDF export.
+ *
+ * The response carries `unknownSections`, and that field is the point of this
+ * endpoint being separate from the paste path. The export does not contain
+ * Recommendations, Featured or Projects, and lists only three skills — so the
+ * client tells the student what the file could not carry, and the scorer skips
+ * those checks rather than marking them down for it.
+ */
+exports.uploadPdf = handle(async (req, res) => {
+  if (!req.file?.buffer) {
+    return res.status(400).json({ message: 'Attach your LinkedIn PDF export.' });
+  }
+
+  // Sent as form fields alongside the file, so they arrive as strings.
+  const hints = {
+    name: req.body?.name,
+    headline: req.body?.headline,
+    location: req.body?.location,
+  };
+
+  const result = await linkedinService.importProfile(req.user.userId, {
+    source: 'pdf',
+    buffer: req.file.buffer,
+    hints,
+  });
+
+  logger.info('LinkedIn PDF imported', {
+    userId: String(req.user.userId),
+    bytes: req.file.size,
+    experienceEntries: result.profile.profile?.experience?.length ?? 0,
+  });
+
+  res.json({
+    profile: result.profile.profile,
+    source: result.profile.source,
+    target: result.profile.target,
+    unknownSections: result.profile.unknownSections,
+    suggestedTarget: result.target.role ? result.target : null,
+    needsTarget: !result.profile.target?.role,
+  });
+});
+
 /** PUT /api/linkedin/target — set or confirm the career target. */
 exports.setTarget = handle(async (req, res) => {
   res.json(await linkedinService.setTarget(req.user.userId, req.body || {}));

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { searchAll, parseIntent, recordClick, getPinned, togglePin, getRecentSearches, getFrequentSearches } from '../api/search';
+import { searchAll, recordClick, getPinned, togglePin, getRecentSearches, getFrequentSearches } from '../api/search';
 
 const DEBOUNCE_MS = 200;
 const MIN_QUERY_LENGTH = 2;
@@ -18,7 +18,9 @@ function loadFromStorage(key) {
 }
 
 function saveToStorage(key, data) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+  // Quota exceeded or storage disabled (private mode): search history is a
+  // convenience, never worth breaking a search over.
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* ignore */ }
 }
 
 export default function useSearch(options = {}) {
@@ -27,7 +29,6 @@ export default function useSearch(options = {}) {
     minLength = MIN_QUERY_LENGTH,
     includeCommands = true,
     enabled = true,
-    progressive = false,
   } = options;
 
   const [query, setQuery] = useState('');
@@ -37,8 +38,6 @@ export default function useSearch(options = {}) {
   const [error, setError] = useState(null);
   const [intent, setIntent] = useState(null);
   const [providerStatus, setProviderStatus] = useState({});
-  const [activeProviders, setActiveProviders] = useState(0);
-  const [totalProviders, setTotalProviders] = useState(0);
   const [pinned, setPinned] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [frequentSearches, setFrequentSearches] = useState([]);
@@ -73,7 +72,6 @@ export default function useSearch(options = {}) {
     return all;
   }, [grouped]);
 
-  const hasPartialResults = activeProviders > 0 && results.length > 0;
 
   const loadLocalData = useCallback(async () => {
     setPinned(loadFromStorage(STORAGE_KEYS.pinned));
@@ -89,10 +87,12 @@ export default function useSearch(options = {}) {
       if (pinnedRes.status === 'fulfilled') setPinned(pinnedRes.value.data || []);
       if (recentRes.status === 'fulfilled') setRecentSearches(recentRes.value.data || []);
       if (frequentRes.status === 'fulfilled') setFrequentSearches(frequentRes.value.data || []);
-    } catch {}
+    } catch { /* suggestions are optional — the search box still works without them */ }
   }, []);
 
   useEffect(() => {
+    // loadLocalData awaits before its first setState.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadLocalData();
   }, [loadLocalData]);
 
@@ -102,8 +102,7 @@ export default function useSearch(options = {}) {
       setCommands([]);
       setIntent(null);
       setProviderStatus({});
-      setActiveProviders(0);
-      setLatency(null);
+        setLatency(null);
       setLoading(false);
       return;
     }
@@ -115,7 +114,6 @@ export default function useSearch(options = {}) {
 
     setLoading(true);
     setError(null);
-    setActiveProviders(0);
     setProviderStatus({});
 
     const startTime = performance.now();
@@ -153,17 +151,19 @@ export default function useSearch(options = {}) {
     return () => { mountedRef.current = false; };
   }, []);
 
+  // Owns the debounce timer; clearing results when the query drops below the
+  // minimum is part of that, not state that could be derived in render.
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!enabled) return;
 
     if (query.length < minLength) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       setCommands([]);
       setIntent(null);
       setProviderStatus({});
-      setActiveProviders(0);
-      setLatency(null);
+        setLatency(null);
       setLoading(false);
       return;
     }
@@ -181,14 +181,13 @@ export default function useSearch(options = {}) {
     setIntent(null);
     setError(null);
     setProviderStatus({});
-    setActiveProviders(0);
     setLatency(null);
   }, []);
 
   const handleSelect = useCallback(async (item) => {
     try {
       await recordClick(query, item.id || item.title, item.category);
-    } catch {}
+    } catch { /* click analytics must never block navigating to the result */ }
 
     const recent = loadFromStorage(STORAGE_KEYS.recentSearches);
     const updated = [{ query, timestamp: Date.now() }, ...recent.filter((r) => r.query !== query)].slice(0, 10);
@@ -215,7 +214,7 @@ export default function useSearch(options = {}) {
       saveToStorage(STORAGE_KEYS.pinned, res.data?.pinned
         ? [item, ...pinned.filter((p) => p.resultId !== item.id && p.id !== item.id)]
         : pinned.filter((p) => p.resultId !== item.id && p.id !== item.id));
-    } catch {}
+    } catch { /* the optimistic UI update above already reflects the intent */ }
   }, [pinned]);
 
   const isPinned = useCallback((itemId) => {
@@ -233,9 +232,6 @@ export default function useSearch(options = {}) {
     error,
     intent,
     providerStatus,
-    hasPartialResults,
-    activeProviders,
-    totalProviders,
     latency,
     pinned,
     recentSearches,

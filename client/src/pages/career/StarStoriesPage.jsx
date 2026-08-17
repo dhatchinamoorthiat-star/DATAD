@@ -92,14 +92,14 @@ function StoryForm({ initial, onSave, onClose }) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Story title *</label>
-        <input value={form.title} onChange={set('title')} placeholder="e.g. Led cross-functional team during ERP migration"
+        <label htmlFor="star-stories-story-title" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Story title *</label>
+        <input id="star-stories-story-title" value={form.title} onChange={set('title')} placeholder="e.g. Led cross-functional team during ERP migration"
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         />
       </div>
       <div>
-        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Competency</label>
-        <select value={form.competency} onChange={set('competency')}
+        <label htmlFor="star-stories-competency" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Competency</label>
+        <select id="star-stories-competency" value={form.competency} onChange={set('competency')}
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         >
           <option value="">Select competency</option>
@@ -111,8 +111,8 @@ function StoryForm({ initial, onSave, onClose }) {
       {ta('Action — what did you specifically do?', 'action', 4)}
       {ta('Result — what was the measurable outcome?', 'result')}
       <div>
-        <label className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tags (comma-separated)</label>
-        <input value={form.tags} onChange={set('tags')} placeholder="e.g. cross-functional, cost reduction, agile"
+        <label htmlFor="star-stories-tags-comma-separated" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">Tags (comma-separated)</label>
+        <input id="star-stories-tags-comma-separated" value={form.tags} onChange={set('tags')} placeholder="e.g. cross-functional, cost reduction, agile"
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
         />
       </div>
@@ -164,7 +164,7 @@ export default function StarStoriesPage() {
           <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-1">What is a STAR story?</p>
           <p className="text-xs text-indigo-700 dark:text-indigo-300">
             <strong>S</strong>ituation → <strong>T</strong>ask → <strong>A</strong>ction → <strong>R</strong>esult.
-            Every behavioral question ("Tell me about a time…") is best answered this way.
+            Every behavioral question (&ldquo;Tell me about a time…&rdquo;) is best answered this way.
             Build your bank now, polish under pressure later.
           </p>
         </div>
@@ -182,7 +182,7 @@ export default function StarStoriesPage() {
           <div className="flex flex-col items-center gap-2 py-12 text-center">
             <BookOpen className="h-10 w-10 text-gray-300" />
             <p className="font-medium text-gray-500">No stories yet</p>
-            <p className="text-xs text-gray-400">Add your first work experience story — it'll pay off in every HR round.</p>
+            <p className="text-xs text-gray-400">Add your first work experience story — it&rsquo;ll pay off in every HR round.</p>
           </div>
         ) : (
           <div className="space-y-3">

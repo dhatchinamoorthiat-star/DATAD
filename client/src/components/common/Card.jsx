@@ -8,7 +8,6 @@ const BASE =
   'rounded-2xl border border-gray-200/80 bg-white shadow-[0_1px_2px_rgba(60,64,67,0.06),0_1px_3px_rgba(60,64,67,0.08)] dark:border-gray-800/80 dark:bg-gray-900 dark:shadow-none';
 
 export default function Card({
-  variant = 'passive',
   padding = 'md',
   hoverable = false,
   onClick,

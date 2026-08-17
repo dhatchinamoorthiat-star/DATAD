@@ -12,7 +12,7 @@ export default function ThinkingIndicator() {
 
   return (
     <div className="flex items-start gap-3 px-1 py-2">
-      <Avatar role="assistant" />
+      <Avatar speaker="assistant" />
       <div className="flex items-center gap-2 pt-1.5">
         <span className="flex items-center gap-1">
           {[0, 1, 2].map((i) => (

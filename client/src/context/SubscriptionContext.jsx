@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { useAuth } from './AuthContext';
 import { getSubscriptionStatus } from '../api/subscription';
 import { TIER_RANK, normalizeTier } from '../utils/tiers';
+import useNow from '../hooks/useNow';
 
 const SubscriptionContext = createContext(null);
 
@@ -11,17 +12,25 @@ export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
   const [status, setStatus] = useState({ tier: 'free', tierExpiresAt: null, trialUsed: false, capabilities: {} });
   const [loading, setLoading] = useState(false);
+  const now = useNow();
 
+  // Keyed on the id, not the user object: a new object identity for the same
+  // signed-in user must not refire the request.
+  const userId = user?.id;
   const fetch = useCallback(() => {
-    if (!user) return;
+    if (!userId) return;
     setLoading(true);
     getSubscriptionStatus()
       .then((res) => setStatus(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [userId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(fetch);
+  }, [fetch]);
 
   const tier = status?.tier ?? user?.tier ?? 'free';
   const tierExpiresAt = status?.tierExpiresAt ? new Date(status.tierExpiresAt) : null;
@@ -31,7 +40,7 @@ export function SubscriptionProvider({ children }) {
   const chatQuota = status?.chatQuota ?? null;
 
   const daysLeft = tierExpiresAt
-    ? Math.max(0, Math.ceil((tierExpiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
+    ? Math.max(0, Math.ceil((tierExpiresAt - now) / (24 * 60 * 60 * 1000)))
     : null;
 
   // Unknown `required` values fail CLOSED. This previously fell back to `?? 1`,

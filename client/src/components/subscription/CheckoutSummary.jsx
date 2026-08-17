@@ -1,30 +1,14 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle2, Loader2, ArrowLeft, Copy, ExternalLink } from 'lucide-react';
+import { X, CheckCircle2, Loader2, ArrowLeft, Copy } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { QRCodeSVG } from 'qrcode.react';
-import { submitPaymentRef, activateTrial } from '../../api/subscription';
-import { formatPrice, formatPriceDecimal, yearlySavings, monthlyEquivalent, dailyEquivalent } from '../../utils/pricing';
+import { submitPaymentRef } from '../../api/subscription';
+import { formatPrice, formatPriceDecimal, yearlySavings, monthlyEquivalent } from '../../utils/pricing';
 
 const UPI_VPA  = import.meta.env.VITE_UPI_VPA  || 'datad@upi';
 const UPI_NAME = import.meta.env.VITE_UPI_NAME || 'DATAD';
-
-function fmtDate(d) {
-  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function renewalDate() {
-  const d = new Date();
-  d.setMonth(d.getMonth() + 1);
-  return fmtDate(d);
-}
-
-function yearlyRenewalDate() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() + 1);
-  return fmtDate(d);
-}
 
 export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
   const [step, setStep] = useState('summary');
@@ -40,12 +24,11 @@ export default function CheckoutSummary({ plan, billing, onClose, onSuccess }) {
 
   if (plan.id === 'trial' || plan.id === 'free') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900"
-          onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Confirm {plan.label}</h2>
@@ -106,14 +89,13 @@ function PriceSummary({ plan, price, total, savings, monthsFree, isYearly, isOne
   const meq = isYearly ? monthlyEquivalent(price) : 0;
   const cycleLabel = isOneTime ? 'One-time' : isYearly ? 'Yearly' : 'Monthly';
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div>
@@ -161,7 +143,7 @@ function PriceSummary({ plan, price, total, savings, monthsFree, isYearly, isOne
                 Save {formatPriceDecimal(savings)} with yearly billing
               </p>
               <p className="text-xs text-success-600 dark:text-success-300">
-                {formatPriceDecimal(meq)}/month equivalent — that's almost {monthsFree} months free
+                {formatPriceDecimal(meq)}/month equivalent — that&rsquo;s almost {monthsFree} months free
               </p>
             </div>
           )}
@@ -206,14 +188,13 @@ function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]" role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div className="flex items-center gap-2">
@@ -258,10 +239,10 @@ function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="checkout-summary-payment-reference" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Payment Reference <span className="text-danger-500">*</span>
               </label>
-              <input
+              <input id="checkout-summary-payment-reference"
                 {...register('paymentRef', {
                   required: 'Reference number is required',
                   minLength: { value: 6, message: 'Enter the full reference number' },
@@ -275,10 +256,10 @@ function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-400">
+              <label htmlFor="checkout-summary-your-upi-id" className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-400">
                 Your UPI ID <span className="font-normal text-gray-400">(optional)</span>
               </label>
-              <input
+              <input id="checkout-summary-your-upi-id"
                 {...register('upiId')}
                 placeholder="yourname@upi"
                 className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-sm placeholder:text-gray-400 focus:border-primary-400 focus:outline-none dark:border-gray-700"

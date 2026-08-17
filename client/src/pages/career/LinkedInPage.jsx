@@ -13,8 +13,8 @@
  * over, and the delete control removes all of it.
  */
 
-import { useEffect, useState } from 'react';
-import { Contact, Sparkles, RefreshCw, Trash2, ArrowRight, ClipboardPaste, FileText, Briefcase } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Contact, Sparkles, RefreshCw, Trash2, ArrowRight, ClipboardPaste, FileText, Briefcase, Upload, FileUp } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -29,8 +29,18 @@ import useDocumentTitle from '../../hooks/useDocumentTitle';
 import toast from '../../utils/toast';
 import { track } from '../../utils/analytics';
 import {
-  getLinkedIn, saveLinkedInProfile, setLinkedInTarget, analyzeLinkedIn, deleteLinkedInData,
+  getLinkedIn, saveLinkedInProfile, uploadLinkedInPdf, setLinkedInTarget, analyzeLinkedIn, deleteLinkedInData,
 } from '../../api/linkedin';
+
+/**
+ * A target still needs the student's confirmation if there isn't one, or if the
+ * one we have was inferred from their DATAD profile rather than stated. An
+ * inferred target is a guess about what job someone wants; scoring against it
+ * without asking is how a career tool confidently optimises for the wrong role.
+ * Answering the form clears the flag, because the server marks an explicitly
+ * supplied role as not inferred.
+ */
+const needsTargetConfirmation = (target) => !target?.role || Boolean(target.inferred);
 
 const SENIORITY = [
   { value: 'intern', label: 'Internship' },
@@ -54,8 +64,11 @@ export default function LinkedInPage() {
       .then(({ data }) => {
         setState(data);
         // Land on the furthest step the stored data supports, so returning to
-        // the page never means re-walking the wizard.
-        setStep(!data.hasProfile ? 'import' : !data.target?.role ? 'target' : 'result');
+        // the page never means re-walking the wizard — except where the target
+        // was only inferred, which has to be confirmed before it is scored
+        // against. Guessing the role and silently scoring against the guess is
+        // the one thing the intent engine exists to avoid.
+        setStep(!data.hasProfile ? 'import' : needsTargetConfirmation(data.target) ? 'target' : 'result');
       })
       .catch(() => toast.error('Could not load your LinkedIn analysis.'))
       .finally(() => setLoading(false));
@@ -128,8 +141,9 @@ export default function LinkedInPage() {
             existing={state}
             onSaved={(next) => {
               setState((prev) => ({ ...prev, ...next, hasProfile: true }));
-              setStep(next.target?.role ? 'result' : 'target');
-              if (next.target?.role) runAnalysis();
+              const confirm = needsTargetConfirmation(next.target);
+              setStep(confirm ? 'target' : 'result');
+              if (!confirm) runAnalysis();
             }}
           />
         )}
@@ -209,6 +223,8 @@ function ImportStep({ existing, onSaved }) {
   const [rawText, setRawText] = useState('');
   const [hints, setHints] = useState({ name: '', headline: '' });
   const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileInput = useRef(null);
 
   const save = async (source) => {
     if (source === 'paste' && !rawText.trim()) {
@@ -227,17 +243,95 @@ function ImportStep({ existing, onSaved }) {
     }
   };
 
+  const uploadPdf = async (file) => {
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('That is not a PDF. Use LinkedIn\'s "Save to PDF" option.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { data } = await uploadLinkedInPdf(file, hints);
+      toast.success('Profile imported from your LinkedIn export.');
+      onSaved(data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not read that PDF.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* First, because it is the least effort and the best provenance:
+          LinkedIn's own export, downloaded by the student themselves. */}
+      <Card padding="lg">
+        <div className="mb-3 flex items-center gap-2">
+          <Upload className="h-4 w-4 text-primary-500" aria-hidden="true" />
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">Upload your LinkedIn PDF</h2>
+          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+            Easiest
+          </span>
+        </div>
+        <p className="mb-3 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+          On your LinkedIn profile: <strong>More</strong> → <strong>Save to PDF</strong>. Drop the file here and we
+          read it directly. Nothing is fetched on your behalf — you download your own data and hand it over.
+        </p>
+
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            uploadPdf(e.dataTransfer.files?.[0]);
+          }}
+          className={`rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
+            dragging
+              ? 'border-primary-400 bg-primary-50/60 dark:border-primary-600 dark:bg-primary-950/30'
+              : 'border-gray-200 dark:border-gray-800'
+          }`}
+        >
+          <FileUp className="mx-auto mb-2 h-6 w-6 text-gray-300 dark:text-gray-600" aria-hidden="true" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Drop your PDF here, or{' '}
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              className="font-semibold text-primary-600 underline-offset-2 hover:underline dark:text-primary-400"
+            >
+              choose a file
+            </button>
+          </p>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="sr-only"
+            aria-label="LinkedIn PDF export"
+            onChange={(e) => {
+              uploadPdf(e.target.files?.[0]);
+              // Reset so re-picking the same file after a failure still fires.
+              e.target.value = '';
+            }}
+          />
+          {saving && <p className="mt-2 text-xs text-gray-400">Reading your profile…</p>}
+        </div>
+
+        <p className="mt-3 text-[11px] leading-relaxed text-gray-400">
+          The export does not include your Featured section, recommendations or your full skills list — we will tell
+          you what it could not see rather than scoring those as empty.
+        </p>
+      </Card>
+
       <Card padding="lg">
         <div className="mb-3 flex items-center gap-2">
           <ClipboardPaste className="h-4 w-4 text-primary-500" aria-hidden="true" />
-          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">Paste your profile</h2>
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">Or paste your profile</h2>
         </div>
         <p className="mb-3 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-          Open your LinkedIn profile, select the whole page, copy it, and paste it below. Everything —
-          headline, About, experience, skills, recommendations — is parsed out for you. We never ask for your
-          LinkedIn password and never fetch your profile ourselves.
+          Copying the page gives us more than the PDF does — it includes your full skills list, your Featured
+          section and your recommendations. Select the whole profile page, copy, and paste it below.
         </p>
 
         <label className="sr-only" htmlFor="linkedin-paste">LinkedIn profile text</label>
@@ -338,10 +432,13 @@ function TargetStep({ target, suggested, analyzing, onSaved }) {
         is scored against what you put here.
       </p>
 
-      {suggested?.inferred && (
+      {/* Fires for a stored-but-unconfirmed target too, not only for a fresh
+          suggestion — otherwise a guess that had already been saved would be
+          presented as though the student had chosen it. */}
+      {(target?.inferred || suggested?.inferred) && (
         <p className="mt-3 rounded-xl bg-indigo-50/70 px-3 py-2 text-xs leading-relaxed text-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300">
-          We guessed <strong>{suggested.role}</strong> from your DATAD profile. Change it if that is not what you are
-          going after.
+          We guessed <strong>{target?.role || suggested?.role}</strong> from your DATAD profile — confirm it or change
+          it. Everything below is scored against this, so a wrong guess would give you the wrong advice.
         </p>
       )}
 

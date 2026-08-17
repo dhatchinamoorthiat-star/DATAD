@@ -12,6 +12,7 @@ import FeatureTable from '../components/subscription/FeatureTable';
 import FAQ from '../components/subscription/FAQ';
 import CreditExplainer from '../components/subscription/CreditExplainer';
 import { PLANS, FEATURE_ROWS, FAQ_ITEMS } from '../utils/pricing';
+import useNow from '../hooks/useNow';
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -26,6 +27,7 @@ export default function SubscribePage() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedPlan, setSubmittedPlan] = useState(null);
   const [dbStatus, setDbStatus] = useState(null);
+  const now = useNow();
 
   useEffect(() => {
     getSubscriptionStatus()
@@ -37,7 +39,7 @@ export default function SubscribePage() {
   const trialUsed = !!dbStatus?.trialUsed;
   const tierExpiresAt = dbStatus?.tierExpiresAt ? new Date(dbStatus.tierExpiresAt) : null;
   const daysLeft = tierExpiresAt
-    ? Math.max(0, Math.ceil((tierExpiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
+    ? Math.max(0, Math.ceil((tierExpiresAt - now) / (24 * 60 * 60 * 1000)))
     : null;
 
   const handleSelect = useCallback(async (plan) => {
@@ -83,9 +85,9 @@ export default function SubscribePage() {
           Payment Reference Submitted
         </h1>
         <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-          We'll verify your payment and activate{' '}
+          We&rsquo;ll verify your payment and activate{' '}
           <span className="font-semibold text-gray-700 dark:text-gray-300">{submittedPlan?.label}</span> within
-          24 hours. You'll be notified once it's done.
+          24 hours. You&rsquo;ll be notified once it&rsquo;s done.
         </p>
         <Link
           to="/"
@@ -141,7 +143,7 @@ export default function SubscribePage() {
             Choose your edge
           </h1>
           <p className="mx-auto mt-3 max-w-lg text-base text-gray-500 dark:text-gray-400">
-            Unlock DATAD's full potential. From basic tools to premium AI — pick the plan that fits your ambition.
+            Unlock DATAD&rsquo;s full potential. From basic tools to premium AI — pick the plan that fits your ambition.
           </p>
         </motion.div>
 

@@ -66,12 +66,15 @@ export default function AdminStudioPage() {
   const [items, setItems] = useState(null);
 
   const refresh = useCallback(() => {
-    listItems(tab ? { status: tab } : {})
+    // Clearing here rather than in the effect body keeps the reset out of the
+    // synchronous render path; the poller below reuses refresh() unchanged.
+    Promise.resolve()
+      .then(() => listItems(tab ? { status: tab } : {}))
       .then((res) => setItems(res.data.items))
       .catch(() => setItems([]));
   }, [tab]);
 
-  useEffect(() => { setItems(null); refresh(); }, [refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   // While anything is still analyzing, poll so cards flip to "ready" live.
   useEffect(() => {
@@ -128,7 +131,15 @@ export default function AdminStudioPage() {
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+        role="button"
+        tabIndex={0}
         onClick={() => !uploading && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!uploading) inputRef.current?.click();
+          }
+        }}
         className={`mb-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors ${
           dragging
             ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'

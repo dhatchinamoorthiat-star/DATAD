@@ -1,51 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../utils/toast';
-import { CalendarDays, Check, Pencil, Plus, Trash2, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { CalendarDays, Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import { listTasks, createTask, updateTask, deleteTask } from '../api/tasks';
-import { useAuth } from '../context/AuthContext';
-import { SUBJECTS, TASK_TYPES, TASK_STATUSES } from '../utils/constants';
+import { TASK_TYPES } from '../utils/constants';
 import { formatDate, daysUntil } from '../utils/dateUtils';
 import { FeedSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
 import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
-import TierGate from '../components/common/TierGate';
-import CrownBadge from '../components/common/CrownBadge';
 import DateInput from '../components/common/DateInput';
 import Button from '../components/common/Button';
-import { DAX_CAPABILITY } from '../utils/dax';
-
-function AIPlannerPanel({ tasks }) {
-  const [state, setState] = useState('idle');
-  const [result, setResult] = useState(null);
-  const [showAI, setShowAI] = useState(false);
-
-  if (state === 'idle' || state === 'error') {
-    return (
-      <button
-        onClick={() => setShowAI((s) => !s)}
-        className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/60 dark:bg-indigo-900/30 dark:text-indigo-300"
-      >
-        <Sparkles className="h-4 w-4" />
-        {showAI ? 'Hide Dax' : "Ask Dax what to focus on today"}
-      </button>
-    );
-  }
-
-  if (state === 'loading') {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-600 dark:border-indigo-800/60 dark:bg-indigo-900/30">
-        <Loader2 className="h-4 w-4 animate-spin" /> Thinking through your priorities…
-      </div>
-    );
-  }
-
-  return null;
-}
 
 export default function PlannerPage() {
-  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -62,6 +29,9 @@ export default function PlannerPage() {
     setLoading(false);
   };
 
+  // The loader awaits before its first setState, so nothing is set
+  // synchronously here — the rule cannot see across the await.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchTasks(); }, []);
 
   const openCreate = () => {

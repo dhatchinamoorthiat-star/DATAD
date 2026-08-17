@@ -1,32 +1,44 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Megaphone, Camera, Archive, ArrowRight, Pin, ShoppingBag, Award,
-  MessageSquare, Users,
+  MessageSquare, 
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { listAnnouncements } from '../../api/admin';
 import { listPosts } from '../../api/posts';
 import { formatDate } from '../../utils/dateUtils';
 import { FeedSkeleton } from '../../components/common/Skeleton';
+import ErrorState from '../../components/common/ErrorState';
 import { Page } from '../../components/common/motion';
+import useAsync from '../../hooks/useAsync';
 
 export default function CommunityHubPage() {
   useDocumentTitle('Community');
-  const [data, setData] = useState(null);
 
-  useEffect(() => {
-    Promise.allSettled([listAnnouncements(), listPosts({ limit: 4 })]).then(
-      ([announcementsRes, postsRes]) => {
-        const announcements = announcementsRes.status === 'fulfilled' ? announcementsRes.value.data.slice(0, 3) : [];
-        const raw = postsRes.status === 'fulfilled' ? postsRes.value.data : {};
-        const posts = (raw.posts || raw).slice(0, 4);
-        setData({ announcements, posts });
-      }
-    );
+  const { data, error, loading, reload } = useAsync(async () => {
+    const [announcementsRes, postsRes] = await Promise.allSettled([
+      listAnnouncements(),
+      listPosts({ limit: 4 }),
+    ]);
+    // Both sections failing is a real error, not an empty campus — otherwise
+    // the hub renders as a ghost town and the student assumes nothing happened.
+    if (announcementsRes.status === 'rejected' && postsRes.status === 'rejected') {
+      throw announcementsRes.reason;
+    }
+    const announcements = announcementsRes.status === 'fulfilled' ? announcementsRes.value.data.slice(0, 3) : [];
+    const raw = postsRes.status === 'fulfilled' ? postsRes.value.data : {};
+    const posts = (raw.posts || raw).slice(0, 4);
+    return { announcements, posts };
   }, []);
 
-  if (!data) return <div className="mx-auto w-full max-w-3xl px-4 py-6"><FeedSkeleton count={4} /></div>;
+  if (loading) return <div className="mx-auto w-full max-w-3xl px-4 py-6"><FeedSkeleton count={4} /></div>;
+  if (error) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 py-6">
+        <ErrorState title="Could not load your community" onRetry={reload} />
+      </div>
+    );
+  }
 
   return (
     <Page>

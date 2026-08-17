@@ -1,20 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Plus, Search } from 'lucide-react';
 import { listNotes } from '../api/notes';
 import { SUBJECTS } from '../utils/constants';
 import { formatDate } from '../utils/dateUtils';
 import EmptyState from '../components/common/EmptyState';
+import ErrorState from '../components/common/ErrorState';
 import { CardGridSkeleton } from '../components/common/Skeleton';
+import useAsync from '../hooks/useAsync';
 
 export default function NotesListPage() {
-  const [notes, setNotes] = useState(null);
+  const { data: notes, error, loading, reload } = useAsync(() => listNotes({}), []);
   const [subject, setSubject] = useState('');
   const [query, setQuery] = useState('');
-
-  useEffect(() => {
-    listNotes({}).then((res) => setNotes(res.data));
-  }, []);
 
   const visible = useMemo(() => {
     if (!notes) return [];
@@ -67,8 +65,10 @@ export default function NotesListPage() {
         </div>
       </div>
 
-      {!notes ? (
+      {loading ? (
         <CardGridSkeleton count={6} />
+      ) : error ? (
+        <ErrorState title="Could not load your notes" onRetry={reload} />
       ) : visible.length === 0 ? (
         <EmptyState
           icon={BookOpen}

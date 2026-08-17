@@ -38,7 +38,10 @@ export default function AdminLogsPage() {
   const [logs, setLogs] = useState(null);
 
   useEffect(() => {
-    getActivityLogs().then((res) => setLogs(res.data));
+    getActivityLogs()
+      .then((res) => setLogs(res.data))
+      // An empty log table beats <Loader/> forever with no explanation.
+      .catch(() => setLogs([]));
   }, []);
 
   if (!logs) return <Loader />;

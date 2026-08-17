@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarDays, Wallet, BookLock, ArrowRight, HeartHandshake,
   Smile,
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import useAsync from '../../hooks/useAsync';
 import { listTasks } from '../../api/tasks';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
 import { Skeleton } from '../../components/common/Skeleton';
+import ErrorState from '../../components/common/ErrorState';
 import { Page } from '../../components/common/motion';
 
 const FEATURE_CARDS = [
@@ -19,19 +20,13 @@ const FEATURE_CARDS = [
 
 export default function MeHubPage() {
   useDocumentTitle('Personal');
-  const [tasks, setTasks] = useState(null);
-
-  useEffect(() => {
-    listTasks().then((res) =>
-      setTasks(res.data.filter((t) => t.status !== 'done' && daysUntil(t.dueDate) >= -7).slice(0, 6))
-    );
-  }, []);
+  const { data: allTasks, error, loading, reload } = useAsync(() => listTasks(), []);
 
   const dateLabel = new Date().toLocaleDateString('en-IN', {
     weekday: 'short', day: 'numeric', month: 'short',
   });
 
-  if (!tasks) {
+  if (loading) {
     return (
       <Page>
         <div className="flex items-center justify-between py-4">
@@ -50,9 +45,27 @@ export default function MeHubPage() {
     );
   }
 
-  const due = tasks.filter((t) => daysUntil(t.dueDate) <= 1 && daysUntil(t.dueDate) >= 0).length;
-  const overdue = tasks.filter((t) => daysUntil(t.dueDate) < 0).length;
-  const upcoming = tasks.filter((t) => daysUntil(t.dueDate) > 1 && daysUntil(t.dueDate) <= 7).length;
+  if (error) {
+    return (
+      <Page>
+        <ErrorState title="Could not load your tasks" onRetry={reload} className="mt-8" />
+      </Page>
+    );
+  }
+
+  // Counts come from every open task, not from the display slice below. They
+  // used to be derived from the truncated list, which capped "Overdue" at six
+  // and hid anything more than a week late — the tasks that most need saying.
+  const open = (allTasks || []).filter((t) => t.status !== 'done');
+  const due = open.filter((t) => daysUntil(t.dueDate) === 0).length;
+  const overdue = open.filter((t) => daysUntil(t.dueDate) < 0).length;
+  const upcoming = open.filter((t) => daysUntil(t.dueDate) > 0 && daysUntil(t.dueDate) <= 7).length;
+
+  // The "Up next" list stays short on purpose — recent and near-term only.
+  const tasks = open
+    .filter((t) => daysUntil(t.dueDate) >= -7)
+    .sort((a, b) => new Date(a.dueDate || 8640000000000000) - new Date(b.dueDate || 8640000000000000))
+    .slice(0, 6);
 
   return (
     <Page>

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateId } from '../lib/id';
 import { toChunks } from '../lib/streaming';
 import { MESSAGE_STATUS, DAX_CONTINUE_INTENT } from '../constants';
@@ -28,8 +28,13 @@ export function useDaxChat({ conversation, adapter, appendMessage, updateMessage
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
   const stoppedRef = useRef(false);
+  // Seeded at mount, then synced after commit. Writing a ref during render is
+  // unsafe under concurrent rendering; every reader below runs from an event
+  // handler or an async callback, i.e. after the effect has run.
   const conversationRef = useRef(conversation);
-  conversationRef.current = conversation;
+  useEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
   // Synchronous re-entrancy guard: some UI paths (e.g. the send button)
   // can dispatch two click events for what is visually a single click,
   // which would otherwise fire two concurrent runReply() calls against the

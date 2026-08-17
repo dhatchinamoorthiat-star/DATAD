@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../utils/toast';
 import { Camera, Plus, Image, Trash2, ExternalLink } from 'lucide-react';
@@ -8,20 +8,19 @@ import { useAuth } from '../context/AuthContext';
 import { formatDate } from '../utils/dateUtils';
 import { CardGridSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
+import ErrorState from '../components/common/ErrorState';
 import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
+import useAsync from '../hooks/useAsync';
 
 export default function AlbumsListPage() {
-  const [albums, setAlbums] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const { register, handleSubmit, reset, formState } = useForm();
   const { user } = useAuth();
 
-  const load = () => listAlbums().then((res) => setAlbums(res.data));
-  useEffect(() => {
-    load();
-  }, []);
+  // `load` doubles as the post-mutation refetch and the retry-after-failure.
+  const { data: albums, error, loading, reload: load } = useAsync(() => listAlbums(), []);
 
   const onCreate = async (data) => {
     try {
@@ -57,8 +56,10 @@ export default function AlbumsListPage() {
         Albums link to shared Google Photos — click any card to open the full album.
       </p>
 
-      {!albums ? (
+      {loading ? (
         <CardGridSkeleton count={6} />
+      ) : error ? (
+        <ErrorState title="Could not load albums" onRetry={load} />
       ) : albums.length === 0 ? (
         <EmptyState
           icon={Camera}

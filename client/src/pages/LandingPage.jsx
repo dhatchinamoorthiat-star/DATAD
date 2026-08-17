@@ -227,7 +227,7 @@ export default function LandingPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg dark:text-gray-400">
           Notes, career prep, planning, money and wellbeing — everything a student juggles,
-          designed to make you a little better every single day, whatever you're studying.
+          designed to make you a little better every single day, whatever you&rsquo;re studying.
           Not louder. Better.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

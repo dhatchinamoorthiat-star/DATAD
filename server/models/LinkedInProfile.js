@@ -91,7 +91,15 @@ const linkedInProfileSchema = new mongoose.Schema(
       openToWork: tri,
     },
 
-    source: { type: String, enum: ['paste', 'manual', 'datad'], default: 'paste' },
+    source: { type: String, enum: ['paste', 'manual', 'datad', 'pdf'], default: 'paste' },
+
+    // Sections this import could not see, rather than sections the student
+    // lacks. LinkedIn's PDF export carries no Recommendations, Featured or
+    // Projects at all, and only the top three skills — so scoring those as
+    // empty would tell a student they have no recommendations when they may
+    // have four. The scorer skips these checks instead of failing them; see
+    // utils/linkedin/score.js.
+    unknownSections: { type: [{ type: String, maxlength: 40 }], default: [] },
 
     // Lets /analyze skip work when nothing changed since the last run. A hash
     // rather than the text itself: it answers the only question we ask of the

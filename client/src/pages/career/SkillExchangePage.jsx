@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { GraduationCap, Star, Users, Search, Plus, Phone } from 'lucide-react';
@@ -39,11 +39,11 @@ export default function SkillExchangePage() {
   const [ratingVal, setRatingVal] = useState(5);
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
-  const load = () => {
+  const load = useCallback(() => {
     listSkills(search ? { search } : {}).then((r) => setSkills(r.data)).catch(() => setSkills([]));
-  };
+  }, [search]);
 
-  useEffect(() => { load(); }, [search]);
+  useEffect(() => { load(); }, [load]);
 
   const onAdd = async (data) => {
     try {

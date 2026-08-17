@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Crown, Sparkles, Zap, Check } from 'lucide-react';
-import { yearlySavings, yearlySavingsPercent, monthlyEquivalent, dailyEquivalent, formatPrice } from '../../utils/pricing';
+import { yearlySavings, monthlyEquivalent, dailyEquivalent, formatPrice } from '../../utils/pricing';
 
 const CARD_COLORS = {
   gray: {
@@ -56,7 +56,6 @@ export default function PricingCard({ plan, billing, onSelect, currentTier, tria
   };
 
   const savings = isRecurringPaid && isYearly ? yearlySavings(plan.id) : 0;
-  const savingsPct = isRecurringPaid && isYearly ? yearlySavingsPercent(plan.id) : 0;
   const monthsFree = isRecurringPaid && isYearly ? Math.round((savings / plan.monthlyPrice) * 10) / 10 : 0;
   const meq = isRecurringPaid && isYearly ? monthlyEquivalent(price) : 0;
   const deq = isRecurringPaid
@@ -164,7 +163,7 @@ export default function PricingCard({ plan, billing, onSelect, currentTier, tria
               Save {formatPrice(savings)} / year
             </p>
             <p className="text-[11px] text-success-600 dark:text-success-500">
-              That's almost {monthsFree} months free
+              That&rsquo;s almost {monthsFree} months free
             </p>
           </motion.div>
         )}

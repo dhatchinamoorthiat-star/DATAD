@@ -64,7 +64,6 @@ export default function SearchPage() {
   const {
     query, setQuery, grouped, flatList, loading, clear,
     intent, pinned, handleSelect, handlePin, isPinned,
-    hasPartialResults, activeProviders, totalProviders,
     recentSearches, frequentSearches,
   } = useSearch({ includeCommands: true });
   const [activeCategory, setActiveCategory] = useState('all');
@@ -163,13 +162,6 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Provider loading indicator */}
-        {hasPartialResults && activeProviders > 0 && (
-          <div className="mt-3 flex items-center gap-2 px-1 text-[11px] text-gray-400">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            Loading from {activeProviders}/{totalProviders} sources…
-          </div>
-        )}
       </div>
 
       {/* ── Empty / Dashboard ── */}
@@ -247,10 +239,10 @@ export default function SearchPage() {
       {loading && query.length >= 2 && totalResults === 0 && <ShimmerBlock count={4} />}
 
       {/* ── No results ── */}
-      {query.length >= 2 && !loading && totalResults === 0 && activeProviders === 0 && (
+      {query.length >= 2 && !loading && totalResults === 0 && (
         <div className="text-center py-16">
           <Search className="h-10 w-10 mx-auto mb-3 text-gray-300" />
-          <p className="text-gray-500">No results for "{query}"</p>
+          <p className="text-gray-500">No results for &ldquo;{query}&rdquo;</p>
           <p className="text-sm text-gray-400 mt-1">Try different keywords or browse the categories above</p>
           {intent && intent.intent !== 'search' && (
             <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-4 py-2 text-sm text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400">

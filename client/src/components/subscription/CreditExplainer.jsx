@@ -40,7 +40,7 @@ export default function CreditExplainer() {
           </h3>
         </div>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          AI Credits represent Dax's AI compute usage. Simple questions use very few credits, while complex
+          AI Credits represent Dax&rsquo;s AI compute usage. Simple questions use very few credits, while complex
           tasks like Resume Review or Company Research use more. You never pay extra for credits — they reset daily.
         </p>
       </div>

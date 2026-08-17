@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { LayoutGroup } from 'framer-motion';
 import DaxShell from './components/layout/DaxShell';
 import DaxTransition from './components/experience/DaxTransition';
 import ConversationView from './components/conversation/ConversationView';
@@ -11,7 +11,6 @@ import SettingsPanel from './components/settings/SettingsPanel';
 import { useDaxConversations } from './hooks/useDaxConversations';
 import { useDaxChat } from './hooks/useDaxChat';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { storage } from './lib/storage';
 import { generateId } from './lib/id';
 import { migrateLocalConversationsToServer } from './lib/migrateToServer';
 import { TEXT_LIKE_EXTENSIONS, TEXT_ATTACHMENT_MAX_BYTES } from './constants';

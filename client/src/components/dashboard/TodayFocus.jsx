@@ -79,7 +79,7 @@ export default function TodayFocus({ data }) {
     >
       <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${s.icon}`} />
       <div className="min-w-0 flex-1">
-        <p className={`text-[10px] font-bold uppercase tracking-widest ${s.label}`}>Today's focus</p>
+        <p className={`text-[10px] font-bold uppercase tracking-widest ${s.label}`}>Today&rsquo;s focus</p>
         <p className={`mt-0.5 text-sm font-semibold ${s.body}`}>{focus.message}</p>
         {focus.sub && <p className="mt-0.5 truncate text-xs text-gray-500 dark:text-gray-400">{focus.sub}</p>}
       </div>

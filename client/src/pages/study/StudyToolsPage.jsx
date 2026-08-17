@@ -128,11 +128,15 @@ export default function StudyToolsPage() {
   const [showPomoInfo, setShowPomoInfo] = useState(false);
 
   useEffect(() => {
-    Promise.allSettled([getTodayLog(), getStreak(), getWeekStats()]).then(([l, s, w]) => {
-      if (l.status === 'fulfilled') setLog(l.value.data);
-      if (s.status === 'fulfilled') setStreak(s.value.data.streak);
-      if (w.status === 'fulfilled') setWeekStats(w.value.data.days);
-    });
+    Promise.allSettled([getTodayLog(), getStreak(), getWeekStats()])
+      .then(([l, s, w]) => {
+        if (l.status === 'fulfilled') setLog(l.value.data);
+        if (s.status === 'fulfilled') setStreak(s.value.data.streak);
+        if (w.status === 'fulfilled') setWeekStats(w.value.data.days);
+      })
+      // Stats are decoration here — the timer works without them. Swallow, but
+      // deliberately, so a malformed payload cannot take the page down.
+      .catch(() => {});
   }, []);
 
   const onPomodoroComplete = async (isFocus) => {
@@ -175,12 +179,12 @@ export default function StudyToolsPage() {
           <p className="mt-1 text-[11px] text-gray-400">{(streak ?? 0) >= 5 ? '🔥 You\'re on fire!' : 'Study daily to grow'}</p>
         </div>
         <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(60,64,67,0.06),0_1px_3px_rgba(60,64,67,0.08)] dark:border-gray-800/80 dark:bg-gray-900 dark:shadow-none">
-          <div className="flex items-center gap-2 mb-1"><Timer className="h-4 w-4 text-primary-500" /><p className="text-xs font-semibold text-gray-500">Today's Pomodoros</p></div>
+          <div className="flex items-center gap-2 mb-1"><Timer className="h-4 w-4 text-primary-500" /><p className="text-xs font-semibold text-gray-500">Today&rsquo;s Pomodoros</p></div>
           <p className="text-3xl font-bold text-primary-600">{log.pomodoroCount}</p>
           <p className="mt-1 text-[11px] text-gray-400">{log.studyMinutes}m studied today</p>
         </div>
         <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(60,64,67,0.06),0_1px_3px_rgba(60,64,67,0.08)] dark:border-gray-800/80 dark:bg-gray-900 dark:shadow-none">
-          <div className="flex items-center gap-2 mb-1"><CheckSquare className="h-4 w-4 text-success-500" /><p className="text-xs font-semibold text-gray-500">Today's Habits</p></div>
+          <div className="flex items-center gap-2 mb-1"><CheckSquare className="h-4 w-4 text-success-500" /><p className="text-xs font-semibold text-gray-500">Today&rsquo;s Habits</p></div>
           <p className="text-3xl font-bold text-success-600">{log.habits.filter((h) => h.done).length}<span className="text-sm font-normal text-gray-400">/{log.habits.length}</span></p>
           <p className="mt-1 text-[11px] text-gray-400">habits completed</p>
         </div>
@@ -203,7 +207,7 @@ export default function StudyToolsPage() {
           <div>
             <h3 className="font-semibold text-sm text-primary-800 dark:text-primary-200">The Pomodoro Technique</h3>
             <p className="text-xs text-primary-600/80 dark:text-primary-300/80 mt-1 leading-relaxed">
-              Developed by Francesco Cirillo in the late 1980s, the Pomodoro Technique is a time management method that uses focused 25-minute work blocks with short breaks in between. It's one of the most researched productivity techniques for students.
+              Developed by Francesco Cirillo in the late 1980s, the Pomodoro Technique is a time management method that uses focused 25-minute work blocks with short breaks in between. It&rsquo;s one of the most researched productivity techniques for students.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -218,14 +222,14 @@ export default function StudyToolsPage() {
             ))}
           </div>
           <p className="text-[11px] text-primary-500/70 dark:text-primary-400/70 italic">
-            "The next pomodoro will go better." — Francesco Cirillo
+            &ldquo;The next pomodoro will go better.&rdquo; — Francesco Cirillo
           </p>
         </div>
       )}
 
       {/* Today's Habits */}
       <div className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
-        <p className="mb-3 font-semibold flex items-center gap-2"><CheckSquare className="h-4 w-4 text-success-500" /> Today's Habits</p>
+        <p className="mb-3 font-semibold flex items-center gap-2"><CheckSquare className="h-4 w-4 text-success-500" /> Today&rsquo;s Habits</p>
         <div className="space-y-2">
           {log.habits.map((h, i) => (
             <label key={i} className="flex cursor-pointer items-center gap-3">

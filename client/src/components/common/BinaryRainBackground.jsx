@@ -4,9 +4,18 @@ import { useMemo } from 'react';
 // tall repeating string of 0/1 animated with a translateY keyframe
 // (index.css's `binary-fall`) — no canvas, no per-frame JS, so it costs
 // nothing beyond a GPU-composited transform per column.
-function randomBits(length) {
+// Deterministic stand-in for Math.random(). Rendering must be pure — a real
+// RNG returns different values on a re-render (and twice per render under
+// StrictMode), so the columns would visibly reshuffle. This hash is seeded by
+// column index, which looks equally arbitrary but is stable.
+function noise(seed) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function bits(length, seed) {
   let s = '';
-  for (let i = 0; i < length; i++) s += Math.round(Math.random()) + '\n';
+  for (let i = 0; i < length; i++) s += Math.round(noise(seed * 97 + i)) + '\n';
   return s;
 }
 
@@ -16,10 +25,10 @@ export default function BinaryRainBackground({ columns = 28 }) {
       Array.from({ length: columns }, (_, i) => ({
         id: i,
         left: `${(i / columns) * 100}%`,
-        duration: 9 + Math.random() * 10, // 9–19s per loop
-        delay: -Math.random() * 15, // negative delay: already mid-loop on mount
-        opacity: 0.15 + Math.random() * 0.25,
-        text: randomBits(48),
+        duration: 9 + noise(i + 1) * 10, // 9–19s per loop
+        delay: -noise(i + 2) * 15, // negative delay: already mid-loop on mount
+        opacity: 0.15 + noise(i + 3) * 0.25,
+        text: bits(48, i + 1),
       })),
     [columns]
   );

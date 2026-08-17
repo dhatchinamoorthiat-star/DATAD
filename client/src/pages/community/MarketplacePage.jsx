@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { ShoppingBag, Tag, Search, Plus, Phone } from 'lucide-react';
@@ -32,15 +32,15 @@ export default function MarketplacePage() {
   const [contactItem, setContactItem] = useState(null);
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
-  const load = () => {
+  const load = useCallback(() => {
     const params = {};
     if (catFilter) params.category = catFilter;
     if (search) params.search = search;
     if (showSold) params.showSold = 'true';
     listListings(params).then((r) => setItems(r.data)).catch(() => setItems([]));
-  };
+  }, [catFilter, search, showSold]);
 
-  useEffect(() => { load(); }, [catFilter, search, showSold]);
+  useEffect(() => { load(); }, [load]);
 
   const onAdd = async (data) => {
     try {

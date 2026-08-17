@@ -37,7 +37,9 @@ function toIndexEntry(conv) {
 export function useDaxConversations(userId) {
   const [index, setIndex] = useState(() => storage.readIndex(userId));
   const [activeId, setActiveIdState] = useState(() => storage.readActiveId(userId));
-  const [cache, setCache] = useState(() => new Map());
+  // Mutated in place and paired with forceRender below — the setter is
+  // deliberately unused, so it is not destructured.
+  const [cache] = useState(() => new Map());
   const [, forceRender] = useState(0);
 
   const getConversation = useCallback(

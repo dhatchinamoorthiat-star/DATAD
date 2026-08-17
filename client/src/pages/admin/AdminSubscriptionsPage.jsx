@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from '../../utils/toast';
 import { CreditCard, CheckCircle2, XCircle, Clock, Users, ChevronDown, AlertTriangle } from 'lucide-react';
 import {
@@ -206,11 +206,13 @@ export default function AdminSubscriptionsPage() {
   const loadUsers = () =>
     listSubscriptionUsers().then((r) => setUsers(r.data)).catch(() => toast.error('Failed to load users'));
 
-  const loadRequests = () =>
-    listSubscriptionRequests(filterStatus || undefined).then((r) => setRequests(r.data)).catch(() => toast.error('Failed to load requests'));
+  const loadRequests = useCallback(() =>
+    listSubscriptionRequests(filterStatus || undefined).then((r) => setRequests(r.data)).catch(() => toast.error('Failed to load requests')),
+    [filterStatus]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadUsers(); }, []);
-  useEffect(() => { loadRequests(); }, [filterStatus]);
+  useEffect(() => { loadRequests(); }, [loadRequests]);
 
   const pendingCount = requests?.filter((r) => r.status === 'pending').length ?? 0;
 

@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import toast from '../../utils/toast';
 import {
   MessageSquare, Heart, Reply, Pin, Trash2, ChevronDown, ChevronUp, Send, Plus, X, Pencil, Check,

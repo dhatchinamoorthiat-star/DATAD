@@ -527,7 +527,7 @@ function Section({ title, children, addLabel, onAdd }) {
   );
 }
 
-function ArrayItem({ index, onRemove, children }) {
+function ArrayItem({ onRemove, children }) {
   return (
     <div className="relative rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-800 dark:bg-gray-900/50">
       <div className="absolute right-2 top-2">

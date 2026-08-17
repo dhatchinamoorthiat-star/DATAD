@@ -61,6 +61,13 @@ const linkedInAnalysisSchema = new mongoose.Schema(
     rulesVersion: { type: String, required: true },
     analysisVersion: { type: Number, required: true },
 
+    // How the profile was imported, and what that import could not see. Both
+    // are needed to read an old score correctly: a PDF-sourced analysis has
+    // several checks skipped, and without this the history would look like the
+    // rules changed underneath it.
+    source: { type: String, maxlength: 20 },
+    unknownSections: [{ type: String, maxlength: 40 }],
+
     // Hash of the profile this ran against. Lets the UI tell the difference
     // between "here is your score" and "here is your score for the text you
     // have since edited", which is the difference between a useful number and
@@ -101,6 +108,9 @@ const linkedInAnalysisSchema = new mongoose.Schema(
       status: { type: String, enum: ['pass', 'partial', 'fail', 'skipped'] },
       why: String,
       fix: String,
+      // Set when the skip was caused by the import format rather than by an
+      // unanswered question — names the sections we could not see.
+      skippedBecause: [String],
     })],
 
     keywords: {

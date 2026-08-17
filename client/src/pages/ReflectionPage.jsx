@@ -47,7 +47,12 @@ export default function ReflectionPage() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(load);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const today = new Date().toLocaleDateString('en-IN', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -72,7 +77,7 @@ export default function ReflectionPage() {
       <Page>
         <div className="py-16 text-center">
           <Sparkles className="h-10 w-10 mx-auto mb-4 text-indigo-300" />
-          <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">Today's reflection isn't ready yet</p>
+          <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">Today&rsquo;s reflection isn&rsquo;t ready yet</p>
           <p className="text-sm text-gray-400 mt-2 max-w-sm mx-auto">
             A new reflection is generated each morning. Check back a little later or visit your journal in the meantime.
           </p>
@@ -91,7 +96,7 @@ export default function ReflectionPage() {
     return (
       <Page>
         <div className="py-16 text-center">
-          <p className="text-gray-500">Could not load today's reflection.</p>
+          <p className="text-gray-500">Could not load today&rsquo;s reflection.</p>
           <button onClick={load} className="mt-4 text-sm text-indigo-600 hover:underline">Try again</button>
         </div>
       </Page>

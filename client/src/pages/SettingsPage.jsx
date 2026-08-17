@@ -320,7 +320,6 @@ function AppSection() {
     lastSynced,
     cacheSize,
     updateAvailable,
-    showInstallPrompt,
     deferredPrompt,
     installApp,
     applyUpdate,
@@ -454,15 +453,19 @@ export default function SettingsPage() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    getMe().then((res) => {
-      setMe(res.data);
-      profileForm.reset({
-        name: res.data.name || '',
-        bio: res.data.bio || '',
-        linkedin: res.data.linkedin || '',
-        github: res.data.github || '',
-      });
-    });
+    getMe()
+      .then((res) => {
+        setMe(res.data);
+        profileForm.reset({
+          name: res.data.name || '',
+          bio: res.data.bio || '',
+          linkedin: res.data.linkedin || '',
+          github: res.data.github || '',
+        });
+      })
+      // Without this the profile form sits blank and a save would wipe the
+      // user's real name and bio with empty strings.
+      .catch(() => toast.error('Could not load your profile — reload to try again'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -698,7 +701,7 @@ export default function SettingsPage() {
 
         <Card title="Delete account" icon={ShieldAlert} danger>
           <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
-            This permanently deletes your account and everything you've created — notes,
+            This permanently deletes your account and everything you&rsquo;ve created — notes,
             photos, tasks, finances and resume. This cannot be undone.
           </p>
           <button

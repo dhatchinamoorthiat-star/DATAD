@@ -9,10 +9,9 @@
  * P1 (Calm is the Interface) by making Dax ambient rather than a destination.
  */
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, Sparkles, PanelRightClose } from 'lucide-react';
+import { MessageCircle, Send, Sparkles, PanelRightClose } from 'lucide-react';
 import { daxChat } from '../../api/dax';
 import { DAX_WELCOME } from '../../utils/dax';
-import { useAuth } from '../../context/AuthContext';
 
 // Page context descriptors — sent as the first user message when a context
 // is provided, so Dax knows what the student is looking at.
@@ -39,7 +38,6 @@ function chip(text, onClick) {
 }
 
 export default function DaxPanel({ context, position = 'right' }) {
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([{ role: 'assistant', content: DAX_WELCOME }]);
   const [input, setInput] = useState('');
@@ -80,7 +78,7 @@ export default function DaxPanel({ context, position = 'right' }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-all hover:bg-indigo-700 hover:shadow-xl active:scale-95"
+        className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-all hover:bg-indigo-700 hover:shadow-xl active:scale-95 lg:bottom-6"
         style={{ [position]: '1.5rem' }}
         aria-label="Open Dax"
       >
@@ -91,8 +89,8 @@ export default function DaxPanel({ context, position = 'right' }) {
 
   return (
     <div
-      className="fixed bottom-6 z-50 flex w-80 flex-col rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
-      style={{ [position]: '1.5rem', maxHeight: 'calc(100vh - 6rem)' }}
+      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 flex w-80 flex-col rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 lg:bottom-6"
+      style={{ [position]: '1.5rem', maxHeight: 'calc(100vh - 11rem)' }}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-800">

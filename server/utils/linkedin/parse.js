@@ -109,6 +109,9 @@ function neutralise(text) {
 
 // Canonical section key → the headings LinkedIn uses for it, in the several
 // spellings the web UI, the mobile app and the PDF export each produce.
+// The PDF export spells several of these differently from the web UI
+// ("Summary" for About, "Honors-Awards" hyphenated, "Top Skills" for Skills),
+// so both spellings live here and one map serves both import paths.
 const SECTION_HEADINGS = {
   about: ['about', 'summary'],
   experience: ['experience', 'work experience', 'professional experience'],
@@ -119,13 +122,15 @@ const SECTION_HEADINGS = {
   recommendations: ['recommendations', 'received recommendations'],
   featured: ['featured'],
   volunteer: ['volunteering', 'volunteer experience', 'volunteering experience'],
-  awards: ['honors & awards', 'honors and awards', 'awards', 'honours & awards'],
+  awards: ['honors & awards', 'honors and awards', 'honors-awards', 'honours-awards', 'awards', 'honours & awards'],
   publications: ['publications'],
   courses: ['courses', 'coursework'],
   organizations: ['organizations', 'organisations'],
   languages: ['languages'],
   interests: ['interests'],
   activity: ['activity', 'posts', 'recent activity'],
+  // PDF-export only: the sidebar block holding email, phone and profile links.
+  contact: ['contact'],
 };
 
 const HEADING_LOOKUP = new Map();
@@ -185,6 +190,7 @@ const EMPLOYMENT_TYPE = /\b(full-?time|part-?time|internship|intern|contract|fre
  * line carrying a date range is the duration, and everything after the header
  * lines is the description. Anything unrecognised stays in the description
  * rather than being dropped — a wrong bucket is recoverable, a lost line is not.
+ *
  */
 function parseExperience(block) {
   if (!block) return [];
@@ -197,12 +203,12 @@ function parseExperience(block) {
       if (i === 0) { entry.role = str(line, 200); return; }
 
       if (!entry.duration && DATE_RANGE.test(line)) {
-        entry.duration = str(line.replace(/·.*$/, '').trim(), 80);
+        entry.duration = str(line.replace(/\u00b7.*$/, '').trim(), 80);
         return;
       }
       // The company line is the one right after the role, before any dates.
       if (!entry.organization && i <= 2 && !DATE_RANGE.test(line)) {
-        const [org, type] = line.split('·').map((s) => s.trim());
+        const [org, type] = line.split('\u00b7').map((s) => s.trim());
         entry.organization = str(org, 200);
         if (type && EMPLOYMENT_TYPE.test(type)) entry.employmentType = str(type, 40);
         return;
@@ -471,5 +477,12 @@ module.exports = {
   stripNoise,
   splitSections,
   extractLinks,
+  // Shared with the PDF import path (utils/linkedin/pdf.js), which parses
+  // experience itself but reuses these for the sections that match.
+  parseEducation,
+  parseSkills,
+  parseSimpleList,
+  splitBlocks,
+  DATE_RANGE,
   MAX_RAW,
 };

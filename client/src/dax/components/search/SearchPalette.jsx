@@ -13,14 +13,16 @@ export default function SearchPalette({ open, onClose, conversations, searchConv
   );
 
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      setSelectedIdx(0);
-      setTimeout(() => inputRef.current?.focus(), 10);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 10);
   }, [open]);
 
-  useEffect(() => setSelectedIdx(0), [query]);
+  // Adjusting state during render rather than in an effect — see CommandPalette.
+  const [lastReset, setLastReset] = useState({ open, query });
+  if (lastReset.open !== open || lastReset.query !== query) {
+    setLastReset({ open, query });
+    setSelectedIdx(0);
+    if (lastReset.open !== open) setQuery('');
+  }
 
   useKeyboardShortcuts(
     {
@@ -44,10 +46,16 @@ export default function SearchPalette({ open, onClose, conversations, searchConv
   }
 
   return (
-    <div className="dax-root fixed inset-0 z-[100] flex items-start justify-center bg-black/30 pt-[15vh]" onClick={onClose}>
+    <div
+      className="dax-root fixed inset-0 z-[100] flex items-start justify-center bg-black/30 pt-[15vh]"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search conversations"
         className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--dax-border)] bg-[var(--dax-bg)] shadow-[var(--dax-shadow-lift)]"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-[var(--dax-border)] px-3 py-2.5">
           <Search size={15} className="text-[var(--dax-text-muted)]" />

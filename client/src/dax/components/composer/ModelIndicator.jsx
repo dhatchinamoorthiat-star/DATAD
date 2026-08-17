@@ -99,8 +99,10 @@ export default function ModelIndicator({ models = [], selectedId, onSelect, disa
 
       {open && (
         <>
+          {/* Click-away catcher for the menu — presentational, not a control. */}
           <div
             className="fixed inset-0 z-40"
+            role="presentation"
             onClick={() => setOpen(false)}
           />
           {/* Anchored to the trigger via the `relative` wrapper rather than

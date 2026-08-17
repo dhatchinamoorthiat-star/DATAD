@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { Link } from 'react-router-dom';
 import {
   FileText, FileSpreadsheet, Link2, Video, Download, Search,
-  Plus, ExternalLink, Upload, Sparkles, Folder, FolderOpen,
+  Plus, ExternalLink, Upload, Sparkles, FolderOpen,
   ArrowLeft, Files,
 } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
-import { listResources, createResource, uploadResourceFile, deleteResource, downloadResource } from '../../api/resources';
+import { listResources, createResource, uploadResourceFile, downloadResource } from '../../api/resources';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
@@ -59,14 +59,14 @@ export default function ResourcesPage() {
   const fileRef = useRef(null);
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm();
 
-  const load = () => {
+  const load = useCallback(() => {
     const params = {};
     if (search) params.search = search;
     if (sortBy === 'downloads') params.sort = 'downloads';
     listResources(params).then((r) => setItems(r.data)).catch(() => setItems([]));
-  };
+  }, [search, sortBy]);
 
-  useEffect(() => { load(); }, [search, sortBy]);
+  useEffect(() => { load(); }, [load]);
 
   const onAddLink = async (data) => {
     try {
@@ -275,11 +275,11 @@ export default function ResourcesPage() {
         ) : (
           <form onSubmit={handleSubmit(onUploadFile)} className="space-y-3">
             <input {...register('title', { required: true })} placeholder="Title *" className="input" />
-            <div onClick={() => fileRef.current?.click()} className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-6 hover:border-primary-400 hover:bg-primary-50/50 dark:border-gray-700">
+            <button type="button" onClick={() => fileRef.current?.click()} className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-gray-300 py-6 hover:border-primary-400 hover:bg-primary-50/50 dark:border-gray-700">
               <Upload className="h-7 w-7 text-gray-400" />
               {selectedFile ? <p className="text-sm font-medium text-primary-600">{selectedFile.name}</p> : <p className="text-sm text-gray-500">Click to select a file (PDF, PPT, Word, Excel, ZIP, Video · max 50 MB)</p>}
-              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.mp4,.webm" onChange={(e) => setSelectedFile(e.target.files[0] || null)} />
-            </div>
+            </button>
+            <input ref={fileRef} type="file" className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.mp4,.webm" onChange={(e) => setSelectedFile(e.target.files[0] || null)} />
             <input {...register('subject')} placeholder="Subject / folder name" className="input" />
             <input {...register('semester')} placeholder="Semester (e.g. Sem 2)" className="input" />
             <input {...register('professor')} placeholder="Professor name" className="input" />

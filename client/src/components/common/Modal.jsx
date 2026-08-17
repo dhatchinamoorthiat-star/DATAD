@@ -34,21 +34,26 @@ export default function Modal({ open, onClose, title, children, blur = true }) {
 
   if (!open) return null;
   return (
+    // The scrim is decoration: it carries role="presentation", and the dialog
+    // role belongs on the panel it frames. Dismiss-on-backdrop compares target
+    // to currentTarget rather than stopping propagation on the panel, so the
+    // panel needs no click handler of its own. Escape is bound above, which is
+    // the keyboard equivalent this click has to have.
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${
         blur ? 'bg-black/40 backdrop-blur-[2px]' : 'bg-black/50'
       }`}
-      onClick={onClose}
-      aria-modal="true"
-      role="dialog"
-      aria-label={title}
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Capped at the viewport with the body scrolling inside it, so content
           longer than the screen stays reachable and the header — the only way
           out besides Escape — never scrolls away. */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="animate-in flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl border border-gray-200 bg-white shadow-xl shadow-black/10 dark:border-gray-800 dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-gray-800">
           <h2 className="text-lg font-semibold" id="modal-title">{title}</h2>

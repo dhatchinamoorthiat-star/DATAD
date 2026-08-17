@@ -4,7 +4,7 @@ import toast from '../../utils/toast';
 import { KanbanSquare, Plus, Users, Calendar, ChevronRight, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listProjects, createProject, getProject, createProjectTask, updateProjectTask, deleteProjectTask } from '../../api/projects';
-import { FeedSkeleton, RowSkeleton } from '../../components/common/Skeleton';
+import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
 import DateInput from '../../components/common/DateInput';
@@ -18,7 +18,7 @@ const COLUMNS = [
   { key: 'done', label: 'Done', color: 'border-success-500' },
 ];
 
-function TaskCard({ task, projectId, onUpdate, onDelete }) {
+function TaskCard({ task, onUpdate, onDelete }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start justify-between gap-2">
@@ -40,7 +40,7 @@ function TaskCard({ task, projectId, onUpdate, onDelete }) {
   );
 }
 
-function KanbanView({ project, onRefresh }) {
+function KanbanView({ project }) {
   const [tasks, setTasks] = useState(project.tasks || []);
   const [addingCol, setAddingCol] = useState(null);
   const { register, handleSubmit, reset } = useForm();
@@ -86,6 +86,8 @@ function KanbanView({ project, onRefresh }) {
               ))}
               {addingCol === col.key && (
                 <form onSubmit={handleSubmit((d) => onAddTask(col.key, d))} className="space-y-2">
+                  {/* Appears only after clicking "Add task" — focus follows intent. */}
+                  {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                   <input {...register('title', { required: true })} placeholder="Task title" autoFocus className="w-full rounded-lg border border-primary-400 bg-white px-3 py-1.5 text-sm focus:outline-none dark:bg-gray-800" />
                   <div className="flex gap-1">
                     <button type="submit" className="flex-1 rounded-full bg-primary-600 py-1 text-xs font-medium text-white">Add</button>
@@ -114,7 +116,9 @@ export default function ProjectsPage() {
   }, []);
 
   useEffect(() => {
-    if (!selected) { setSelectedData(null); return; }
+    // Both branches settle state asynchronously so the effect body itself
+    // never triggers a cascading render.
+    if (!selected) { queueMicrotask(() => setSelectedData(null)); return; }
     getProject(selected).then((r) => setSelectedData(r.data)).catch(() => setSelectedData(null));
   }, [selected]);
 

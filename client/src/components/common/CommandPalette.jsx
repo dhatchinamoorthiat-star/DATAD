@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, Pin, PinOff, Sparkles, ArrowRight, Clock, TrendingUp, History, Command } from 'lucide-react';
+import { Search, Loader2, Pin, Sparkles, ArrowRight, Clock, TrendingUp, Command } from 'lucide-react';
 import useSearch from '../../hooks/useSearch';
 
 const ICON_MAP = {
@@ -15,8 +15,7 @@ const ICON_MAP = {
   TrendingDown: '📉', Tags: '🏷️', MessageCircle: '💭', Calendar: '📅',
   User: '👤', FolderGit2: '📁', Zap: '⚡', Key: '🔑', Trash2: '🗑️',
   Download: '⬇️', AlertTriangle: '⚠️', Terminal: '⌨️', Navigation: '🧭',
-  Sparkles: '✨', Bell: '🔔', Palette: '🎨', Clock: '🕐', Pin: '📌',
-  TrendingUp: '📈', Command: '⌘',
+  Sparkles: '✨', Bell: '🔔', Clock: '🕐', Pin: '📌', Command: '⌘',
 };
 
 function getIcon(item) {
@@ -66,10 +65,9 @@ export default function CommandPalette({ open, onClose }) {
   const [selectedIdx, setSelectedIdx] = useState(0);
 
   const {
-    query, setQuery, grouped, flatList, loading, clear,
+    query, setQuery, grouped, flatList, loading,
     pinned, recentSearches, frequentSearches,
     handleSelect, handlePin, isPinned, intent,
-    providerStatus, hasPartialResults, activeProviders, totalProviders,
   } = useSearch({ includeCommands: true, enabled: open });
 
   const categories = useMemo(() => {
@@ -132,15 +130,16 @@ export default function CommandPalette({ open, onClose }) {
   }, [query, pinned, recentSearches, frequentSearches, categories, grouped, commandsGroup]);
 
   useEffect(() => {
-    if (open) {
-      setSelectedIdx(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
-  useEffect(() => {
+  // Adjusting state during render rather than in an effect: React re-runs this
+  // component before committing, so the highlight never paints on a stale row.
+  const [lastReset, setLastReset] = useState({ open, query });
+  if (lastReset.open !== open || lastReset.query !== query) {
+    setLastReset({ open, query });
     setSelectedIdx(0);
-  }, [query]);
+  }
 
   const execute = useCallback((item) => {
     handleSelect(item);
@@ -196,7 +195,7 @@ export default function CommandPalette({ open, onClose }) {
   if (!open) return null;
 
   const hasResults = entries.length > 0;
-  const showEmptyState = query.length >= 2 && !loading && !hasResults && activeProviders === 0;
+  const showEmptyState = query.length >= 2 && !loading && !hasResults;
   const showLoading = loading && query.length >= 2 && !hasResults;
 
   const totalItems = pinned.length + recentSearches.slice(0, 5).length + frequentSearches.slice(0, 5).length;
@@ -204,7 +203,9 @@ export default function CommandPalette({ open, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      {/* Visual scrim only. Escape is bound in handleKeyDown below, which is
+          this click's keyboard equivalent. */}
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" role="presentation" onClick={onClose} />
       <div
         className="relative w-full max-w-2xl mx-4 rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-950 overflow-hidden"
         style={{ maxHeight: '70vh' }}
@@ -235,7 +236,7 @@ export default function CommandPalette({ open, onClose }) {
           {showEmptyState && (
             <div className="px-6 py-10 text-center">
               <Search className="h-8 w-8 mx-auto mb-3 text-gray-300" />
-              <p className="text-sm text-gray-500">No results for "{query}"</p>
+              <p className="text-sm text-gray-500">No results for &ldquo;{query}&rdquo;</p>
               <p className="text-xs text-gray-400 mt-1">Try a different search term</p>
               {intent && intent.intent !== 'search' && (
                 <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-primary-50 px-4 py-1.5 text-xs text-primary-600 dark:bg-primary-900/20 dark:text-primary-400">
@@ -416,15 +417,6 @@ export default function CommandPalette({ open, onClose }) {
             return null;
           })}
 
-          {/* Provider loading indicators */}
-          {hasPartialResults && activeProviders > 0 && (
-            <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Loading results from {activeProviders}/{totalProviders} sources…
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── Footer ── */}

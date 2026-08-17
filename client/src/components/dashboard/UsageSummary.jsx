@@ -17,7 +17,7 @@ export default function UsageSummary() {
       <div className="mb-3 flex items-center gap-2">
         <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
         <span className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-          Today's Usage
+          Today&rsquo;s Usage
         </span>
       </div>
 

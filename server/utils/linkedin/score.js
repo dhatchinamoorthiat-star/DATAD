@@ -30,6 +30,13 @@ const { deriveSignals } = require('./signals');
  * photo/banner questions when the student never answered them. Those checks
  * are removed from the denominator rather than failed, so an unanswered
  * question can never cost points.
+ *
+ * `dependsOn` names the profile sections a check reads. When an import could
+ * not see one of them — the PDF export carries no Recommendations or Featured
+ * section at all — the check is skipped rather than failed. The rule is that
+ * missing *visibility* can only ever cause a skip, never a deduction: a check
+ * that passes on the evidence available still passes, so a student is never
+ * marked down for a limitation of the file format they used.
  */
 const CHECKS = [
   // ── Positioning (20) ────────────────────────────────────────────────────
@@ -96,6 +103,9 @@ const CHECKS = [
     key: 'skills_populated',
     dimension: 'searchability',
     weight: 5,
+    // The PDF export prints only the top three skills, so a short list from
+    // that source says nothing about the profile.
+    dependsOn: ['skills'],
     label: 'Skills section is populated',
     met: (s) => s.skills.count >= T.SKILLS_MIN,
     why: (s) => `You list ${s.skills.count} skills. Recruiters filter on this field, so a sparse list removes you from searches you would pass.`,
@@ -142,6 +152,7 @@ const CHECKS = [
     key: 'proof_of_work',
     dimension: 'credibility',
     weight: 4,
+    dependsOn: ['featured'],
     label: 'Profile links to proof of work',
     met: (s) => s.evidence.hasProof,
     why: () => 'Nothing on your profile can be opened and inspected — no Featured items, no portfolio or repository link.',
@@ -151,6 +162,7 @@ const CHECKS = [
     key: 'social_proof',
     dimension: 'credibility',
     weight: 3,
+    dependsOn: ['recommendations'],
     label: 'Has recommendations',
     met: (s) => s.recommendations.count >= 1,
     partial: (s) => Math.min(s.recommendations.count / T.RECOMMENDATIONS_STRONG, 1),
@@ -171,11 +183,11 @@ const CHECKS = [
     met: (s) => s.education.present,
     why: () => 'Your education section is empty — it is how campus recruiters filter.',
     fix: 'Add your degree, institution and graduation year.' },
-  { key: 'has_skills', dimension: 'completeness', weight: 2, label: 'Skills listed',
+  { key: 'has_skills', dimension: 'completeness', weight: 2, label: 'Skills listed', dependsOn: ['skills'],
     met: (s) => s.skills.count > 0,
     why: () => 'You have listed no skills.',
     fix: 'Add the skills you would be comfortable being asked about.' },
-  { key: 'has_evidence_section', dimension: 'completeness', weight: 2, label: 'Featured, projects or certifications present',
+  { key: 'has_evidence_section', dimension: 'completeness', weight: 2, label: 'Featured, projects or certifications present', dependsOn: ['featured', 'projects'],
     met: (s) => s.evidence.featuredCount + s.evidence.projectCount + s.evidence.certificationCount > 0,
     why: () => 'You have no Featured items, projects or certifications.',
     fix: 'Add the strongest project you have finished.' },
@@ -247,6 +259,7 @@ const CHECKS = [
     key: 'featured_proof',
     dimension: 'conversion',
     weight: 3,
+    dependsOn: ['featured'],
     label: 'Featured section carries your strongest work',
     met: (s) => s.evidence.featuredCount > 0,
     why: () => 'Your Featured section is empty — it is the only place a recruiter sees work without leaving your profile.',
@@ -256,6 +269,7 @@ const CHECKS = [
     key: 'value_proposition',
     dimension: 'conversion',
     weight: 3,
+    dependsOn: ['featured'],
     label: 'Clear reason to start a conversation',
     met: (s) => s.headline.mentionsTargetRole && (s.evidence.hasProof || s.experience.quantifiedBullets > 0),
     why: () => 'Your profile does not connect what you want to what you have proven, so there is no obvious reason to reach out.',
@@ -269,12 +283,20 @@ const CHECKS = [
  * @param {object} profile  normalised profile (utils/linkedin/parse.js)
  * @param {object} target   { role, secondaryRole, industry, seniority }
  * @param {object} keywords output of analyzeKeywords()
+ * @param {object} [options] { unknownSections } — sections the import could not
+ *   see, e.g. Recommendations and Featured for a PDF export.
  * @returns {{score:number, dimensions:object, checks:Array, signals:object}}
  */
-function scoreProfile(profile = {}, target = {}, keywords) {
+function scoreProfile(profile = {}, target = {}, keywords, options = {}) {
   const role = roleProfile(target.role);
   const signals = deriveSignals(profile, role.titles);
-  const ctx = { keywords: keywords || { coverage: null, missingHigh: [], stuffing: { detected: false, overusedTerms: [] } }, target, role };
+  const ctx = {
+    keywords: keywords || { coverage: null, missingHigh: [], stuffing: { detected: false, overusedTerms: [] } },
+    target,
+    role,
+    // Sections the import could not see — see the CHECKS docblock.
+    unknownSections: options.unknownSections || [],
+  };
 
   const dimensions = {};
   for (const [key, def] of Object.entries(DIMENSIONS)) {
@@ -283,18 +305,37 @@ function scoreProfile(profile = {}, target = {}, keywords) {
 
   const checks = [];
 
+  const unknown = new Set(ctx.unknownSections || []);
+
   for (const check of CHECKS) {
     const raw = check.met(signals, ctx);
+    const passed = raw === true;
+
+    // A check whose evidence lives in a section this import could not see is
+    // skipped — but only if it did not already pass. Unknown data can supply
+    // evidence, never remove it, so a check that cleared on what we *can* see
+    // stays cleared.
+    const blindTo = !passed && check.dependsOn?.some((section) => unknown.has(section));
 
     // null = not assessable. Drop from the denominator entirely so the
     // remaining checks are rescaled rather than the student being penalised
     // for a question we never asked.
-    if (raw === null || raw === undefined) {
-      checks.push({ key: check.key, dimension: check.dimension, label: check.label, status: 'skipped', weight: 0 });
+    if (raw === null || raw === undefined || blindTo) {
+      checks.push({
+        key: check.key,
+        dimension: check.dimension,
+        label: check.label,
+        status: 'skipped',
+        weight: 0,
+        // Distinguishes "we did not ask" from "your file could not tell us",
+        // which is what the UI turns into a prompt to fill the gap in.
+        skippedBecause: blindTo
+          ? check.dependsOn.filter((section) => unknown.has(section))
+          : null,
+      });
       continue;
     }
 
-    const passed = raw === true;
     const fraction = passed ? 1 : clamp01(check.partial ? check.partial(signals, ctx) ?? 0 : 0);
     const earned = round2(check.weight * fraction);
 

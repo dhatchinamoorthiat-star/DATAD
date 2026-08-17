@@ -13,7 +13,7 @@ import {
   Briefcase,
   Newspaper,
   Clock,
-  Info,
+  
   ShieldCheck,
 } from 'lucide-react';
 import { getCompany, getCompanyNews } from '../api/companies';

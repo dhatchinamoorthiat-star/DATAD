@@ -29,6 +29,7 @@ const logger = require('../utils/logger');
 
 const { RULES_VERSION, ANALYSIS_VERSION, roleProfile, DIMENSIONS } = require('../utils/linkedin/knowledge');
 const { parseProfileText, normalizeProfile, neutralise } = require('../utils/linkedin/parse');
+const { parseProfilePdf } = require('../utils/linkedin/pdf');
 const { analyzeKeywords } = require('../utils/linkedin/keywords');
 const { scoreProfile } = require('../utils/linkedin/score');
 const { detectRedFlags } = require('../utils/linkedin/redFlags');
@@ -182,10 +183,22 @@ const clean = (v) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 120)
  * @param {object} input { source, rawText, profile, hints, target }
  */
 async function importProfile(userId, input = {}) {
-  const source = input.source === 'manual' ? 'manual' : input.source === 'datad' ? 'datad' : 'paste';
+  const SOURCES = ['manual', 'datad', 'pdf'];
+  const source = SOURCES.includes(input.source) ? input.source : 'paste';
 
   let profile;
-  if (source === 'paste') {
+  let unknownSections = [];
+
+  if (source === 'pdf') {
+    if (!Buffer.isBuffer(input.buffer)) {
+      throw badRequest('Attach your LinkedIn PDF export to import it.');
+    }
+    const parsed = await parseProfilePdf(input.buffer, input.hints || {});
+    profile = parsed.profile;
+    // What the export format cannot carry — recorded so the analysis says
+    // "we could not see this" rather than "you have none of this".
+    unknownSections = parsed.unknownSections;
+  } else if (source === 'paste') {
     if (!String(input.rawText || '').trim()) {
       throw badRequest('Paste your LinkedIn profile text to import it.');
     }
@@ -214,6 +227,7 @@ async function importProfile(userId, input = {}) {
       $set: {
         profile,
         source,
+        unknownSections,
         contentHash: hashProfile(profile),
         ...(target.role ? { target: stripTransient(target) } : {}),
       },
@@ -296,8 +310,12 @@ async function analyze(userId, options = {}) {
   const jobDescription = options.jobDescription ? neutralise(String(options.jobDescription).slice(0, 20000)) : '';
 
   // ── Deterministic layer ────────────────────────────────────────────────
+  // Sections the import could not see. A PDF export carries no Featured or
+  // Recommendations section, so those checks are skipped rather than failed.
+  const unknownSections = stored.unknownSections || [];
+
   const keywords = analyzeKeywords(profile, target, jobDescription);
-  const scored = scoreProfile(profile, target, keywords);
+  const scored = scoreProfile(profile, target, keywords, { unknownSections });
   const skills = analyzeSkills(profile, target);
   const { flags, authenticity } = detectRedFlags(profile, scored.signals, datad.resume);
   const strategy = recommendationStrategy(profile, scored.signals);
@@ -334,6 +352,8 @@ async function analyze(userId, options = {}) {
     rulesVersion: RULES_VERSION,
     analysisVersion: ANALYSIS_VERSION,
     profileHash: stored.contentHash,
+    source: stored.source,
+    unknownSections,
     target: {
       role: target.role,
       secondaryRole: target.secondaryRole,
@@ -554,6 +574,8 @@ async function getState(userId) {
     hasProfile: Boolean(stored),
     profile: stored?.profile || null,
     source: stored?.source || null,
+    // Drives the "your PDF export could not include this — add it here" prompt.
+    unknownSections: stored?.unknownSections || [],
     target: stored?.target || null,
     suggestedTarget: suggestedTarget.role ? suggestedTarget : null,
     lastAnalyzedAt: stored?.lastAnalyzedAt || null,

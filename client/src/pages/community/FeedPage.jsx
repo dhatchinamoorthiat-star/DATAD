@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
-import { Heart, MessageSquare, Trophy, Image, BarChart2, Bookmark, Plus, Loader2 } from 'lucide-react';
+import { MessageSquare, Trophy, Image, BarChart2, Plus, Loader2 } from 'lucide-react';
 import { getFeed, createPost, reactToPost, votePoll } from '../../api/feed';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
@@ -125,10 +125,16 @@ export default function FeedPage() {
       if (pg === 1) setPosts(data.posts);
       else setPosts((prev) => [...(prev || []), ...data.posts]);
       setHasMore(pg < data.pages);
+      // load() owns `page` now, so switching filters no longer needs a
+      // synchronous setPage(1) in the effect body below.
+      setPage(pg);
     } catch { setPosts([]); }
   }, [typeFilter]);
 
-  useEffect(() => { setPage(1); load(1, typeFilter); }, [typeFilter]);
+  // load() awaits before its first setState, so nothing is set synchronously
+  // here — the rule cannot see across the await.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(1, typeFilter); }, [load, typeFilter]);
 
   const onPost = async (data) => {
     try {
@@ -158,13 +164,15 @@ export default function FeedPage() {
       {showCompose && (
         <div className="mb-4 rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-3 flex gap-2">
-            {[['text', <MessageSquare className="h-3.5 w-3.5" />, 'Text'],
-              ['achievement', <Trophy className="h-3.5 w-3.5" />, 'Win'],
-              ['photo', <Image className="h-3.5 w-3.5" />, 'Photo'],
-              ['poll', <BarChart2 className="h-3.5 w-3.5" />, 'Poll']].map(([key, icon, label]) => (
+            {/* Icon components, not elements: elements built inside an array
+                literal are children React expects to be keyed. */}
+            {[['text', MessageSquare, 'Text'],
+              ['achievement', Trophy, 'Win'],
+              ['photo', Image, 'Photo'],
+              ['poll', BarChart2, 'Poll']].map(([key, Icon, label]) => (
               <button key={key} onClick={() => setPostType(key)}
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${postType === key ? 'bg-indigo-600 text-white' : 'border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800'}`}>
-                {icon} {label}
+                <Icon className="h-3.5 w-3.5" /> {label}
               </button>
             ))}
           </div>
@@ -212,7 +220,7 @@ export default function FeedPage() {
         <div className="space-y-4">
           {posts.map((p) => <PostCard key={p._id} post={p} />)}
           {hasMore && (
-            <button onClick={() => { const next = page + 1; setPage(next); load(next); }}
+            <button onClick={() => load(page + 1)}
               className="w-full rounded-xl border border-gray-200 py-2.5 text-sm text-gray-500 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800">
               Load more
             </button>

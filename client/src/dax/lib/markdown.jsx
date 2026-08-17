@@ -12,7 +12,7 @@ function extractText(node) {
   return '';
 }
 
-export function buildComponents({ isStreaming, CodeBlock, Citation }) {
+export function buildComponents({ isStreaming, CodeBlock, Citation: _Citation }) {
   return {
     a: ({ href, children }) => (
       <a href={href} target="_blank" rel="noopener noreferrer">

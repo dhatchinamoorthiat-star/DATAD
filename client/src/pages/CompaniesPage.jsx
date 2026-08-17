@@ -25,7 +25,9 @@ export default function CompaniesPage() {
   };
 
   useEffect(() => {
-    load();
+    // Scheduled rather than called inline: load() clears the list synchronously,
+    // and doing that in the effect body cascades an extra render on every load.
+    queueMicrotask(load);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sector]);
 

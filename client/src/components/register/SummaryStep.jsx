@@ -1,6 +1,6 @@
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { User, GraduationCap, Target, Zap, Briefcase } from 'lucide-react';
+import { GraduationCap, Zap, Briefcase } from 'lucide-react';
 
 function Row({ icon: Icon, label, value }) {
   if (!value) return null;
@@ -51,7 +51,7 @@ export default function SummaryStep() {
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Your workspace preview</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Looks good? Hit Create and we'll set everything up.
+          Looks good? Hit Create and we&rsquo;ll set everything up.
         </p>
       </div>
 

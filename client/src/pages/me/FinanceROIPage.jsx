@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { TrendingUp, IndianRupee } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { Page } from '../../components/common/motion';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -99,7 +98,7 @@ export default function FinanceROIPage() {
         </div>
 
         <div className="rounded-xl bg-amber-50 border border-amber-100 dark:bg-amber-950/20 dark:border-amber-900/40 p-4 text-xs text-amber-800 dark:text-amber-300">
-          <strong>Assumptions: </strong>Salary jump is consistent every year post-MBA. Opportunity cost = pre-MBA CTC × 2 (the 2 years you're not earning). Loan EMI starts immediately after graduation. All values are pre-tax approximations.
+          <strong>Assumptions: </strong>Salary jump is consistent every year post-MBA. Opportunity cost = pre-MBA CTC × 2 (the 2 years you&rsquo;re not earning). Loan EMI starts immediately after graduation. All values are pre-tax approximations.
         </div>
       </div>
     </Page>

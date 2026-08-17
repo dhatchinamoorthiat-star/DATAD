@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Building2, MessageSquare, ArrowRight, ExternalLink, Lock, Contact } from 'lucide-react';
+import { FileText, Building2, MessageSquare, ArrowRight, ExternalLink, Contact } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { track } from '../../utils/analytics';
-import { useSubscription } from '../../context/SubscriptionContext';
 import { listCompanies, getCompanyNews } from '../../api/companies';
 import ReadinessCard from '../../components/common/ReadinessCard';
 import PlacementCountdown from '../../components/career/PlacementCountdown';
@@ -11,8 +10,6 @@ import PlacementJourney from '../../components/career/PlacementJourney';
 import ReadinessBreakdown from '../../components/career/ReadinessBreakdown';
 import { getReadiness } from '../../api/readiness';
 import { Page } from '../../components/common/motion';
-import { Skeleton } from '../../components/common/Skeleton';
-import TierGate from '../../components/common/TierGate';
 
 const NEWS_LIMIT = 6;
 
@@ -27,7 +24,6 @@ const SOURCE_DOT = {
 
 export default function CareerHubPage() {
   useDocumentTitle('Career');
-  const { hasAccess } = useSubscription();
   const [companies, setCompanies] = useState([]);
   const [newsMap, setNewsMap] = useState({});
   const [readiness, setReadiness] = useState(null);

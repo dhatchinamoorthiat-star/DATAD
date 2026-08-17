@@ -46,7 +46,7 @@ export const useRegisterForm = (initialValues = {}) => {
     },
   });
 
-  const { watch, setValue, formState } = form;
+  const { watch, setValue } = form;
 
   // Watch fields for dynamic behavior
   const password = watch('password', '');
