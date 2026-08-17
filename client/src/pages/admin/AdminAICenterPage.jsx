@@ -6,10 +6,14 @@ import {
 import { AdminShell } from './shared';
 import { RowSkeleton } from '../../components/common/Skeleton';
 
+// Surface the status code rather than letting .json() choke on an HTML error page.
 const API = (path) =>
   fetch(`/api/automation${path}`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-  }).then((r) => r.json());
+  }).then((r) => {
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  });
 
 const JOB_LABELS = {
   'daily-case': 'Daily Case',
@@ -132,6 +136,9 @@ export default function AdminAICenterPage() {
     setLoading(false);
   }, []);
 
+  // The loader awaits before its first setState, so nothing is set
+  // synchronously here — the rule cannot see across the await.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const today = center?.today;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sparkles, Search, Heart, Tv, Gamepad2, Smartphone,
@@ -31,18 +31,18 @@ export default function EntertainmentPage() {
   const [selectedYear, setSelectedYear] = useState('all');
   const [items, setItems] = useState(null);
 
-  useEffect(() => {
-    fetchArchiveItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCategory, selectedYear]);
+  // The search term is read through a ref, not a dependency: changing category
+  // or year should keep whatever is already typed, but typing itself must not
+  // refire the request — search is submit-driven.
+  const searchRef = useRef('');
 
-  const fetchArchiveItems = async () => {
+  const fetchArchiveItems = useCallback(async () => {
     setItems(null);
     try {
       const params = {};
       if (selectedCategory !== 'all') params.category = selectedCategory;
       if (selectedYear !== 'all') params.year = selectedYear;
-      if (searchQuery) params.q = searchQuery;
+      if (searchRef.current) params.q = searchRef.current;
 
       const { data } = await listItems(params);
       setItems(Array.isArray(data) ? data : []);
@@ -50,7 +50,13 @@ export default function EntertainmentPage() {
       console.error('Failed to fetch entertainment archives:', error);
       setItems([]);
     }
-  };
+  }, [selectedCategory, selectedYear]);
+
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(fetchArchiveItems);
+  }, [fetchArchiveItems]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -81,7 +87,7 @@ export default function EntertainmentPage() {
             placeholder="Search cartoons, characters, shows…"
             aria-label="Search the archive"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => { setSearchQuery(e.target.value); searchRef.current = e.target.value; }}
             className="w-full rounded-2xl border border-gray-300 bg-white py-3 pl-11 pr-24 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900"
           />
           <button

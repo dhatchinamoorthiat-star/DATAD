@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CalendarDays, ArrowRight, Plus, X } from 'lucide-react';
 import { listTasks, createTask } from '../../api/tasks';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 import DateInput from '../../components/common/DateInput';
 import { Page } from '../../components/common/motion';
 import toast from '../../utils/toast';
@@ -42,28 +43,28 @@ function NewAssignmentModal({ onClose, onCreated }) {
         </div>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Title *</label>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input" placeholder="e.g. Marketing Case Analysis" />
+            <label htmlFor="assignments-title" className="mb-1 block text-xs font-medium text-gray-500">Title *</label>
+            <input id="assignments-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="input" placeholder="e.g. Marketing Case Analysis" />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Type</label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input">
+              <label htmlFor="assignments-type" className="mb-1 block text-xs font-medium text-gray-500">Type</label>
+              <select id="assignments-type" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="input">
                 {TASK_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Due date</label>
-              <DateInput value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+              <label htmlFor="assignments-due-date" className="mb-1 block text-xs font-medium text-gray-500">Due date</label>
+              <DateInput id="assignments-due-date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Subject (optional)</label>
-            <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="input" placeholder="e.g. Marketing" />
+            <label htmlFor="assignments-subject" className="mb-1 block text-xs font-medium text-gray-500">Subject (optional)</label>
+            <input id="assignments-subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="input" placeholder="e.g. Marketing" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-500">Notes (optional)</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input" placeholder="What do you need to prepare?" />
+            <label htmlFor="assignments-notes" className="mb-1 block text-xs font-medium text-gray-500">Notes (optional)</label>
+            <textarea id="assignments-notes" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="input" placeholder="What do you need to prepare?" />
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
@@ -78,19 +79,42 @@ function NewAssignmentModal({ onClose, onCreated }) {
 }
 
 export default function AssignmentsPage() {
+  // Local state rather than useAsync: the new-assignment modal appends to this
+  // list optimistically, so the page needs a setter of its own.
   const [tasks, setTasks] = useState(null);
+  const [error, setError] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    listTasks().then((res) =>
-      setTasks(
-        res.data
-          .filter((t) => ACADEMIC_TYPES.includes(t.type))
-          .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-      )
-    );
+  // Only touches state from the promise callbacks, so it is safe to call
+  // straight from an effect without triggering a cascading render.
+  const fetchTasks = useCallback(() => {
+    listTasks()
+      .then((res) => {
+        setTasks(
+          res.data
+            .filter((t) => ACADEMIC_TYPES.includes(t.type))
+            .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
+        );
+        setError(false);
+      })
+      .catch(() => setError(true));
   }, []);
 
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
+
+  const retry = () => {
+    setTasks(null);
+    setError(false);
+    fetchTasks();
+  };
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        <ErrorState title="Could not load your assignments" onRetry={retry} />
+      </div>
+    );
+  }
   if (!tasks) return <div className="mx-auto max-w-3xl px-4 py-6"><FeedSkeleton count={5} /></div>;
 
   const open = tasks.filter((t) => t.status !== 'done');

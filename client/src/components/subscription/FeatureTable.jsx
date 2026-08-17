@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, X, Minus } from 'lucide-react';
+import { Check, Minus } from 'lucide-react';
 
 function Cell({ value, color }) {
   return (
@@ -24,15 +24,7 @@ const HEADER_COLORS = {
   max: 'text-purple-500',
 };
 
-const BG_COLORS = {
-  free: '',
-  trial: 'bg-indigo-50/30 dark:bg-indigo-950/10',
-  pro: 'bg-amber-50/30 dark:bg-amber-950/10',
-  placement: 'bg-purple-50/30 dark:bg-purple-950/10',
-};
-
-export default function FeatureTable({ features, billing, selectedPlan }) {
-  const isYearly = billing === 'yearly';
+export default function FeatureTable({ features, selectedPlan }) {
   const columns = ['free', 'trial', 'pro', 'placement'];
 
   return (

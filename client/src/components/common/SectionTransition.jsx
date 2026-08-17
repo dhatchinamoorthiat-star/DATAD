@@ -55,6 +55,8 @@ export default function SectionTransition() {
     if (!from || !section || from === section) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    // Drives the route-transition overlay against router and network timing —
+    // an external system, which is what an effect is for.
     let quietTimer = null;
     let exitTimer = null;
     let rafId = null;
@@ -64,6 +66,7 @@ export default function SectionTransition() {
     // Gate 2: whether this page turned out to fetch anything at all.
     let sawRequest = false;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPhase('active');
 
     const finish = () => {

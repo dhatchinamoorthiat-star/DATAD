@@ -44,7 +44,14 @@ export default function FinanceTrackerPage() {
   const expenseForm = useForm({ defaultValues: { category: 'Food', source: 'Allowance' } });
 
   const load = useCallback(() => {
-    listExpenses(month).then((r) => setExpenses(r.data));
+    listExpenses(month)
+      .then((r) => setExpenses(r.data))
+      // An empty month renders the same as a failed one here, which beats the
+      // <Loader/> spinning forever with no way to retry but a page reload.
+      .catch(() => {
+        setExpenses([]);
+        toast.error('Could not load this month — try again');
+      });
   }, [month]);
   useEffect(load, [load]);
 
@@ -141,32 +148,32 @@ export default function FinanceTrackerPage() {
         <form onSubmit={expenseForm.handleSubmit(onAddEntry)} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-sm font-medium">Amount (₹)</label>
-              <input type="number" step="0.01" min="0" {...expenseForm.register('amount', { required: true, min: 0.01 })} className="input" />
+              <label htmlFor="finance-tracker-amount" className="mb-1 block text-sm font-medium">Amount (₹)</label>
+              <input id="finance-tracker-amount" type="number" step="0.01" min="0" {...expenseForm.register('amount', { required: true, min: 0.01 })} className="input" />
             </div>
             {entryModal === 'income' ? (
               <div>
-                <label className="mb-1 block text-sm font-medium">Source</label>
-                <select {...expenseForm.register('source')} className="input">
+                <label htmlFor="finance-tracker-source" className="mb-1 block text-sm font-medium">Source</label>
+                <select id="finance-tracker-source" {...expenseForm.register('source')} className="input">
                   {SOURCES.map((s) => <option key={s}>{s}</option>)}
                 </select>
               </div>
             ) : (
               <div>
-                <label className="mb-1 block text-sm font-medium">Category</label>
-                <select {...expenseForm.register('category')} className="input">
+                <label htmlFor="finance-tracker-category" className="mb-1 block text-sm font-medium">Category</label>
+                <select id="finance-tracker-category" {...expenseForm.register('category')} className="input">
                   {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
                 </select>
               </div>
             )}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Note <span className="text-gray-400">(optional)</span></label>
-            <input {...expenseForm.register('note')} placeholder={entryModal === 'income' ? 'e.g. Monthly allowance' : 'e.g. Mess bill'} className="input" />
+            <label htmlFor="finance-tracker-note" className="mb-1 block text-sm font-medium">Note <span className="text-gray-400">(optional)</span></label>
+            <input id="finance-tracker-note" {...expenseForm.register('note')} placeholder={entryModal === 'income' ? 'e.g. Monthly allowance' : 'e.g. Mess bill'} className="input" />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Date</label>
-            <DateInput defaultValue={new Date().toISOString().slice(0, 10)} {...expenseForm.register('date')} />
+            <label htmlFor="finance-tracker-date" className="mb-1 block text-sm font-medium">Date</label>
+            <DateInput id="finance-tracker-date" defaultValue={new Date().toISOString().slice(0, 10)} {...expenseForm.register('date')} />
           </div>
           <button type="submit" disabled={expenseForm.formState.isSubmitting}
             className={`w-full rounded-lg py-2 text-sm font-medium text-white disabled:opacity-50 ${entryModal === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>

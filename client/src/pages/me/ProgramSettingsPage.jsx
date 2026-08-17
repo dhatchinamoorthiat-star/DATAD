@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useProgramContext } from '../../context/ProgramContext';
 import { ProgramBadge } from '../../components/program/ProgramBadge';
@@ -160,10 +160,10 @@ export default function ProgramSettingsPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="program-settings-reason-for-change" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Reason for Change *
                   </label>
-                  <select
+                  <select id="program-settings-reason-for-change"
                     value={changeReason}
                     onChange={(e) => setChangeReason(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -215,7 +215,7 @@ export default function ProgramSettingsPage() {
                   Program Already Changed
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  You've already used your one program change. To change again, please contact support.
+                  You&rsquo;ve already used your one program change. To change again, please contact support.
                 </p>
               </div>
             </div>

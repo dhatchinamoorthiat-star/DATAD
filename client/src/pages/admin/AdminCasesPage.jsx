@@ -27,7 +27,13 @@ export default function AdminCasesPage() {
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  const load = () => listCases().then((res) => setCases(res.data));
+  const load = () =>
+    listCases()
+      .then((res) => setCases(res.data))
+      .catch(() => {
+        setCases([]);
+        toast.error('Could not load cases');
+      });
   useEffect(() => { load(); }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));

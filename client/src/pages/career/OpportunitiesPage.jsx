@@ -61,10 +61,17 @@ export default function OpportunitiesPage() {
   const [internships, setInternships] = useState(null);
 
   useEffect(() => {
-    Promise.allSettled([listDrives(), listInternships()]).then(([d, i]) => {
-      setDrives(d.status === 'fulfilled' ? d.value.data : []);
-      setInternships(i.status === 'fulfilled' ? i.value.data : []);
-    });
+    Promise.allSettled([listDrives(), listInternships()])
+      .then(([d, i]) => {
+        setDrives(d.status === 'fulfilled' ? d.value.data : []);
+        setInternships(i.status === 'fulfilled' ? i.value.data : []);
+      })
+      // allSettled never rejects, but an unexpected payload shape throwing in
+      // the callback above would otherwise pin the page on its skeleton.
+      .catch(() => {
+        setDrives([]);
+        setInternships([]);
+      });
   }, []);
 
   const loading = drives === null || internships === null;

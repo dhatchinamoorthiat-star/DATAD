@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, PenSquare, Sparkles } from 'lucide-react';
 import DailyCaseCard from '../../components/dashboard/DailyCaseCard';
@@ -8,10 +8,12 @@ import { listTasks } from '../../api/tasks';
 import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil } from '../../utils/dateUtils';
 import { Skeleton } from '../../components/common/Skeleton';
+import ErrorState from '../../components/common/ErrorState';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import { Page } from '../../components/common/motion';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import useAsync from '../../hooks/useAsync';
 import { track } from '../../utils/analytics';
 
 const ACADEMIC_TYPES = ['case-study', 'exam', 'deadline'];
@@ -25,7 +27,7 @@ const PROMPTS = [
   'You\'ve handled every hard day so far. Today is no different.',
 ];
 
-function deriveInsight({ subjects, notes, assignments, nextAssignment, notesCount, subjectCount }) {
+function deriveInsight({ subjects, nextAssignment, notesCount, subjectCount }) {
   const sorted = [...subjects].sort((a, b) => b[1] - a[1]);
 
   if (sorted.length > 0) {
@@ -82,8 +84,56 @@ export default function StudyHubPage() {
   useDocumentTitle('Study');
   useEffect(() => { track('study_hub_viewed'); }, []);
   const { hash } = useLocation();
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+
+  const { data, error, loading, reload } = useAsync(async () => {
+    const [notesRes, tasksRes, roadmapRes] = await Promise.allSettled([
+      listNotes(),
+      listTasks(),
+      getRoadmapProgress(),
+    ]);
+    // Notes and tasks are the hub's substance. If both are gone there is
+    // nothing to show, so say so rather than rendering a hub full of zeroes.
+    if (notesRes.status === 'rejected' && tasksRes.status === 'rejected') {
+      throw notesRes.reason;
+    }
+    const notes = notesRes.status === 'fulfilled' ? notesRes.value.data : [];
+    const tasks = tasksRes.status === 'fulfilled' ? tasksRes.value.data : [];
+    const roadmapProgress = roadmapRes.status === 'fulfilled' ? roadmapRes.value.data : null;
+
+    const subjects = {};
+    notes.forEach((n) => {
+      const key = n.subject || 'General';
+      subjects[key] = (subjects[key] || 0) + 1;
+    });
+    const sortedSubjects = Object.entries(subjects).sort((a, b) => b[1] - a[1]);
+
+    const sortedNotes = [...notes].sort(
+      (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
+    );
+
+    const academicTasks = tasks.filter((t) => ACADEMIC_TYPES.includes(t.type));
+    const upcomingTasks = academicTasks
+      .filter((t) => t.status !== 'done' && daysUntil(t.dueDate) >= -7)
+      .sort((a, b) => daysUntil(a.dueDate) - daysUntil(b.dueDate));
+
+    // Compute roadmap props for TodayFocus
+    const roadmapPending = roadmapProgress?.total ? roadmapProgress.total - roadmapProgress.completed : 0;
+    const roadmapNext = roadmapProgress?.items?.find((g) => g.status !== 'done')?.skill || null;
+
+    return {
+      recentNote: sortedNotes[0] || null,
+      notes: sortedNotes.slice(0, 4),
+      assignments: upcomingTasks.slice(0, 4),
+      subjects: sortedSubjects,
+      subjectCount: sortedSubjects.length,
+      notesCount: notes.length,
+      nextAssignment: upcomingTasks[0] || null,
+      // Roadmap data for TodayFocus
+      roadmapPending,
+      roadmapNext,
+      canCreateRoadmap: !roadmapProgress?.hasRoadmap && roadmapProgress !== null,
+    };
+  }, []);
 
   useEffect(() => {
     if (hash === '#daily-case' && data) {
@@ -92,49 +142,6 @@ export default function StudyHubPage() {
       });
     }
   }, [hash, data]);
-
-  useEffect(() => {
-    Promise.allSettled([listNotes(), listTasks(), getRoadmapProgress()]).then(([notesRes, tasksRes, roadmapRes]) => {
-      const notes = notesRes.status === 'fulfilled' ? notesRes.value.data : [];
-      const tasks = tasksRes.status === 'fulfilled' ? tasksRes.value.data : [];
-      const roadmapProgress = roadmapRes.status === 'fulfilled' ? roadmapRes.value.data : null;
-
-      const subjects = {};
-      notes.forEach((n) => {
-        const key = n.subject || 'General';
-        subjects[key] = (subjects[key] || 0) + 1;
-      });
-      const sortedSubjects = Object.entries(subjects).sort((a, b) => b[1] - a[1]);
-
-      const sortedNotes = [...notes].sort(
-        (a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt)
-      );
-
-      const academicTasks = tasks.filter((t) => ACADEMIC_TYPES.includes(t.type));
-      const upcomingTasks = academicTasks
-        .filter((t) => t.status !== 'done' && daysUntil(t.dueDate) >= -7)
-        .sort((a, b) => daysUntil(a.dueDate) - daysUntil(b.dueDate));
-
-      // Compute roadmap props for TodayFocus
-      const roadmapPending = roadmapProgress?.total ? roadmapProgress.total - roadmapProgress.completed : 0;
-      const roadmapNext = roadmapProgress?.items?.find((g) => g.status !== 'done')?.skill || null;
-
-      setData({
-        recentNote: sortedNotes[0] || null,
-        notes: sortedNotes.slice(0, 4),
-        assignments: upcomingTasks.slice(0, 4),
-        subjects: sortedSubjects,
-        subjectCount: sortedSubjects.length,
-        notesCount: notes.length,
-        nextAssignment: upcomingTasks[0] || null,
-        // Roadmap data for TodayFocus
-        roadmapPending,
-        roadmapNext,
-        canCreateRoadmap: !roadmapProgress?.hasRoadmap && roadmapProgress !== null,
-      });
-      setLoading(false);
-    });
-  }, []);
 
   const insight = useMemo(() => data ? deriveInsight(data) : null, [data]);
 
@@ -174,6 +181,14 @@ export default function StudyHubPage() {
             </div>
           </div>
         </div>
+      </Page>
+    );
+  }
+
+  if (error) {
+    return (
+      <Page>
+        <ErrorState title="Could not load your study hub" onRetry={reload} className="mt-8" />
       </Page>
     );
   }

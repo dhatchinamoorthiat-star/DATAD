@@ -14,7 +14,15 @@ export default function ConversationListItem({ conversation, active, onSelect, o
         group relative flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm cursor-pointer
         ${active ? 'bg-[var(--dax-accent-soft)] text-[var(--dax-accent)]' : 'text-[var(--dax-text)] hover:bg-[var(--dax-surface-hover)]'}
       `}
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect?.(conversation.id)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect?.(conversation.id);
+        }
+      }}
     >
       <MessageSquare size={14} className="shrink-0 opacity-70 mt-0.5 self-start" />
       <div className="min-w-0 flex-1">
@@ -42,6 +50,7 @@ export default function ConversationListItem({ conversation, active, onSelect, o
               absolute right-0 top-7 z-20 w-36 overflow-hidden rounded-xl border
               border-[var(--dax-border)] bg-[var(--dax-bg)] py-1 text-xs shadow-[var(--dax-shadow-lift)]
             "
+            role="presentation"
             onClick={(e) => e.stopPropagation()}
           >
             <button

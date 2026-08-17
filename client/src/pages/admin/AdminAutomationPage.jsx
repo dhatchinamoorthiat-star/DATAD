@@ -1,17 +1,22 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
-  Bot, RefreshCw, CheckCircle2, XCircle, Clock, AlertTriangle,
+  Bot, RefreshCw, AlertTriangle,
   Play, Zap, Database, TrendingUp, FileText, Users, Newspaper,
   ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { AdminShell } from './shared';
 import { RowSkeleton } from '../../components/common/Skeleton';
 
+// A non-2xx response is usually HTML (a proxy error page), and calling .json()
+// on it throws something unreadable. Turn it into a real error up front.
 const API = (path, opts) =>
   fetch(`/api/automation${path}`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
     ...opts,
-  }).then((r) => r.json());
+  }).then((r) => {
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  });
 
 const JOB_META = {
   'daily-case':         { label: 'Daily Case',          icon: FileText,    color: 'text-indigo-500' },
@@ -119,21 +124,38 @@ export default function AdminAutomationPage() {
   const [toast, setToast] = useState(null);
 
   const load = useCallback(async () => {
-    const [s, l] = await Promise.all([API('/status'), API('/logs?limit=40')]);
-    setStatus(Array.isArray(s) ? s : []);
-    setLogs(Array.isArray(l) ? l : []);
-    setLoading(false);
+    try {
+      const [s, l] = await Promise.all([API('/status'), API('/logs?limit=40')]);
+      setStatus(Array.isArray(s) ? s : []);
+      setLogs(Array.isArray(l) ? l : []);
+    } catch {
+      setStatus([]);
+      setLogs([]);
+      setToast('Could not reach the automation service');
+    } finally {
+      // Must run on the failure path too, or the page never leaves its skeleton.
+      setLoading(false);
+    }
   }, []);
 
+  // The loader awaits before its first setState, so nothing is set
+  // synchronously here — the rule cannot see across the await.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function trigger(job) {
     setTriggering(job);
-    const res = await API(`/trigger/${job}`, { method: 'POST' });
-    setTriggering(null);
-    setToast(res.message || 'Triggered');
+    try {
+      const res = await API(`/trigger/${job}`, { method: 'POST' });
+      setToast(res.message || 'Triggered');
+      setTimeout(load, 4000);
+    } catch {
+      setToast('Trigger failed');
+    } finally {
+      // Without this a failed trigger leaves the button spinning permanently.
+      setTriggering(null);
+    }
     setTimeout(() => setToast(null), 3000);
-    setTimeout(load, 4000);
   }
 
   const statusMap = Object.fromEntries(status.map((s) => [s.job, s.last]));
@@ -167,7 +189,7 @@ export default function AdminAutomationPage() {
       {loading ? (
         <div className="space-y-2"><RowSkeleton /><RowSkeleton /><RowSkeleton /></div>
       ) : logs.length === 0 ? (
-        <p className="text-sm text-gray-400">No logs yet — jobs haven't run.</p>
+        <p className="text-sm text-gray-400">No logs yet — jobs haven&rsquo;t run.</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
           <table className="w-full text-left">

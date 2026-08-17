@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { MessageSquare, Heart, Send, Pin, User } from 'lucide-react';
 
 
-export default function MemoryStream({ memories = [], itemId, onAddMemory }) {
+export default function MemoryStream({ memories = [], onAddMemory }) {
   const memoryList = memories;
   const [title, setTitle] = useState('');
   const [story, setStory] = useState('');

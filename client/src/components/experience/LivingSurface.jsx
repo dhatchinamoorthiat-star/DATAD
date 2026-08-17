@@ -21,7 +21,6 @@ import { track } from '../../utils/analytics';
 import { Page } from '../common/motion';
 import { Skeleton } from '../common/Skeleton';
 import Card from '../common/Card';
-import Button from '../common/Button';
 import UsageSummary from '../dashboard/UsageSummary';
 import TodayFocus from '../dashboard/TodayFocus';
 import { ProgramHeader } from '../program/ProgramHeader';
@@ -76,7 +75,7 @@ function TodaysFocus({ tasks, loading }) {
   return (
     <section>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Today's focus</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Today&rsquo;s focus</h2>
         <Link to="/me/planner" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
           Open planner
         </Link>
@@ -339,7 +338,7 @@ function Discover({ reflection }) {
         <Link to="/briefing">
           <Card padding="md" hoverable className="flex h-full flex-col gap-2">
             <Newspaper className="h-4 w-4 text-primary-500" />
-            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Today's briefing</p>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Today&rsquo;s briefing</p>
             <p className="text-xs text-gray-500 dark:text-gray-400">News and concepts picked for your interests.</p>
             <span className="mt-auto inline-flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-400">
               Read now <ArrowUpRight className="h-3 w-3" />
@@ -354,7 +353,7 @@ function Discover({ reflection }) {
           </Card>
         ) : (
           <Card padding="md" className="flex h-full flex-col justify-center gap-1">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Your daily concept will appear here once it's ready.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Your daily concept will appear here once it&rsquo;s ready.</p>
           </Card>
         )}
       </div>

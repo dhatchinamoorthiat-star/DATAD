@@ -14,7 +14,14 @@ export default function AdminAnnouncementsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const { register, handleSubmit, reset, formState } = useForm();
 
-  const load = () => listAnnouncements().then((res) => setAnnouncements(res.data));
+  const load = () =>
+    listAnnouncements()
+      .then((res) => setAnnouncements(res.data))
+      // Render an empty list rather than pinning the page on <Loader/>.
+      .catch(() => {
+        setAnnouncements([]);
+        toast.error('Could not load announcements');
+      });
   useEffect(() => {
     load();
   }, []);

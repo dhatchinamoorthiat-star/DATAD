@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/toast';
-import { Paperclip, Link2, X, Upload, FileText, FileSpreadsheet, File, Loader2 } from 'lucide-react';
+import { Link2, X, Upload, FileText, FileSpreadsheet, File, Loader2 } from 'lucide-react';
 import Button from '../components/common/Button';
 import { getNote, createNote, updateNote } from '../api/notes';
 import { SUBJECTS } from '../utils/constants';
@@ -35,14 +35,20 @@ export default function NoteEditorPage() {
   const subject = watch('subject');
 
   useEffect(() => {
-    if (isEdit) {
-      getNote(id).then((res) => {
+    if (!isEdit) return;
+    getNote(id)
+      .then((res) => {
         const { title, subject, semester, content, customSubject, attachments: att } = res.data;
         reset({ title, subject, semester, content, customSubject });
         setAttachments(att || []);
+      })
+      // Leaving the user on a blank form after a failed load is how a note gets
+      // overwritten with nothing on the next save. Bail out to the list instead.
+      .catch(() => {
+        toast.error('Could not open that note — please try again');
+        navigate('/study/notes');
       });
-    }
-  }, [id, isEdit, reset]);
+  }, [id, isEdit, reset, navigate]);
 
   const handleFileUpload = async (files) => {
     if (!files?.length) return;

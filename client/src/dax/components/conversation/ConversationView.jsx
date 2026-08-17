@@ -2,7 +2,10 @@ import DaxHome from '../home/DaxHome';
 import MessageList from './MessageList';
 
 export default function ConversationView({
-  messages, userName, phase, greeting, subtitle, suggestions, onPickSuggestion,
+  messages, userName, phase, onPickSuggestion,
+  // Still accepted so they never leak into ...messageHandlers below; DaxHome
+  // reads them from config now.
+  greeting: _greeting, subtitle: _subtitle, suggestions: _suggestions,
   conversations, activeId, onOpenConversation, onNewChat, introActive,
   models, selectedModelId, onModelSelect,
   ...messageHandlers

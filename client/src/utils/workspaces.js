@@ -1,91 +1,98 @@
-import { Home, BookOpen, Briefcase, Users, Sun, Wallet, HeartHandshake, Sparkles } from 'lucide-react';
+import { Home, BookOpen, Briefcase, Users, Sun } from 'lucide-react';
 
-// Pitch mode: college-fest stall build shows only the 6 modules from the
-// pitch proposal (Planner, Resume/Career, Daily Briefing, Finance, Campus
-// Hub, Dax + Wellbeing) and hides the rest so the demo isn't overwhelming.
-// Toggle with VITE_PITCH_MODE=true in client/.env — no code change needed
-// to flip it back after the event.
-export const PITCH_MODE = import.meta.env.VITE_PITCH_MODE === 'true';
-
-const WORKSPACES_FULL = [
-  { key: 'dashboard', label: 'Home', to: '/', icon: Home, end: true },
-  { key: 'dax', label: 'Dax', to: '/dax?home', icon: Sparkles },
+// Primary navigation. Capped at five: this list renders as the mobile bottom
+// tab bar, where a sixth item pushes each target below the 44pt minimum on a
+// 375px screen. Finance and Wellbeing used to sit here; they are sub-sections
+// of Life (the Life hub already linked to both), so they are tabs now.
+//
+// Dax is deliberately absent — DaxPanel puts it one tap away from every screen,
+// and /dax renders outside the app shell, so a tab there removed the very bar
+// the user tapped it from. Its bundle is also the largest in the app; behind a
+// deliberate tap it is no longer a stray-thumb download.
+export const WORKSPACES = [
+  // "/" redirects logged-in users to /dashboard, so an `end`-matched link to
+  // "/" could never be active. Point at the URL the user actually lands on.
+  { key: 'dashboard', label: 'Home', to: '/dashboard', icon: Home },
   { key: 'study', label: 'Study', to: '/study', icon: BookOpen },
   { key: 'career', label: 'Career', to: '/career', icon: Briefcase },
   { key: 'community', label: 'Community', to: '/community', icon: Users },
+  // Life owns /me, and now /finance and /wellbeing too — see WORKSPACE_ALIASES.
   { key: 'me', label: 'Life', to: '/me', icon: Sun },
-  { key: 'finance', label: 'Finance', to: '/finance', icon: Wallet },
-  { key: 'wellbeing', label: 'Wellbeing', to: '/wellbeing', icon: HeartHandshake },
 ];
 
-// Study isn't one of the 6 pitch-proposal modules (Planner, Resume/Career,
-// Daily Briefing, Finance, Campus Hub, Dax + Wellbeing) — dropped from the top
-// nav in pitch mode so a stall visitor never lands on it in the first place.
-export const WORKSPACES = PITCH_MODE
-  ? WORKSPACES_FULL.filter((w) => w.key !== 'study')
-  : WORKSPACES_FULL;
+// Extra path prefixes that should light up a primary nav item. Finance and
+// Wellbeing keep their own top-level URLs (bookmarks and legacy redirects point
+// at them), but they belong to Life as far as the nav is concerned.
+const WORKSPACE_ALIASES = {
+  me: ['/finance', '/wellbeing'],
+};
 
-const WORKSPACE_TABS_FULL = {
+// Shared by the desktop rail and the mobile tab bar so the two can never
+// disagree about which section the user is in.
+export function isWorkspaceActive(pathname, workspace) {
+  const prefixes = [workspace.to, ...(WORKSPACE_ALIASES[workspace.key] || [])];
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+// The Life tab row, reused by the Finance and Wellbeing workspaces so a student
+// who taps into either still sees where they are in the hierarchy.
+const LIFE_TABS = [
+  { to: '/me', label: 'Overview', end: true },
+  { to: '/me/journal', label: 'Journal' },
+  { to: '/me/planner', label: 'Planner' },
+  { to: '/me/calendar', label: 'Calendar' },
+  { to: '/finance', label: 'Finance', end: true },
+  { to: '/wellbeing', label: 'Wellbeing', end: true },
+];
+
+export const WORKSPACE_TABS = {
   study: [
     { to: '/study', label: 'Overview', end: true },
     { to: '/study/notes', label: 'Notes' },
     { to: '/study/work', label: 'Work' },
-    { to: '/study/resources', label: 'Resources', soon: true },
-    { to: '/study/focus', label: 'Focus', soon: true },
+    { to: '/study/resources', label: 'Resources' },
+    { to: '/study/focus', label: 'Focus' },
   ],
   career: [
     { to: '/career', label: 'Overview', end: true },
-    { to: '/career/roadmap', label: 'Roadmap', soon: true },
+    { to: '/career/roadmap', label: 'Roadmap' },
     { to: '/career/companies', label: 'Companies' },
-    { to: '/career/opportunities', label: 'Opportunities', soon: true },
+    { to: '/career/opportunities', label: 'Opportunities' },
     { to: '/career/resume', label: 'Resume' },
-    { to: '/career/pivot', label: 'Pivot', soon: true },
-    { to: '/career/stories', label: 'STAR Stories', soon: true },
+    { to: '/career/linkedin', label: 'LinkedIn' },
+    // Reachable from the hub's Quick Links but previously unreachable by tab.
+    { to: '/career/questions', label: 'Interview Qs' },
+    { to: '/career/pivot', label: 'Pivot' },
+    { to: '/career/stories', label: 'STAR Stories' },
     { to: '/briefing', label: 'Briefing' },
   ],
   community: [
     { to: '/community', label: 'Overview', end: true },
     { to: '/community/feed', label: 'Feed' },
     { to: '/community/announcements', label: 'Announcements' },
-    { to: '/community/events', label: 'Events', soon: true },
-    { to: '/community/directory', label: 'People', soon: true },
-    { to: '/community/memories', label: 'BatchVault', soon: true },
-    { to: '/community/marketplace', label: 'Marketplace', soon: true },
-    { to: '/community/skills', label: 'Skills', soon: true },
+    { to: '/community/events', label: 'Events' },
+    { to: '/community/directory', label: 'People' },
+    { to: '/community/memories', label: 'BatchVault' },
+    { to: '/community/marketplace', label: 'Marketplace' },
+    { to: '/community/skills', label: 'Skills' },
   ],
-  me: [
-    { to: '/me', label: 'Overview', end: true },
-    { to: '/me/journal', label: 'Journal', soon: true },
-    { to: '/me/planner', label: 'Planner' },
-    { to: '/me/calendar', label: 'Calendar', soon: true },
-  ],
+  me: LIFE_TABS,
   finance: [
-    { to: '/finance', label: 'Overview', end: true },
+    ...LIFE_TABS,
     { to: '/finance/tracker', label: 'Tracker' },
     { to: '/finance/calculator', label: 'Calculator' },
     { to: '/finance/stocks', label: 'Stocks' },
     { to: '/finance/learn', label: 'Learn' },
-    { to: '/finance/roi', label: 'ROI', soon: true },
+    { to: '/finance/roi', label: 'ROI' },
   ],
   wellbeing: [
-    { to: '/wellbeing', label: 'Breathing', end: true },
+    ...LIFE_TABS,
     { to: '/wellbeing/study', label: 'Study Tips' },
-    { to: '/wellbeing/memory', label: 'Memory', soon: true },
-    { to: '/wellbeing/routines', label: 'Routines', soon: true },
+    { to: '/wellbeing/memory', label: 'Memory' },
+    { to: '/wellbeing/routines', label: 'Routines' },
     { to: '/wellbeing/support', label: 'Support' },
   ],
 };
-
-// In pitch mode, tabs marked `soon` are dropped entirely rather than shown
-// disabled — the goal is fewer things on screen, not more explaining.
-export const WORKSPACE_TABS = PITCH_MODE
-  ? Object.fromEntries(
-      Object.entries(WORKSPACE_TABS_FULL).map(([key, tabs]) => [
-        key,
-        tabs.filter((t) => !t.soon),
-      ])
-    )
-  : WORKSPACE_TABS_FULL;
 
 export const LEGACY_REDIRECTS = {
   '/notes': '/study/notes',

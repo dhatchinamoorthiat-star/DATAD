@@ -15,9 +15,11 @@ export default function VerifyEmailPage() {
   // the second call would always fail and overwrite a successful result.
   const claimed = useRef(false);
 
+  // Runs once on mount to redeem the link (or report that it is malformed).
   useEffect(() => {
     const token = params.get('token');
     if (!token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ status: 'error', message: 'This link is missing its confirmation token.' });
       return;
     }

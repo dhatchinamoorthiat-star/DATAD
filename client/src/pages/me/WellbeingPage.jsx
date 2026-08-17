@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
-  Wind, Brain, Lightbulb, Sunrise, HeartHandshake, PenSquare, ArrowRight, Phone,
+  Wind, 
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { Page } from '../../components/common/motion';
@@ -111,75 +110,6 @@ function BreathingExercise() {
         </button>
       </div>
     </div>
-  );
-}
-
-// ── Techniques ───────────────────────────────────────────────────────────────
-const STUDY_TECHNIQUES = [
-  {
-    title: 'Active recall',
-    body: 'Close the book and write everything you remember, then check. Retrieval — not re-reading — is what builds memory.',
-  },
-  {
-    title: 'Spaced repetition',
-    body: 'Review a topic after 1 day, 3 days, then a week. Each spaced review roughly doubles how long it sticks.',
-  },
-  {
-    title: 'The Feynman method',
-    body: 'Explain the concept out loud as if teaching a junior. Wherever you stumble is exactly what you don’t yet understand.',
-  },
-  {
-    title: 'One-topic focus blocks',
-    body: 'One subject, 25–45 minutes, phone in another room. Try the timer on the Focus page.',
-    link: { to: '/study/focus', label: 'Open Focus' },
-  },
-];
-
-const MEMORY_TECHNIQUES = [
-  {
-    title: 'Chunking',
-    body: 'Group long material into 3–5 item chunks. Frameworks like 4P or SWOT persist because they are pre-chunked.',
-  },
-  {
-    title: 'Memory palace',
-    body: 'Place items along a route you know well — your walk to class — and retrieve them by walking it mentally.',
-  },
-  {
-    title: 'Make it weird',
-    body: 'The brain keeps what is vivid and strange. An absurd mental image beats a neat, forgettable summary.',
-  },
-];
-
-const ROUTINES = [
-  { title: 'Sleep is study time', body: 'Memory consolidates during sleep. Six hours before an exam beats two more hours of blurry revision.' },
-  { title: 'Daylight before screens', body: 'Five minutes of morning daylight anchors your body clock and steadies energy all day.' },
-  { title: 'Move between classes', body: 'A ten-minute walk resets attention better than scrolling. Use it before the subject you dread.' },
-  { title: 'One win before bed', body: 'Write down one thing you did today — however small. Your journal is built for this.', link: { to: '/me/journal', label: 'Open Journal' } },
-];
-
-function TechniqueSection({ icon: Icon, iconClass, title, items }) {
-  return (
-    <section className="rounded-2xl border border-gray-200/80 bg-white p-6 dark:border-gray-800/80 dark:bg-gray-900">
-      <h2 className="mb-4 flex items-center gap-2 font-semibold">
-        <Icon className={`h-4 w-4 ${iconClass}`} /> {title}
-      </h2>
-      <ul className="space-y-4">
-        {items.map((t) => (
-          <li key={t.title}>
-            <p className="text-sm font-medium">{t.title}</p>
-            <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{t.body}</p>
-            {t.link && (
-              <Link
-                to={t.link.to}
-                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
-              >
-                {t.link.label} <ArrowRight className="h-3 w-3" />
-              </Link>
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
   );
 }
 

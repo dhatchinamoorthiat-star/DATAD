@@ -45,9 +45,11 @@ export default function ConfirmModal({
   if (!open) return null;
 
   return (
+    // Scrim is presentational; the alertdialog role below is the real dialog.
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
-      onClick={onClose}
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
         role="alertdialog"
@@ -55,7 +57,6 @@ export default function ConfirmModal({
         aria-labelledby="confirm-title"
         aria-describedby={message ? 'confirm-message' : undefined}
         className="animate-in w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-6 shadow-xl shadow-black/10 dark:border-gray-800 dark:bg-gray-900"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
           <h2 id="confirm-title" className="text-base font-semibold">{title}</h2>

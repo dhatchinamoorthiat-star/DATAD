@@ -28,9 +28,13 @@ export default function SmartSelect({
   // value is empty — that would override the user's "Other..." selection before
   // they finish typing (the flow is: select "Other..." → onChange('') → this
   // effect sees value='' and would wrongly hide the input).
+  //
+  // This mirrors a prop into local state rather than deriving it, precisely
+  // because of that asymmetry — the reset is intentionally not symmetric.
   useEffect(() => {
     if (value && typeof value === 'string') {
       if (!normalOpts.some((o) => o.value === value)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsOther(true);
         setCustomVal(value);
       } else {

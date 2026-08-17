@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Check, X, Undo2, Loader2, AlertTriangle } from 'lucide-react';
 import { confirmProposal, rejectProposal, undoProposal } from '../../../api/dax';
+import useNow from '../../../hooks/useNow';
 
 // The confirmation surface for a write Dax has proposed but not performed.
 // Nothing has been changed in the student's data at the point this renders —
@@ -25,6 +26,8 @@ export default function ProposalCard({ proposal, onUpdate }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState(null);
   const [current, setCurrent] = useState(proposal);
+  // Ticks so the undo window closes on screen instead of only on the next render.
+  const now = useNow(1000);
 
   const status = current?.status;
   const isPending = status === 'pending';
@@ -32,7 +35,7 @@ export default function ProposalCard({ proposal, onUpdate }) {
   const canUndo =
     (status === 'executed' || status === 'partial') &&
     current.undoableUntil &&
-    new Date(current.undoableUntil).getTime() > Date.now();
+    new Date(current.undoableUntil).getTime() > now;
 
   async function run(action, fn) {
     setBusy(action);

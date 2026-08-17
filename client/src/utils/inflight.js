@@ -4,14 +4,13 @@
  * Exists so UI (currently SectionTransition) can wait on "is the app still
  * fetching?" without every page having to report its own loading state.
  *
- * Background pollers are deliberately excluded. NotificationBell refetches on a
- * 30s timer and the admin studio pages poll every ~2s; if those counted, a
- * loading overlay would be held open by traffic the user never asked for.
+ * Background pollers are deliberately excluded: the admin studio pages poll
+ * every ~2s, and if that counted, a loading overlay would be held open by
+ * traffic the user never asked for.
  */
 
-// Polling. NotificationBell refetches on a 30s timer and the admin studio
-// pages poll every ~2s; if these counted, traffic the user never asked for
-// would hold a loading overlay open.
+// Polling endpoints. The /notifications pattern is kept for the server route,
+// which is still mounted even though the client no longer has a bell.
 const BACKGROUND = [
   /\/notifications(\b|\/|\?)/,
   /\/studio\/(queue|jobs|status)/,

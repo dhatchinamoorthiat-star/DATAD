@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Mail, ExternalLink, Code2, Sparkles,
-  BookOpen, Users, Zap, Heart, Shield, Globe, CheckCircle,
+  ArrowRight, Mail, Code2, Sparkles,
+  BookOpen, Users, Zap, Heart, Shield, Globe, 
   Trophy, TrendingUp, Lightbulb, Brain, Palette, Building2, Lock,
 } from 'lucide-react';
 import { Page } from '../components/common/motion';
@@ -238,7 +238,7 @@ export default function CreatorPage() {
                 </h2>
                 <div className="space-y-4 text-slate-300 leading-relaxed">
                   <p>
-                    I was a psychology student at KCLAS watching my batchmates juggle placement prep across five different apps. Every tool solved one problem — but student life isn't one-dimensional.
+                    I was a psychology student at KCLAS watching my batchmates juggle placement prep across five different apps. Every tool solved one problem — but student life isn&rsquo;t one-dimensional.
                   </p>
                   <p>
                     No one had built software that understood placement deadlines, finance tracking, career prep, and community all together. So I did.
@@ -254,11 +254,11 @@ export default function CreatorPage() {
                   <div className="relative space-y-4">
                     <div className="text-sm font-mono text-blue-400">
                       <div>const DATAD = {'{' }</div>
-                      <div className="ml-4">madeBy: 'one student',</div>
-                      <div className="ml-4">forWho: 'all students',</div>
+                      <div className="ml-4">madeBy: &rsquo;one student&rsquo;,</div>
+                      <div className="ml-4">forWho: &rsquo;all students&rsquo;,</div>
                       <div className="ml-4">hasAds: false,</div>
                       <div className="ml-4">sellingData: false,</div>
-                      <div className="ml-4">philosophy: 'human first',</div>
+                      <div className="ml-4">philosophy: &rsquo;human first&rsquo;,</div>
                       <div>{'}' }</div>
                     </div>
                   </div>
@@ -345,7 +345,7 @@ export default function CreatorPage() {
               <span className="text-xs font-bold uppercase tracking-[0.2em] text-rose-400 bg-rose-500/10 px-4 py-2 rounded-full border border-rose-500/30 inline-block">
                 Core Values
               </span>
-              <h2 className="text-4xl font-black text-white mt-4">Lines I won't cross</h2>
+              <h2 className="text-4xl font-black text-white mt-4">Lines I won&rsquo;t cross</h2>
             </div>
           </IntersectionReveal>
 

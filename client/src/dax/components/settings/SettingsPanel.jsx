@@ -8,10 +8,16 @@ import ModelSelector from './ModelSelector';
 export default function SettingsPanel({ open, onClose, brandName }) {
   if (!open) return null;
   return (
-    <div className="dax-root fixed inset-0 z-[100] flex justify-end bg-black/30" onClick={onClose}>
+    <div
+      className="dax-root fixed inset-0 z-[100] flex justify-end bg-black/30"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${brandName} settings`}
         className="dax-scrollbar h-full w-full max-w-sm overflow-y-auto border-l border-[var(--dax-border)] bg-[var(--dax-bg)] p-5"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-[var(--dax-text)]">{brandName} settings</h2>
@@ -26,8 +32,8 @@ export default function SettingsPanel({ open, onClose, brandName }) {
           <section>
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--dax-text-faint)]">Memory</p>
             <p className="text-sm text-[var(--dax-text-muted)]">
-              {brandName}'s memory is currently shared across all of your chats — conversation history in this
-              interface is organized locally, but the underlying memory isn't split per chat yet.
+              {brandName}&rsquo;s memory is currently shared across all of your chats — conversation history in this
+              interface is organized locally, but the underlying memory isn&rsquo;t split per chat yet.
             </p>
           </section>
 

@@ -26,7 +26,7 @@ export default function WelcomeStep() {
           Welcome to DATAD
         </h1>
         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          Let's build your personalised student workspace.
+          Let&rsquo;s build your personalised student workspace.
           <br />
           Takes about 2 minutes.
         </p>

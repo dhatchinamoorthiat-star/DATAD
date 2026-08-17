@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TrendingUp, Users, Brain, Target, Activity, Sparkles } from 'lucide-react';
+import { Brain, Target, Activity, Sparkles } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { Skeleton } from '../../components/common/Skeleton';
 

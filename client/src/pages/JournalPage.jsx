@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../utils/toast';
-import { BookLock, Lock, PenLine, Pencil, Plus, Trash2 } from 'lucide-react';
+import { BookLock, Lock, PenLine, Pencil, Trash2 } from 'lucide-react';
 import {
   listJournal,
   createJournalEntry,
@@ -11,6 +11,8 @@ import {
 import { formatDate } from '../utils/dateUtils';
 import { FeedSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
+import ErrorState from '../components/common/ErrorState';
+import useAsync from '../hooks/useAsync';
 import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import DateInput from '../components/common/DateInput';
@@ -27,16 +29,13 @@ const MOODS = [
 const moodEmoji = (mood) => MOODS.find((m) => m.value === mood)?.label.split(' ')[0] || '🙂';
 
 export default function JournalPage() {
-  const [entries, setEntries] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // entry _id to delete
   const { register, handleSubmit, reset, formState } = useForm();
 
-  const load = () => listJournal().then((res) => setEntries(res.data));
-  useEffect(() => {
-    load();
-  }, []);
+  // `load` doubles as the post-mutation refetch and the retry-after-failure.
+  const { data: entries, error, loading, reload: load } = useAsync(() => listJournal(), []);
 
   const openNew = () => {
     setEditing(null);
@@ -94,8 +93,10 @@ export default function JournalPage() {
         <Lock className="h-3 w-3" /> Completely private — only you can ever see this.
       </p>
 
-      {!entries ? (
+      {loading ? (
         <FeedSkeleton count={4} />
+      ) : error ? (
+        <ErrorState title="Could not load your journal" onRetry={load} />
       ) : entries.length === 0 ? (
         <EmptyState
           icon={BookLock}

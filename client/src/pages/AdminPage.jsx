@@ -23,7 +23,7 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react';
-import { getStats, listStudents } from '../api/admin';
+import { getStats } from '../api/admin';
 import { getMeta, updateMeta } from '../api/meta';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/common/Loader';
@@ -100,15 +100,15 @@ function PlacementDateForm() {
       <p className="mb-3 text-sm font-semibold">Placement season settings</p>
       <div className="flex flex-wrap gap-3">
         <div className="flex-1 min-w-[160px]">
-          <label className="mb-1 block text-xs text-gray-500">Placement date</label>
-          <DateInput
+          <label htmlFor="admin-placement-date" className="mb-1 block text-xs text-gray-500">Placement date</label>
+          <DateInput id="admin-placement-date"
             value={form.placementDate}
             onChange={(e) => setForm((f) => ({ ...f, placementDate: e.target.value }))}
           />
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="mb-1 block text-xs text-gray-500">Batch name (optional)</label>
-          <input
+          <label htmlFor="admin-batch-name" className="mb-1 block text-xs text-gray-500">Batch name (optional)</label>
+          <input id="admin-batch-name"
             type="text"
             maxLength={100}
             placeholder="e.g. Batch 2024–26"
@@ -241,7 +241,7 @@ export default function AdminPage() {
         <Crown className="h-5 w-5 text-amber-500" /> Admin Console
       </h1>
       <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">
-        Welcome back, {user?.name?.split(' ')[0]} — here's your platform at a glance.
+        Welcome back, {user?.name?.split(' ')[0]} — here&rsquo;s your platform at a glance.
       </p>
 
       {/* Primary stats */}

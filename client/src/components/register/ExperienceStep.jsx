@@ -47,10 +47,10 @@ export default function ExperienceStep() {
 
       {/* Fresher / Experienced */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <p id="background-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Your background
-        </label>
-        <div className="grid grid-cols-2 gap-3">
+        </p>
+        <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="background-group-label">
           {[
             { value: 'fresher',    Icon: GraduationCap, title: 'Fresher',         sub: 'Straight from undergrad' },
             { value: 'experienced', Icon: Briefcase,     title: 'Work experience', sub: '1+ years before this program' },
@@ -82,8 +82,8 @@ export default function ExperienceStep() {
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Years</label>
-              <input
+              <label htmlFor="experience-years" className="mb-1 block text-xs font-semibold text-gray-600 dark:text-gray-400">Years</label>
+              <input id="experience-years"
                 type="number" min="0" max="20" step="0.5"
                 {...register('workExYears')}
                 placeholder="e.g. 2.5"
@@ -108,10 +108,10 @@ export default function ExperienceStep() {
 
       {/* Learning style */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <p id="learning-style-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           How do you learn best?
-        </label>
-        <div className="grid grid-cols-3 gap-2">
+        </p>
+        <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="learning-style-group-label">
           {STYLES.map(({ value, emoji, label }) => (
             <button
               key={value}
@@ -132,10 +132,10 @@ export default function ExperienceStep() {
 
       {/* Time available */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <p id="time-per-day-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Time you can give per day
-        </label>
-        <div className="flex flex-wrap gap-2">
+        </p>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="time-per-day-group-label">
           {TIME_OPTIONS.map(({ value, label }) => (
             <button
               key={value}

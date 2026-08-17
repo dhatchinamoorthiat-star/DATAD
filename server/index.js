@@ -136,6 +136,7 @@ app.use('/api/albums', require('./routes/albumRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 app.use('/api/finance', require('./routes/financeRoutes'));
 app.use('/api/resume', require('./routes/resumeRoutes'));
+app.use('/api/linkedin', require('./routes/linkedinRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use('/api/intelligence', require('./routes/intelligenceRoutes'));

@@ -39,7 +39,6 @@ export default function ProgramStep() {
   const [showPass, setShowPass] = useState(false);
   const password = watch('password', '');
   const name = watch('name', '');
-  const email = watch('email', '');
 
   return (
     <motion.div
@@ -55,11 +54,11 @@ export default function ProgramStep() {
 
       {/* Name */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <label htmlFor="program-full-name" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Full name <span className="text-red-400">*</span>
         </label>
         <div className="relative">
-          <input
+          <input id="program-full-name"
             {...register('name', { required: 'Name is required', minLength: { value: 2, message: 'At least 2 characters' } })}
             placeholder="e.g. Arjun Mehta"
             className="input"
@@ -73,10 +72,10 @@ export default function ProgramStep() {
 
       {/* Email */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <label htmlFor="program-email" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Email <span className="text-red-400">*</span>
         </label>
-        <input
+        <input id="program-email"
           type="email"
           {...register('email', {
             required: 'Email is required',
@@ -90,11 +89,11 @@ export default function ProgramStep() {
 
       {/* Password */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <label htmlFor="program-password" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Password <span className="text-red-400">*</span>
         </label>
         <div className="relative">
-          <input
+          <input id="program-password"
             type={showPass ? 'text' : 'password'}
             {...register('password', {
               required: 'Password is required',
@@ -120,16 +119,16 @@ export default function ProgramStep() {
       {/* Roll number + Referral — collapsed row */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <label htmlFor="program-roll-number-opt" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
             Roll number <span className="text-gray-400 font-normal">(opt)</span>
           </label>
-          <input {...register('rollNumber')} placeholder="e.g. 2024CS001" className="input" />
+          <input id="program-roll-number-opt" {...register('rollNumber')} placeholder="e.g. 2024CS001" className="input" />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <label htmlFor="program-referral-code-opt" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
             Referral code <span className="text-gray-400 font-normal">(opt)</span>
           </label>
-          <input {...register('referralCode')} placeholder="DHAT-7K2M" className="input" />
+          <input id="program-referral-code-opt" {...register('referralCode')} placeholder="DHAT-7K2M" className="input" />
         </div>
       </div>
 

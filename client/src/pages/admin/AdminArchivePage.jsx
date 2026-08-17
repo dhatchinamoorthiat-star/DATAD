@@ -23,7 +23,13 @@ export default function AdminArchivePage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const { register, handleSubmit, reset, formState } = useForm();
 
-  const load = () => listItems().then((res) => setItems(res.data));
+  const load = () =>
+    listItems()
+      .then((res) => setItems(res.data))
+      .catch(() => {
+        setItems([]);
+        toast.error('Could not load archive items');
+      });
   useEffect(() => {
     load();
   }, []);

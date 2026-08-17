@@ -108,7 +108,7 @@ export default function FinanceStocksPage() {
             <p>
               This is educational, not financial advice. Prices refresh once a day from a public
               market data feed, so they can lag real-time by up to 24 hours. Markets carry risk and
-              past range doesn't predict what happens next — investing is entirely at your own risk.
+              past range doesn&rsquo;t predict what happens next — investing is entirely at your own risk.
               When in doubt, talk to a licensed advisor before you invest real money.
             </p>
           </div>
@@ -152,7 +152,7 @@ export default function FinanceStocksPage() {
         </div>
       ) : error || stocks.length === 0 ? (
         <p className="py-8 text-center text-sm text-gray-400">
-          Couldn't load stock quotes right now. Try again shortly.
+          Couldn&rsquo;t load stock quotes right now. Try again shortly.
         </p>
       ) : (
         <>

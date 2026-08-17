@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
-import { CalendarRange, MapPin, Video, Users, Check, Clock, Plus } from 'lucide-react';
+import { CalendarRange, MapPin, Video, Users, Clock, Plus } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listEvents, createEvent, rsvpEvent, getMyRSVPs, getEventAttendees } from '../../api/events';
 import { FeedSkeleton } from '../../components/common/Skeleton';

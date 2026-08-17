@@ -67,6 +67,20 @@ export function PWAProvider({ children }) {
     };
   }, [installed, isIOS]);
 
+  function triggerBackgroundSync() {
+    const reg = swReg.current;
+    if (!reg) return;
+    if (reg.sync) {
+      // Chromium: real Background Sync — fires even if the tab closes
+      reg.sync.register('datad-background-sync').catch(() => {
+        reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
+      });
+    } else {
+      // iOS Safari / Firefox: no Sync API — flush the queue directly
+      reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
+    }
+  }
+
   // Online / offline
   useEffect(() => {
     const goOnline = () => {
@@ -121,20 +135,6 @@ export function PWAProvider({ children }) {
 
     return () => navigator.serviceWorker.removeEventListener('message', onMessage);
   }, []);
-
-  function triggerBackgroundSync() {
-    const reg = swReg.current;
-    if (!reg) return;
-    if (reg.sync) {
-      // Chromium: real Background Sync — fires even if the tab closes
-      reg.sync.register('datad-background-sync').catch(() => {
-        reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
-      });
-    } else {
-      // iOS Safari / Firefox: no Sync API — flush the queue directly
-      reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
-    }
-  }
 
   async function installApp() {
     if (!deferredPrompt) return;

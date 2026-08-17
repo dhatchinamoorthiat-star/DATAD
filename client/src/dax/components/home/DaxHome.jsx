@@ -89,6 +89,10 @@ export default function DaxHome({
         <motion.div {...rise(0.18, reduce)} className="mt-7 w-full">
           <div
             className="rounded-2xl border border-[var(--dax-border)] bg-[var(--dax-surface)] p-3 shadow-[var(--dax-shadow-lift)] transition-colors focus-within:border-[rgb(var(--dax-accent-rgb)/0.6)]"
+            /* Widens the click target onto the padding around the textarea.
+               Keyboard users tab straight to the textarea, so there is no
+               keyboard behaviour to mirror here. */
+            role="presentation"
             onClick={() => inputRef.current?.focus()}
           >
             <textarea

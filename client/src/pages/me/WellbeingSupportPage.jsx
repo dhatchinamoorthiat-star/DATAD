@@ -10,7 +10,7 @@ export default function WellbeingSupportPage() {
           <HeartHandshake className="h-5 w-5 text-indigo-500" /> Support
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Student life is a marathon run at sprint pace. It's okay to need a moment.
+          Student life is a marathon run at sprint pace. It&rsquo;s okay to need a moment.
         </p>
       </div>
 
@@ -29,7 +29,7 @@ export default function WellbeingSupportPage() {
         {/* Reach out */}
         <section className="rounded-2xl border border-indigo-200/70 bg-indigo-50/50 p-6 dark:border-indigo-800/50 dark:bg-indigo-950/20">
           <h2 className="mb-2 flex items-center gap-2 font-semibold">
-            <HeartHandshake className="h-4 w-4 text-indigo-500" /> If you'd like to talk
+            <HeartHandshake className="h-4 w-4 text-indigo-500" /> If you&rsquo;d like to talk
           </h2>
           <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
             DATAD is built by one of your own batchmates — with a psychology background and counselling
@@ -46,8 +46,8 @@ export default function WellbeingSupportPage() {
         <section className="rounded-2xl border border-gray-200/80 bg-gray-50 p-5 text-sm dark:border-gray-800/80 dark:bg-gray-900/60">
           <p className="text-gray-600 dark:text-gray-300">
             <span className="font-semibold">Please know:</span> DATAD is a study companion, not a
-            replacement for professional mental-health care. If you're struggling in a way that
-            doesn't pass, talking to a professional is a sign of strength — not weakness.
+            replacement for professional mental-health care. If you&rsquo;re struggling in a way that
+            doesn&rsquo;t pass, talking to a professional is a sign of strength — not weakness.
           </p>
           <ul className="mt-3 space-y-1.5 text-gray-600 dark:text-gray-300">
             <li className="flex items-center gap-2">

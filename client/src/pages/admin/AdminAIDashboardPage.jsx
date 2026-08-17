@@ -2,14 +2,18 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Activity, Cpu, Zap, DollarSign, Clock, BarChart2, Server,
   CheckCircle2, XCircle, AlertTriangle, RefreshCw, ChevronDown, ChevronUp,
-  Layers, TrendingUp, Thermometer, Coins,
+  Layers, Thermometer, Coins,
 } from 'lucide-react';
 import { AdminShell } from './shared';
 
+// Surface the status code rather than letting .json() choke on an HTML error page.
 const API = (path) =>
   fetch(`/api/admin/ai${path}`, {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-  }).then((r) => r.json());
+  }).then((r) => {
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  });
 
 function StatTile({ label, value, icon: Icon, sub, color = 'indigo' }) {
   const colors = {
@@ -178,6 +182,7 @@ export default function AdminAIDashboardPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null); // otherwise a successful retry still renders the old failure
     const [r, l, p, u] = await Promise.allSettled([
       API('/runtime'),
       API('/live'),
@@ -192,7 +197,11 @@ export default function AdminAIDashboardPage() {
     setLoading(false);
   }, [usageDays]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(load);
+  }, [load]);
 
   if (error) {
     return (

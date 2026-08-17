@@ -1,6 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { WORKSPACE_TABS } from '../../utils/workspaces';
-import { CONTAINER } from '../common/motion';
 
 // Rounded pill segmented control: the active page reads through a soft
 // filled pill, matching the product's "rounded navigation" language.

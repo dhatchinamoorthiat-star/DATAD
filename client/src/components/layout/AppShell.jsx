@@ -19,11 +19,10 @@ import { DatadMark } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSubscription } from '../../context/SubscriptionContext';
-import { TIER_RING, TIER_DOT, TIER_BADGE_STYLE } from '../../utils/tiers';
+import { TIER_RING, TIER_BADGE_STYLE } from '../../utils/tiers';
 import { useLocation } from 'react-router-dom';
-import { WORKSPACES } from '../../utils/workspaces';
+import { WORKSPACES, isWorkspaceActive } from '../../utils/workspaces';
 import CommandPalette from '../common/CommandPalette';
-import NotificationBell from '../common/NotificationBell';
 import DaxPanel from '../chat/DaxPanel';
 import Footer from './Footer';
 
@@ -183,17 +182,13 @@ export default function AppShell({ children }) {
           <kbd className="ml-auto rounded border border-gray-200 px-1.5 py-0.5 text-[10px] dark:border-gray-700">⌘K</kbd>
         </button>
         <nav className="flex flex-col gap-1">
-          {WORKSPACES.map((w) => {
-            const isActive = w.end
-              ? location.pathname === w.to
-              : location.pathname.startsWith(w.to);
-
-            return (
-              <NavLink key={w.key} to={w.to} end={w.end} className={railLink}>
-                <w.icon className="h-[18px] w-[18px]" /> {w.label}
-              </NavLink>
-            );
-          })}
+          {WORKSPACES.map((w) => (
+            // Active state is computed, not left to NavLink: Life has to stay
+            // lit on /finance and /wellbeing, which are not under /me.
+            <NavLink key={w.key} to={w.to} className={railLink({ isActive: isWorkspaceActive(location.pathname, w) })}>
+              <w.icon className="h-[18px] w-[18px]" /> {w.label}
+            </NavLink>
+          ))}
           {isAdmin && (
             <>
               <div className="mx-2 my-2 border-t border-gray-100 dark:border-gray-800/70" />
@@ -241,7 +236,6 @@ export default function AppShell({ children }) {
 
             {/* Right side actions - visible on lg and up */}
             <div className="hidden items-center gap-2 lg:flex">
-              <NotificationBell />
               <NavLink to="/me/settings" aria-label="Settings" className={({ isActive }) => `rounded-full p-2 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                 <Settings className="h-5 w-5" />
               </NavLink>
@@ -269,28 +263,25 @@ export default function AppShell({ children }) {
 
       {/* Mobile bottom tab bar — sits above the iOS home indicator */}
       <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),8px)] dark:border-gray-800/70 lg:hidden print:hidden">
-        {WORKSPACES.map((w) => (
-          <NavLink
-            key={w.key}
-            to={w.to}
-            end={w.end}
-            className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
-                isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <span className={`rounded-full p-1.5 transition-colors ${isActive ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}>
-                  <w.icon className="h-5 w-5" />
-                </span>
-                {w.label}
-              </>
-            )}
-          </NavLink>
-        ))}
-        {/* Admin is accessible via sidebar on desktop; excluded from mobile tab bar to keep max 5 items */}
+        {WORKSPACES.map((w) => {
+          const active = isWorkspaceActive(location.pathname, w);
+          return (
+            <NavLink
+              key={w.key}
+              to={w.to}
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+                active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
+              }`}
+            >
+              <span className={`rounded-full p-1.5 transition-colors ${active ? 'bg-primary-100 dark:bg-primary-900/50' : ''}`}>
+                <w.icon className="h-5 w-5" />
+              </span>
+              {w.label}
+            </NavLink>
+          );
+        })}
+        {/* Admin is reachable from the avatar menu and the desktop rail. WORKSPACES
+            is capped at five so each target here clears the 44pt minimum. */}
       </nav>
     </div>
   );

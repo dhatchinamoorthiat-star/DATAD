@@ -5,7 +5,6 @@ import {
   BarChart2, Eye, Lightbulb, Globe,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { DatadMark } from '../components/common/Logo';
 
 /* ── scroll-reveal hook ── */
 function useReveal(threshold = 0.15) {
@@ -72,7 +71,6 @@ const milestones = [
 export default function AboutPage() {
   const [activeNode, setActiveNode] = useState(null);
   const [columnStages, setColumnStages] = useState([0, 0, 0, 0, 0]);
-  const [counterDone, setCounterDone] = useState(false);
 
   const startReveal = () => {
     setColumnStages([0, 0, 0, 0, 0]);
@@ -84,6 +82,8 @@ export default function AboutPage() {
     });
   };
 
+  // Kicks off a one-shot timed reveal animation on mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { startReveal(); }, []);
 
   return (
@@ -116,13 +116,13 @@ export default function AboutPage() {
             return (
               <div key={`top-${idx}`} className="flex justify-center">
                 {item.topNode ? (
-                  <div onClick={() => revealed && setActiveNode(activeNode?.id === item.topNode.id ? null : item.topNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.topNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'}`}>
+                  <button type="button" onClick={() => revealed && setActiveNode(activeNode?.id === item.topNode.id ? null : item.topNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.topNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'}`}>
                     <div className="flex items-center gap-2 mb-1">
                       <div className={`p-1.5 rounded-lg ${item.topNode.bg}`}><item.topNode.icon className="w-3.5 h-3.5" /></div>
                       <span className="text-[11px] font-bold text-white truncate">{item.topNode.title}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 line-clamp-2">{item.topNode.desc}</p>
-                  </div>
+                  </button>
                 ) : <div className="h-12" />}
               </div>
             );
@@ -165,13 +165,13 @@ export default function AboutPage() {
             return (
               <div key={`bottom-${idx}`} className="flex justify-center">
                 {item.bottomNode ? (
-                  <div onClick={() => revealed && setActiveNode(activeNode?.id === item.bottomNode.id ? null : item.bottomNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.bottomNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
+                  <button type="button" onClick={() => revealed && setActiveNode(activeNode?.id === item.bottomNode.id ? null : item.bottomNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.bottomNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
                     <div className="flex items-center gap-2 mb-1">
                       <div className={"p-1.5 rounded-lg " + item.bottomNode.bg}><item.bottomNode.icon className="w-3.5 h-3.5" /></div>
                       <span className="text-[11px] font-bold text-white truncate">{item.bottomNode.title}</span>
                     </div>
                     <p className="text-[10px] text-slate-400 line-clamp-2">{item.bottomNode.desc}</p>
-                  </div>
+                  </button>
                 ) : <div className="h-12" />}
               </div>
             );
@@ -204,7 +204,7 @@ export default function AboutPage() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">in the world is DATA.</span>
             </h2>
             <p className="text-slate-400 text-sm mt-4 max-w-2xl mx-auto leading-relaxed">
-              Before we tell you about the platform — let us tell you about the word that starts it all. Because the name DATAD begins with data, and that's not an accident.
+              Before we tell you about the platform — let us tell you about the word that starts it all. Because the name DATAD begins with data, and that&rsquo;s not an accident.
             </p>
           </div>
         </Reveal>
@@ -213,8 +213,8 @@ export default function AboutPage() {
         <Reveal delay={100}>
           <div className="bg-gradient-to-br from-cyan-500/8 via-slate-900 to-purple-500/8 border border-cyan-500/20 rounded-3xl p-8 sm:p-12 mb-10 text-center">
             <p className="text-lg sm:text-2xl text-slate-200 leading-relaxed font-light italic">
-              "Every great decision in history — in business, in medicine, in your career —<br className="hidden sm:block" />
-              was made by someone who had <strong className="text-cyan-300 not-italic font-bold">better data</strong> than everyone else."
+              &ldquo;Every great decision in history — in business, in medicine, in your career —<br className="hidden sm:block" />
+              was made by someone who had <strong className="text-cyan-300 not-italic font-bold">better data</strong> than everyone else.&ldquo;
             </p>
           </div>
         </Reveal>
@@ -240,17 +240,17 @@ export default function AboutPage() {
           <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-10 space-y-5">
             <h3 className="text-lg sm:text-xl font-bold text-white">Your journey is your first dataset.</h3>
             <p className="text-sm text-slate-300 leading-relaxed">
-              Think about it. Two years. Hundreds of decisions — which electives to take, which companies to target, which skills to build, how to spend your weekend, who to network with. Each one of those is a data point. And if you don't track them, they disappear.
+              Think about it. Two years. Hundreds of decisions — which electives to take, which companies to target, which skills to build, how to spend your weekend, who to network with. Each one of those is a data point. And if you don&rsquo;t track them, they disappear.
             </p>
             <p className="text-sm text-slate-400 leading-relaxed">
-              Students who keep track of their placements, their learning, their finances, and their goals are not just more prepared — they are more confident. They walk into an interview knowing their story, because they've been writing it in data all along.
+              Students who keep track of their placements, their learning, their finances, and their goals are not just more prepared — they are more confident. They walk into an interview knowing their story, because they&rsquo;ve been writing it in data all along.
             </p>
             <p className="text-sm text-slate-300 leading-relaxed font-medium">
-              That's what DATAD was built to do. Not to replace your instinct — but to give your instinct something real to work with.
+              That&rsquo;s what DATAD was built to do. Not to replace your instinct — but to give your instinct something real to work with.
             </p>
             <div className="pt-2 border-t border-slate-800">
               <p className="text-xs text-cyan-400 italic">
-                "Data doesn't make decisions for you. It gives you the clarity to make better ones yourself."
+                &ldquo;Data doesn&rsquo;t make decisions for you. It gives you the clarity to make better ones yourself.&rdquo;
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function AboutPage() {
               DATAD was not named for a logo or a marketing brief. It was named for a student who believed the best tools are built by the people who most need them. The acronym — Discover, Aspire, Transform, Achieve, Develop — is the journey that student wanted every student to take.
             </p>
             <p className="text-sm text-slate-500 leading-relaxed italic">
-              "Not a tool someone made for students. A tool a student made — with them, for them."
+              &ldquo;Not a tool someone made for students. A tool a student made — with them, for them.&rdquo;
             </p>
           </div>
         </Reveal>
@@ -331,7 +331,7 @@ export default function AboutPage() {
               <Heart className="w-3.5 h-3.5" /> Crafted with purpose
             </div>
             <blockquote className="text-sm sm:text-base text-slate-200 leading-relaxed italic">
-              "DATAD was created out of a desire for a unified digital sanctuary — a place where raw analytical data meets human craftsmanship, and where productivity and deliberate rest coexist seamlessly."
+              &ldquo;DATAD was created out of a desire for a unified digital sanctuary — a place where raw analytical data meets human craftsmanship, and where productivity and deliberate rest coexist seamlessly.&rdquo;
             </blockquote>
             <div className="pt-2">
               <h4 className="text-sm font-bold text-white">T. A. Dhatchina Moorthi</h4>

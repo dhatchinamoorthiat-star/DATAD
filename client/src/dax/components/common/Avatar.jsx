@@ -1,7 +1,9 @@
 import { Sparkles } from 'lucide-react';
 
-export default function Avatar({ role, name }) {
-  if (role === 'assistant') {
+// Prop is `speaker`, not `role`: `role` is a reserved DOM attribute name and
+// reads as an (invalid) ARIA role to both linters and anyone skimming the JSX.
+export default function Avatar({ speaker, name }) {
+  if (speaker === 'assistant') {
     return (
       <span
         className="

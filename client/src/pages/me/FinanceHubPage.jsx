@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import toast from '../../utils/toast';
 import {
-  TrendingUp, TrendingDown, Pencil, Plus, Download, ArrowRight,
+  TrendingUp, TrendingDown, Pencil, Plus, Download, 
   List, Calculator, BookOpen, LineChart,
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -15,10 +15,8 @@ import BudgetBar from '../../components/finance/BudgetBar';
 import CategoryChart from '../../components/finance/CategoryChart';
 import { Page } from '../../components/common/motion';
 import { Skeleton } from '../../components/common/Skeleton';
-import TierGate from '../../components/common/TierGate';
 
 const CATEGORIES = ['Food', 'Travel', 'Rent', 'Books & Courses', 'Entertainment', 'Shopping', 'Other'];
-const SOURCES    = ['Allowance', 'Stipend', 'Salary', 'Freelance', 'Scholarship', 'Gift', 'Other'];
 const formatINR  = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 
@@ -54,7 +52,8 @@ export default function FinanceHubPage() {
   useDocumentTitle('Finance');
 
   const [expenses, setExpenses] = useState([]);
-  const [summary, setSummary] = useState({ income: 0, expense: 0 });
+  // Fetched for the hub's income/expense strip, which is not rendered yet.
+  const [, setSummary] = useState({ income: 0, expense: 0 });
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(currentMonth());
   const [showModal, setShowModal] = useState(false);
@@ -73,7 +72,11 @@ export default function FinanceHubPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchData(month); }, [month, fetchData]);
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(() => fetchData(month));
+  }, [month, fetchData]);
 
   const onSubmit = async (data) => {
     try {
@@ -201,22 +204,22 @@ export default function FinanceHubPage() {
             <label className="flex items-center gap-2 text-sm"><input type="radio" value="income" {...register('kind')} /> Income</label>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Category / Source</label>
-            <select {...register('category')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
+            <label htmlFor="finance-hub-category-source" className="block text-xs font-medium text-gray-600 mb-1">Category / Source</label>
+            <select id="finance-hub-category-source" {...register('category')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
-            <input type="number" step="0.01" {...register('amount', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="finance-hub-amount" className="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
+            <input id="finance-hub-amount" type="number" step="0.01" {...register('amount', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
-            <input {...register('note')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="finance-hub-note" className="block text-xs font-medium text-gray-600 mb-1">Note</label>
+            <input id="finance-hub-note" {...register('note')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-            <DateInput {...register('date')} />
+            <label htmlFor="finance-hub-date" className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+            <DateInput id="finance-hub-date" {...register('date')} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>

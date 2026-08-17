@@ -1,38 +1,36 @@
-import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { BookOpen, CalendarDays, ArrowLeft, PenSquare, ArrowRight } from 'lucide-react';
 import { listNotes } from '../../api/notes';
 import { listTasks } from '../../api/tasks';
 import { formatDate, daysUntil } from '../../utils/dateUtils';
 import { CardGridSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 import { Page } from '../../components/common/motion';
+import useAsync from '../../hooks/useAsync';
 
 const ACADEMIC_TYPES = ['case-study', 'exam', 'deadline'];
 
 export default function SubjectPage() {
   const [params] = useSearchParams();
   const subject = params.get('subject') || '';
-  const [notes, setNotes] = useState(null);
-  const [tasks, setTasks] = useState(null);
 
-  useEffect(() => {
-    if (!subject) return;
-    Promise.all([
-      listNotes(subject ? { subject } : {}),
-      listTasks(),
-    ]).then(([n, t]) => {
-      setNotes(n.data);
-      setTasks(
-        t.data.filter(
-          (task) =>
-            ACADEMIC_TYPES.includes(task.type) &&
-            task.subject?.toLowerCase() === subject.toLowerCase() &&
-            task.status !== 'done'
-        )
-      );
-    });
+  const { data, error, loading, reload } = useAsync(async () => {
+    if (!subject) return { notes: [], tasks: [] };
+    const [n, t] = await Promise.all([listNotes({ subject }), listTasks()]);
+    return {
+      notes: n.data,
+      tasks: t.data.filter(
+        (task) =>
+          ACADEMIC_TYPES.includes(task.type) &&
+          task.subject?.toLowerCase() === subject.toLowerCase() &&
+          task.status !== 'done'
+      ),
+    };
   }, [subject]);
+
+  const notes = data?.notes;
+  const tasks = data?.tasks;
 
   if (!subject) {
     return (
@@ -42,7 +40,14 @@ export default function SubjectPage() {
     );
   }
 
-  if (!notes) return <div className="mx-auto w-full max-w-3xl px-4 py-6"><CardGridSkeleton count={6} /></div>;
+  if (loading) return <div className="mx-auto w-full max-w-3xl px-4 py-6"><CardGridSkeleton count={6} /></div>;
+  if (error) {
+    return (
+      <Page>
+        <ErrorState title={`Could not load ${subject}`} onRetry={reload} />
+      </Page>
+    );
+  }
 
   return (
     <Page>

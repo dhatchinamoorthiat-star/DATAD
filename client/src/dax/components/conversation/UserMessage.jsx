@@ -26,6 +26,9 @@ export default function UserMessage({ message, userName, onEdit }) {
         {editing ? (
           <div className="w-full min-w-[16rem] rounded-2xl border border-[var(--dax-accent)] bg-[var(--dax-bg)] p-2">
             <textarea
+              // The textarea exists only because the user clicked Edit; focusing
+              // what they just asked to edit is the expected behaviour.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
@@ -61,7 +64,7 @@ export default function UserMessage({ message, userName, onEdit }) {
           )}
         </span>
       </div>
-      <Avatar role="user" name={userName} />
+      <Avatar speaker="user" name={userName} />
     </div>
   );
 }

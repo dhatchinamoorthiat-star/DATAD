@@ -53,7 +53,7 @@ const EMAIL_CHECK_STEP = 1;
 
 export default function RegisterPage() {
   const methods = useForm({ defaultValues: DEFAULT_VALUES, mode: 'onChange' });
-  const { handleSubmit, trigger, getValues, setError, formState: { isSubmitting, isValid } } = methods;
+  const { handleSubmit, trigger, getValues, setError, formState: { isSubmitting } } = methods;
   const { login } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);

@@ -149,7 +149,7 @@ export default function SupportPage() {
           <Sparkles className="h-3 w-3" /> Independent · Ad-free · Community-backed
         </span>
         <h1 className="mx-auto mt-5 max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">
-          Software this personal shouldn't answer to advertisers.
+          Software this personal shouldn&rsquo;t answer to advertisers.
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-sm leading-relaxed text-gray-500 dark:text-gray-400">
           DATAD holds your notes, plans, finances, and ambitions. A product like that stays
@@ -162,7 +162,7 @@ export default function SupportPage() {
       <section className="mb-16">
         <Overline>The mission</Overline>
         <h2 className="mt-2 text-xl font-bold tracking-tight">
-          One system for a student's entire life.
+          One system for a student&rsquo;s entire life.
         </h2>
         <div className="mt-4 space-y-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
           <p>
@@ -172,16 +172,16 @@ export default function SupportPage() {
             instead of compete.
           </p>
           <p>
-            The measure of success here isn't time-on-app. It's whether your notes turned into
+            The measure of success here isn&rsquo;t time-on-app. It&rsquo;s whether your notes turned into
             grades, your preparation turned into offers, and your habits turned into momentum.
-            That's only possible for a product with nothing to gain from distracting you.
+            That&rsquo;s only possible for a product with nothing to gain from distracting you.
           </p>
         </div>
       </section>
 
       {/* ── Principles ── */}
       <section className="mb-16">
-        <Overline>The lines we won't cross</Overline>
+        <Overline>The lines we won&rsquo;t cross</Overline>
         <h2 className="mt-2 text-xl font-bold tracking-tight">Independence, by design.</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           {PRINCIPLES.map(({ icon: Icon, title, body }) => (
@@ -394,7 +394,7 @@ export default function SupportPage() {
       {/* ── Closing ── */}
       <footer className="text-center">
         <p className="mx-auto max-w-md text-sm leading-relaxed text-gray-600 dark:text-gray-300">
-          If DATAD improves your semester, you're welcome to help shape what it becomes.
+          If DATAD improves your semester, you&rsquo;re welcome to help shape what it becomes.
         </p>
         <div className="mt-4 flex justify-center gap-3">
           <a

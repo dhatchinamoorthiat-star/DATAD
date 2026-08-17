@@ -231,10 +231,10 @@ export default function AdminStudioReviewPage() {
             {/* Destination picker */}
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Destination</label>
+                <p id="destination-group-label" className="text-xs font-semibold uppercase tracking-wide text-gray-500">Destination</p>
                 <ConfidenceBadge value={item.analysis?.confidence} />
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-labelledby="destination-group-label">
                 {destinations.map((d) => {
                   const disabled = d.fileTypes && !d.fileTypes.includes(item.file?.type);
                   return (
@@ -287,10 +287,10 @@ export default function AdminStudioReviewPage() {
                   </div>
                 ))}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label htmlFor="admin-studio-review-tags-comma-separated" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Tags (comma-separated)
                   </label>
-                  <input
+                  <input id="admin-studio-review-tags-comma-separated"
                     className={inputClass}
                     disabled={!editable}
                     value={tagsText}
@@ -298,10 +298,10 @@ export default function AdminStudioReviewPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <label htmlFor="admin-studio-review-visibility" className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Visibility
                   </label>
-                  <select
+                  <select id="admin-studio-review-visibility"
                     className={inputClass}
                     disabled={!editable}
                     value={meta.visibility || 'members'}

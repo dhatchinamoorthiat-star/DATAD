@@ -111,13 +111,13 @@ export default function AcademicStep() {
     >
       <div>
         <h2 className="text-lg font-bold text-gray-900 dark:text-white">Academic profile</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Tell us what you're studying.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Tell us what you&rsquo;re studying.</p>
       </div>
 
       {/* Program selection */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">Programme</label>
-        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+        <p id="programme-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">Programme</p>
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5" role="group" aria-labelledby="programme-group-label">
           {PROGRAM_OPTIONS.map((p) => (
             <button
               key={p.value}
@@ -153,16 +153,18 @@ export default function AcademicStep() {
             transition={{ duration: 0.2 }}
             className="mt-2"
           >
-            <label className="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+            <label htmlFor="academic-please-specify-2" className="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">
               Please specify
             </label>
-            <input
+            <input id="academic-please-specify-2"
               type="text"
               value={courseCustom}
               onChange={handleCourseCustom}
               placeholder="Enter your programme"
               className={`${inp} ${courseErr ? inputErr : ''}`}
               maxLength={100}
+              // Revealed by picking "Other" — the user is mid-keystroke intent.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               aria-invalid={courseErr ? 'true' : undefined}
             />
@@ -176,10 +178,10 @@ export default function AcademicStep() {
       {/* Specialization — only if course selected */}
       {specs.length > 0 && (
         <div>
-          <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+          <p id="specialisation-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
             Specialisation
-          </label>
-          <div className="flex flex-wrap gap-2">
+          </p>
+          <div className="flex flex-wrap gap-2" role="group" aria-labelledby="specialisation-group-label">
             {specs.map((s) => (
               <button
                 key={s}
@@ -214,16 +216,18 @@ export default function AcademicStep() {
               transition={{ duration: 0.2 }}
               className="mt-2"
             >
-              <label className="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+              <label htmlFor="academic-please-specify" className="mb-1 block text-[11px] font-medium text-gray-500 dark:text-gray-400">
                 Please specify
               </label>
-              <input
+              <input id="academic-please-specify"
                 type="text"
                 value={specCustom}
                 onChange={handleSpecCustom}
                 placeholder="Type your specialisation…"
                 className={`${inp} ${specErr ? inputErr : ''}`}
                 maxLength={100}
+                // Revealed by picking "Other" — the user is mid-keystroke intent.
+                // eslint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
                 aria-invalid={specErr ? 'true' : undefined}
               />
@@ -237,10 +241,10 @@ export default function AcademicStep() {
 
       {/* College */}
       <div>
-        <label className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <label htmlFor="academic-institution" className="mb-1.5 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Institution <span className="font-normal text-gray-400">(optional)</span>
         </label>
-        <input
+        <input id="academic-institution"
           {...register('college')}
           placeholder="e.g. IIM Bangalore, Delhi University…"
           className={inp}
@@ -249,10 +253,10 @@ export default function AcademicStep() {
 
       {/* Graduation Year */}
       <div>
-        <label className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
+        <p id="graduation-year-group-label" className="mb-2 block text-xs font-semibold text-gray-600 dark:text-gray-400">
           Expected graduation year
-        </label>
-        <div className="flex flex-wrap gap-2">
+        </p>
+        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="graduation-year-group-label">
           {YEARS.map((y) => (
             <button
               key={y}

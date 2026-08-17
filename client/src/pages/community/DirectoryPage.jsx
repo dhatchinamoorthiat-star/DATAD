@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { Users, Search, Edit2, ExternalLink, Link2 } from 'lucide-react';
@@ -32,7 +32,7 @@ export default function DirectoryPage() {
   const [editOpen, setEditOpen] = useState(false);
   const { register, handleSubmit, reset, setValue, watch, formState: { isSubmitting } } = useForm();
 
-  const loadDirectory = () => {
+  const loadDirectory = useCallback(() => {
     const params = {};
     if (search) params.search = search;
     if (specFilter) params.specialization = specFilter;
@@ -41,9 +41,9 @@ export default function DirectoryPage() {
       if (domainFilter) list = list.filter((p) => p.priorDomain === domainFilter);
       setProfiles(list);
     }).catch(() => setProfiles([]));
-  };
+  }, [search, specFilter, domainFilter]);
 
-  useEffect(() => { loadDirectory(); }, [search, specFilter, domainFilter]);
+  useEffect(() => { loadDirectory(); }, [loadDirectory]);
   useEffect(() => { getMyProfile().then((r) => setMyProfile(r.data)).catch(() => {}); }, []);
 
   const onSaveProfile = async (data) => {

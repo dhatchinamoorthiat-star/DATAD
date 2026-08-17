@@ -1,25 +1,20 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import toast from '../utils/toast';
-import { ArrowLeft, Pencil, Trash2, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { getNote, deleteNote } from '../api/notes';
-import { useAuth } from '../context/AuthContext';
 import { formatDateTime } from '../utils/dateUtils';
 import { Skeleton } from '../components/common/Skeleton';
 import ConfirmModal from '../components/common/ConfirmModal';
-import TierGate from '../components/common/TierGate';
-import CrownBadge from '../components/common/CrownBadge';
 
 export default function NoteDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [note, setNote] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     getNote(id)
       .then((res) => setNote(res.data?.data || res.data))
       .catch(() => { toast.error('Note not found'); navigate('/study/notes'); })
@@ -48,9 +43,6 @@ export default function NoteDetailPage() {
   }
 
   if (!note) return null;
-
-  const hasContent = note.content && note.content.trim().length > 50;
-  const enrichmentData = { noteId: id };
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">

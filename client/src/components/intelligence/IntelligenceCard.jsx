@@ -3,7 +3,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Lightbulb,
-  GraduationCap,
+  
   Building2,
   Briefcase,
   ChevronDown,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ChevronLeft, ChevronRight, Plus, X, Trash2, Calendar as CalendarIcon,
+  ChevronLeft, ChevronRight, Plus, X, Calendar as CalendarIcon,
   Sparkles, Cake, Briefcase, Bell, Clock,
 } from 'lucide-react';
 import { getHolidays, getEvents, createEvent, deleteEvent } from '../../api/calendar';
@@ -44,12 +44,6 @@ function buildCalendarDays(year, month) {
 function sameDay(a, b) {
   return a && b && a.getFullYear() === b.getFullYear() &&
     a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-}
-
-function formatTime(h, m) {
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const hh = h % 12 || 12;
-  return `${hh}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
 export default function CalendarPage() {
@@ -271,8 +265,8 @@ export default function CalendarPage() {
         <Modal open={showForm} onClose={() => setShowForm(false)} title="Add event">
           <form onSubmit={handleCreate} className="space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Title *</label>
-              <input
+              <label htmlFor="calendar-title" className="mb-1 block text-xs font-medium text-gray-500">Title *</label>
+              <input id="calendar-title"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 placeholder="Event title"
@@ -288,8 +282,8 @@ export default function CalendarPage() {
                 required
               />
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500">Time</label>
-                <input
+                <label htmlFor="calendar-time" className="mb-1 block text-xs font-medium text-gray-500">Time</label>
+                <input id="calendar-time"
                   type="time"
                   value={form.time}
                   onChange={(e) => setForm({ ...form, time: e.target.value })}
@@ -298,8 +292,8 @@ export default function CalendarPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Type</label>
-              <select
+              <label htmlFor="calendar-type" className="mb-1 block text-xs font-medium text-gray-500">Type</label>
+              <select id="calendar-type"
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
                 className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
@@ -312,8 +306,8 @@ export default function CalendarPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-500">Description</label>
-              <textarea
+              <label htmlFor="calendar-description" className="mb-1 block text-xs font-medium text-gray-500">Description</label>
+              <textarea id="calendar-description"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}

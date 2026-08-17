@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, CheckCircle2, Circle, Clock, ArrowRight, Save, X, Sparkles, RefreshCw, Target, BookOpen, Zap, Flame, Edit3 } from 'lucide-react';
+import { Plus, CheckCircle2, Circle, Clock, ArrowRight, Save, X, Sparkles, RefreshCw, Zap, Flame, Edit3 } from 'lucide-react';
 import toast from '../../utils/toast';
 import PageHeader from '../../components/common/PageHeader';
 import SmartSelect from '../../components/common/SmartSelect';
@@ -98,7 +98,11 @@ export default function PivotPage({ mode }) {
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // Scheduled, not called inline: the loader flips loading state
+    // synchronously, which cascades an extra render from the effect body.
+    queueMicrotask(load);
+  }, [load]);
 
   // Load daily check-in and progress in roadmap mode
   useEffect(() => {
@@ -339,15 +343,15 @@ export default function PivotPage({ mode }) {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 mb-1">Current role / title</label>
-                      <input value={form.fromRole} onChange={set('fromRole')} placeholder="e.g. Software Engineer" className={inp} />
+                      <label htmlFor="pivot-current-role-title" className="block text-xs font-semibold text-gray-500 mb-1">Current role / title</label>
+                      <input id="pivot-current-role-title" value={form.fromRole} onChange={set('fromRole')} placeholder="e.g. Software Engineer" className={inp} />
                     </div>
                   </div>
                 )}
                 {!isRoadmap && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Years of experience</label>
-                    <input type="number" min="0" max="20" value={form.fromYears} onChange={set('fromYears')} placeholder="e.g. 2.5" className={inp} />
+                    <label htmlFor="pivot-years-of-experience" className="block text-xs font-semibold text-gray-500 mb-1">Years of experience</label>
+                    <input id="pivot-years-of-experience" type="number" min="0" max="20" value={form.fromYears} onChange={set('fromYears')} placeholder="e.g. 2.5" className={inp} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
@@ -364,19 +368,19 @@ export default function PivotPage({ mode }) {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Target role</label>
-                    <input value={form.toRole} onChange={set('toRole')} placeholder="e.g. Product Manager" className={inp} />
+                    <label htmlFor="pivot-target-role" className="block text-xs font-semibold text-gray-500 mb-1">Target role</label>
+                    <input id="pivot-target-role" value={form.toRole} onChange={set('toRole')} placeholder="e.g. Product Manager" className={inp} />
                   </div>
                 </div>
                 {!isRoadmap && (
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Why this move? (your pivot narrative)</label>
-                    <textarea rows={3} value={form.motivation} onChange={set('motivation')} placeholder="3–4 sentences you'd say in an interview…" className={inp} />
+                    <label htmlFor="pivot-why-this-move-your-pivot-narrative" className="block text-xs font-semibold text-gray-500 mb-1">Why this move? (your pivot narrative)</label>
+                    <textarea id="pivot-why-this-move-your-pivot-narrative" rows={3} value={form.motivation} onChange={set('motivation')} placeholder="3–4 sentences you'd say in an interview…" className={inp} />
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">Target companies (comma-separated)</label>
-                  <input value={form.targetCompanies} onChange={set('targetCompanies')} placeholder="McKinsey, BCG, Amazon…" className={inp} />
+                  <label htmlFor="pivot-target-companies-comma-separated" className="block text-xs font-semibold text-gray-500 mb-1">Target companies (comma-separated)</label>
+                  <input id="pivot-target-companies-comma-separated" value={form.targetCompanies} onChange={set('targetCompanies')} placeholder="McKinsey, BCG, Amazon…" className={inp} />
                 </div>
                 <button onClick={save} disabled={saving}
                   className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"

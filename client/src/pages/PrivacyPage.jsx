@@ -4,7 +4,7 @@ export default function PrivacyPage() {
   return (
     <LegalLayout title="Privacy Policy" updated="July 2026">
       <p>
-        DATAD ("the platform") is an independent project built and maintained by a student,
+        DATAD (&ldquo;the platform&rdquo;) is an independent project built and maintained by a student,
         Dhatchina Moorthi, for use by the batch. This page explains what data the platform
         stores, where it lives, and who can see it. Plain and honest — no legalese padding.
       </p>

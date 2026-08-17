@@ -12,7 +12,6 @@ const statusBadge = (status) =>
 
 // Recursively render the invite tree starting from a root user.
 function ChainNode({ user, allUsers, depth = 0 }) {
-  const invitee = allUsers.find((u) => u.referralUsedBy?._id === user._id || u.referredBy?._id === user._id);
   // find the person this user invited (who has referredBy = this user)
   const child = allUsers.find((u) => u.referredBy?._id === user._id);
 
@@ -50,7 +49,9 @@ export default function AdminReferralsPage() {
   const [referrals, setReferrals] = useState(null);
 
   useEffect(() => {
-    getReferralMap().then((res) => setReferrals(res.data));
+    getReferralMap()
+      .then((res) => setReferrals(res.data))
+      .catch(() => setReferrals([]));
   }, []);
 
   if (!referrals) return <Loader />;

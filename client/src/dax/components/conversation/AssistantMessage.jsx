@@ -13,7 +13,7 @@ export default function AssistantMessage({
 
   return (
     <div className="group flex gap-3 px-1 py-3">
-      <Avatar role="assistant" />
+      <Avatar speaker="assistant" />
       <div className="min-w-0 flex-1">
         {isError ? (
           <p className="rounded-xl border border-[var(--dax-danger)]/30 bg-[var(--dax-danger-soft)] px-3 py-2 text-sm text-[var(--dax-danger)]">

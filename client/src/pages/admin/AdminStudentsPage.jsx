@@ -80,7 +80,13 @@ export default function AdminStudentsPage() {
   const [expanded, setExpanded] = useState(() => new Set());
   const [confirmReject, setConfirmReject] = useState(null); // student object
 
-  const load = () => listStudents().then((res) => setStudents(res.data));
+  const load = () =>
+    listStudents()
+      .then((res) => setStudents(res.data))
+      .catch(() => {
+        setStudents([]);
+        toast.error('Could not load students');
+      });
   useEffect(() => {
     load();
   }, []);

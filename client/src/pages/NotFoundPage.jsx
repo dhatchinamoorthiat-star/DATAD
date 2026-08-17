@@ -12,7 +12,7 @@ export default function NotFoundPage() {
       <p className="mb-2 text-7xl font-black tabular-nums text-gray-200 dark:text-gray-800">404</p>
       <h1 className="mb-2 text-xl font-bold text-gray-800 dark:text-gray-100">Page not found</h1>
       <p className="mb-8 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-        This page doesn't exist or may have moved. Head back to a familiar place.
+        This page doesn&rsquo;t exist or may have moved. Head back to a familiar place.
       </p>
 
       <div className="flex flex-wrap justify-center gap-3">

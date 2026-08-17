@@ -1,51 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../utils/toast';
-import { CalendarDays, Check, Pencil, Plus, Trash2, Sparkles, Loader2, RefreshCw } from 'lucide-react';
+import { CalendarDays, Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import { listTasks, createTask, updateTask, deleteTask } from '../api/tasks';
-import { useAuth } from '../context/AuthContext';
-import { SUBJECTS, TASK_TYPES, TASK_STATUSES } from '../utils/constants';
+import { TASK_TYPES } from '../utils/constants';
 import { formatDate, daysUntil } from '../utils/dateUtils';
 import { FeedSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
 import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
-import TierGate from '../components/common/TierGate';
-import CrownBadge from '../components/common/CrownBadge';
 import DateInput from '../components/common/DateInput';
 import Button from '../components/common/Button';
-import { DAX_CAPABILITY } from '../utils/dax';
-
-function AIPlannerPanel({ tasks }) {
-  const [state, setState] = useState('idle');
-  const [result, setResult] = useState(null);
-  const [showAI, setShowAI] = useState(false);
-
-  if (state === 'idle' || state === 'error') {
-    return (
-      <button
-        onClick={() => setShowAI((s) => !s)}
-        className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800/60 dark:bg-indigo-900/30 dark:text-indigo-300"
-      >
-        <Sparkles className="h-4 w-4" />
-        {showAI ? 'Hide Dax' : "Ask Dax what to focus on today"}
-      </button>
-    );
-  }
-
-  if (state === 'loading') {
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-600 dark:border-indigo-800/60 dark:bg-indigo-900/30">
-        <Loader2 className="h-4 w-4 animate-spin" /> Thinking through your priorities…
-      </div>
-    );
-  }
-
-  return null;
-}
 
 export default function PlannerPage() {
-  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -62,6 +29,9 @@ export default function PlannerPage() {
     setLoading(false);
   };
 
+  // The loader awaits before its first setState, so nothing is set
+  // synchronously here — the rule cannot see across the await.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchTasks(); }, []);
 
   const openCreate = () => {
@@ -170,20 +140,20 @@ export default function PlannerPage() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editingTask ? 'Edit task' : 'New task'}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Title</label>
-            <input {...register('title', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="planner-title" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Title</label>
+            <input id="planner-title" {...register('title', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
             {errors.title && <p className="mt-1 text-xs text-rose-500">Required</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
-              <select {...register('type')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
+              <label htmlFor="planner-type" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
+              <select id="planner-type" {...register('type')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
                 {TASK_TYPES?.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Due</label>
-              <DateInput {...register('dueDate')} />
+              <label htmlFor="planner-due" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Due</label>
+              <DateInput id="planner-due" {...register('dueDate')} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

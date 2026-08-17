@@ -1,19 +1,23 @@
-import { useEffect, useState } from 'react';
 import { Megaphone, Pin } from 'lucide-react';
 import { listAnnouncements } from '../../api/admin';
 import { formatDate } from '../../utils/dateUtils';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
+import ErrorState from '../../components/common/ErrorState';
 import { Page } from '../../components/common/motion';
+import useAsync from '../../hooks/useAsync';
 
 export default function AnnouncementsPage() {
-  const [announcements, setAnnouncements] = useState(null);
+  const { data: announcements, error, loading, reload } = useAsync(() => listAnnouncements(), []);
 
-  useEffect(() => {
-    listAnnouncements().then((res) => setAnnouncements(res.data));
-  }, []);
-
-  if (!announcements) return <div className="mx-auto max-w-3xl px-4 py-6"><FeedSkeleton count={5} /></div>;
+  if (loading) return <div className="mx-auto max-w-3xl px-4 py-6"><FeedSkeleton count={5} /></div>;
+  if (error) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-6">
+        <ErrorState title="Could not load announcements" onRetry={reload} />
+      </div>
+    );
+  }
 
   return (
     <Page>

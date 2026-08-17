@@ -42,7 +42,10 @@ export default function IntelligencePage() {
 
   const loadArticles = useCallback(() => {
     const fetcher = view === 'saved' ? listBookmarked() : listArticles(category || undefined);
-    fetcher.then((res) => setArticles(res.data));
+    fetcher
+      .then((res) => setArticles(res.data))
+      // Fall through to the empty state instead of an endless skeleton.
+      .catch(() => setArticles([]));
   }, [view, category]);
 
   useEffect(() => {
@@ -50,11 +53,17 @@ export default function IntelligencePage() {
   }, [loadArticles]);
 
   useEffect(() => {
-    getMarket().then((res) => {
-      setMarketState(res.data.indicators || []);
-      setUpdatedAt(res.data.updatedAt || null);
-    });
-    getMe().then((res) => setInterests(res.data.interests || []));
+    // Market strip and interests are both supplementary — the article list
+    // stands on its own, so a failure here just leaves them empty.
+    getMarket()
+      .then((res) => {
+        setMarketState(res.data.indicators || []);
+        setUpdatedAt(res.data.updatedAt || null);
+      })
+      .catch(() => setMarketState([]));
+    getMe()
+      .then((res) => setInterests(res.data.interests || []))
+      .catch(() => setInterests([]));
   }, []);
 
   const onToggleBookmark = async (article) => {
@@ -72,10 +81,12 @@ export default function IntelligencePage() {
       const res = await refreshNews();
       toast.success(`Refreshed — ${res.data.total} stories, ${res.data.market} live market feeds`);
       loadArticles();
-      getMarket().then((r) => {
-        setMarketState(r.data.indicators || []);
-        setUpdatedAt(r.data.updatedAt || null);
-      });
+      getMarket()
+        .then((r) => {
+          setMarketState(r.data.indicators || []);
+          setUpdatedAt(r.data.updatedAt || null);
+        })
+        .catch(() => {});
     } catch (err) {
       toast.error(err.response?.data?.message || 'Refresh failed');
     } finally {
@@ -126,7 +137,7 @@ export default function IntelligencePage() {
         </div>
       </div>
       <p className="mb-4 text-xs text-gray-400">
-        Live business news, auto-updated from the newsroom and sorted by topic — useful for placement prep and staying market-aware, whatever you're studying.
+        Live business news, auto-updated from the newsroom and sorted by topic — useful for placement prep and staying market-aware, whatever you&rsquo;re studying.
       </p>
 
       {/* Market snapshot (live) */}
