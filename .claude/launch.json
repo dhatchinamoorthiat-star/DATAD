@@ -27,7 +27,7 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": [
         "-c",
-        "VERIFY_CLIENT_ORIGINS=http://localhost:5174,http://localhost:5175,http://localhost:5176 node /Users/aaruraanat/Documents/DATAD/server/verify-testdb-server.js"
+        "VERIFY_CLIENT_ORIGINS=http://localhost:5174,http://localhost:5175,http://localhost:5176 node server/verify-testdb-server.js"
       ],
       "port": 5001,
       "autoPort": true

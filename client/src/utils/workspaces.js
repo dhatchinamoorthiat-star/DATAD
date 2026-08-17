@@ -1,18 +1,21 @@
-import { Home, BookOpen, Briefcase, Users, Sun } from 'lucide-react';
+import { Home, BookOpen, Briefcase, Users, Sun, Sparkles } from 'lucide-react';
 
-// Primary navigation. Capped at five: this list renders as the mobile bottom
-// tab bar, where a sixth item pushes each target below the 44pt minimum on a
-// 375px screen. Finance and Wellbeing used to sit here; they are sub-sections
+// Primary navigation. This list renders as both the desktop rail and the mobile
+// bottom tab bar. Finance and Wellbeing used to sit here; they are sub-sections
 // of Life (the Life hub already linked to both), so they are tabs now.
 //
-// Dax is deliberately absent — DaxPanel puts it one tap away from every screen,
-// and /dax renders outside the app shell, so a tab there removed the very bar
-// the user tapped it from. Its bundle is also the largest in the app; behind a
-// deliberate tap it is no longer a stray-thumb download.
+// Six is the ceiling. Each mobile target is `flex-1`, so six clears the 44pt
+// minimum even on a 320px screen (53px each) — a seventh would not, and the
+// labels would start wrapping before that. Add a seventh item and the bottom
+// bar needs rethinking rather than one more entry.
 export const WORKSPACES = [
   // "/" redirects logged-in users to /dashboard, so an `end`-matched link to
   // "/" could never be active. Point at the URL the user actually lands on.
   { key: 'dashboard', label: 'Home', to: '/dashboard', icon: Home },
+  // `?home` opens Dax's home mode rather than the workspace view (DaxPage reads
+  // it via searchParams). /dax renders outside the app shell, so tapping this
+  // leaves the bar behind — DaxApp's exitHref sends you back to /dashboard.
+  { key: 'dax', label: 'Dax', to: '/dax?home', icon: Sparkles },
   { key: 'study', label: 'Study', to: '/study', icon: BookOpen },
   { key: 'career', label: 'Career', to: '/career', icon: Briefcase },
   { key: 'community', label: 'Community', to: '/community', icon: Users },
@@ -29,8 +32,13 @@ const WORKSPACE_ALIASES = {
 
 // Shared by the desktop rail and the mobile tab bar so the two can never
 // disagree about which section the user is in.
+//
+// `to` may carry a query string (Dax uses `?home` to pick its opening mode).
+// That part is a destination detail, not part of the section's identity, so it
+// is stripped before matching — otherwise /dax would never light up its own tab.
 export function isWorkspaceActive(pathname, workspace) {
-  const prefixes = [workspace.to, ...(WORKSPACE_ALIASES[workspace.key] || [])];
+  const prefixes = [workspace.to, ...(WORKSPACE_ALIASES[workspace.key] || [])]
+    .map((p) => p.split(/[?#]/)[0]);
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
