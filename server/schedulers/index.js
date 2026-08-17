@@ -26,8 +26,7 @@ const { checkStreakMilestones }     = require('../automation/reminders/streakMil
 // Existing services (kept running via cron instead of setInterval)
 const { refreshNews }   = require('../services/newsFetcher');
 const { refreshMarket } = require('../services/marketFetcher');
-const { refreshStocks } = require('../services/stockFetcher');
-const StockQuote = require('../models/StockQuote');
+const { refreshStocks, refreshStocksIfStale } = require('../services/stockFetcher');
 
 function safe(name, fn) {
   return async () => {
@@ -44,9 +43,12 @@ function register() {
 
   // ── 1am daily: stock watchlist quotes ───────────────────────────────────────
   cron.schedule(s.stockRefresh, safe('stock-refresh', refreshStocks));
-  // Prime the collection immediately so the Stocks page isn't empty until 1am
-  // on a fresh deploy — subsequent runs stay on the daily cron above.
-  StockQuote.countDocuments().then((n) => { if (n === 0) safe('stock-refresh-initial', refreshStocks)(); });
+  // Prime on boot whenever the stored quotes have gone stale — not just when
+  // the collection is empty. This instance spins down when idle, so a boot is
+  // usually a wake-up after a stretch of missed cron ticks, and the old
+  // empty-only check meant those quotes stayed frozen at whatever the very
+  // first run ever wrote.
+  safe('stock-refresh-initial', refreshStocksIfStale)();
 
   // ── Every 30 min: news RSS + enhancement ────────────────────────────────────
   cron.schedule(s.newsRefresh, safe('news-refresh', refreshNews));

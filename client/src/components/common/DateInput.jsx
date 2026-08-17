@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 const DateInput = forwardRef(function DateInput({
   type = 'date',
@@ -8,10 +8,16 @@ const DateInput = forwardRef(function DateInput({
   className = '',
   ...props
 }, ref) {
+  // Falls back to a generated id so the label is associated even when the
+  // caller does not pass one — clicking the label focuses the field, and a
+  // screen reader announces it, neither of which worked with a bare <label>.
+  const generatedId = useId();
+  const id = props.id || generatedId;
+
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+        <label htmlFor={id} className="text-xs font-medium text-gray-500 dark:text-gray-400">
           {label}
         </label>
       )}
@@ -25,6 +31,7 @@ const DateInput = forwardRef(function DateInput({
           ref={ref}
           type={type}
           {...props}
+          id={id}
           className={`
             w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm
             text-gray-800 transition-colors placeholder:text-gray-400

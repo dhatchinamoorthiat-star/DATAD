@@ -108,7 +108,12 @@ module.exports = {
   schedules: {
     newsRefresh:        process.env.CRON_NEWS_REFRESH        || '*/30 * * * *',   // every 30 min
     marketRefresh:      process.env.CRON_MARKET_REFRESH      || '*/15 * * * *',   // every 15 min
-    stockRefresh:       process.env.CRON_STOCK_REFRESH        || '0 1 * * *',      // 1am daily
+    // Every 15 min through the NSE session, on weekdays. Server time is UTC, so
+    // 03:45–10:00 UTC covers 09:15–15:30 IST plus a little either side. The old
+    // '0 1 * * *' fired at 06:30 IST — before the market opened — so it wrote
+    // the previous day's close and the page then showed that same number all
+    // day, which is what made the quotes look frozen.
+    stockRefresh:       process.env.CRON_STOCK_REFRESH       || '*/15 3-10 * * 1-5',
     dailyCase:          process.env.CRON_DAILY_CASE          || '0 5 * * *',      // 5am daily
     dailyBriefing:      process.env.CRON_DAILY_BRIEFING      || '0 6 * * *',      // 6am daily
     dailyReflection:    process.env.CRON_DAILY_REFLECTION    || '0 6 * * *',      // 6am daily

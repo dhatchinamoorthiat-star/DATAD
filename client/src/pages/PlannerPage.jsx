@@ -170,20 +170,20 @@ export default function PlannerPage() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editingTask ? 'Edit task' : 'New task'}>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Title</label>
-            <input {...register('title', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="task-title" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Title</label>
+            <input id="task-title" {...register('title', { required: true })} className="input" />
             {errors.title && <p className="mt-1 text-xs text-rose-500">Required</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
-              <select {...register('type')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
+              <label htmlFor="task-type" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
+              <select id="task-type" {...register('type')} className="input">
                 {TASK_TYPES?.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Due</label>
-              <DateInput {...register('dueDate')} />
+              <label htmlFor="task-due" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Due</label>
+              <DateInput id="task-due" {...register('dueDate')} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">

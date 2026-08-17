@@ -13,7 +13,6 @@ import {
   Zap,
   HeartHandshake,
   Settings,
-  Gem,
 } from 'lucide-react';
 import { DatadMark } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -25,18 +24,8 @@ import { WORKSPACES } from '../../utils/workspaces';
 import CommandPalette from '../common/CommandPalette';
 import NotificationBell from '../common/NotificationBell';
 import DaxPanel from '../chat/DaxPanel';
+import RailSidebar from './RailSidebar';
 import Footer from './Footer';
-
-const AdminIcon = Crown;
-
-// Minimal rounded rail: the selected page reads through a soft blue pill,
-// hover is a whisper. No heavy sidebar chrome.
-const railLink = ({ isActive }) =>
-  `flex items-center gap-3 rounded-full px-3.5 py-2 text-sm transition-all duration-150 ${
-    isActive
-      ? 'bg-primary-50 font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-      : 'font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-gray-100'
-  }`;
 
 function AvatarMenu() {
   const { user, logout } = useAuth();
@@ -170,62 +159,8 @@ export default function AppShell({ children }) {
     <div className="flex min-h-screen">
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-gray-100 bg-white px-4 py-5 dark:border-gray-800/70 dark:bg-gray-950 lg:flex print:hidden">
-        <div className="mb-7 px-2 font-semibold">
-          <DatadMark />
-        </div>
-        <button
-          onClick={() => setPaletteOpen(true)}
-          className="mb-5 flex items-center gap-2 rounded-full border border-gray-200 px-3.5 py-2 text-sm text-gray-400 transition-colors hover:border-primary-300 hover:text-gray-600 dark:border-gray-800 dark:hover:border-primary-700"
-        >
-          <Search className="h-4 w-4" /> Search…
-          <kbd className="ml-auto rounded border border-gray-200 px-1.5 py-0.5 text-[10px] dark:border-gray-700">⌘K</kbd>
-        </button>
-        <nav className="flex flex-col gap-1">
-          {WORKSPACES.map((w) => {
-            const isActive = w.end
-              ? location.pathname === w.to
-              : location.pathname.startsWith(w.to);
-
-            return (
-              <NavLink key={w.key} to={w.to} end={w.end} className={railLink}>
-                <w.icon className="h-[18px] w-[18px]" /> {w.label}
-              </NavLink>
-            );
-          })}
-          {isAdmin && (
-            <>
-              <div className="mx-2 my-2 border-t border-gray-100 dark:border-gray-800/70" />
-              <NavLink to="/admin" className={railLink}>
-                <AdminIcon className="h-[18px] w-[18px] text-warn-600" />
-                <span>Admin</span>
-              </NavLink>
-            </>
-          )}
-        </nav>
-        <div className="mt-auto space-y-1">
-          <NavLink
-            to="/subscribe"
-            className={({ isActive }) =>
-              `flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
-                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-gray-200'
-              }`
-            }
-          >
-            <Gem className="h-3.5 w-3.5 shrink-0 text-primary-500" /> Upgrade plan
-          </NavLink>
-          <NavLink
-            to="/wellbeing"
-            className="flex items-center gap-2 rounded-full px-3.5 py-2 text-xs text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800/50 dark:hover:text-gray-300"
-          >
-            <HeartHandshake className="h-3.5 w-3.5 shrink-0" /> Feeling stressed? Reach out
-          </NavLink>
-          <p className="px-3 pt-1 text-[11px] text-gray-400">Your student OS — every day, one place.</p>
-        </div>
-      </aside>
+      {/* Desktop sidebar — hover-reveal rail, pinnable via its hamburger */}
+      <RailSidebar isAdmin={isAdmin} onOpenPalette={() => setPaletteOpen(true)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
@@ -233,7 +168,7 @@ export default function AppShell({ children }) {
           <div className="flex items-center justify-between gap-3 px-4 py-2.5">
             {/* Logo — mobile only; on desktop the sidebar already shows it */}
             <div className="flex items-center lg:hidden">
-              <DatadMark className="h-6 w-6" />
+              <DatadMark size="sm" />
             </div>
 
             {/* Search lives in the sidebar (⌘K palette) — no duplicate here */}

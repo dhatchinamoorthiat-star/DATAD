@@ -439,8 +439,10 @@ export default function LivingSurface() {
   }), [tasks, caseData, roadmapPending, roadmapNext, canCreateRoadmap]);
 
   return (
-    <Page>
-      <div className="mx-auto max-w-4xl space-y-12 pb-16">
+    <Page wide>
+      {/* The measure comes from <Page wide> — an inner max-w here would just
+          fight it (the old max-w-4xl was already dead under the 3xl cap). */}
+      <div className="space-y-12 pb-16">
         {/* ⭐ Program Header */}
         <ProgramHeader />
         <Arrival firstName={firstName} brief={brief} briefLoading={briefLoading} />

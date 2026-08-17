@@ -6,6 +6,7 @@ const {
   getSummary,
   setBudget,
   listStockQuotes,
+  getStockInsight,
 } = require('../controllers/financeController');
 const verifyToken = require('../middleware/verifyToken');
 
@@ -16,5 +17,6 @@ router.delete('/expenses/:id', deleteExpense);
 router.get('/summary', getSummary);
 router.put('/budget', setBudget);
 router.get('/stocks', listStockQuotes);
+router.get('/stocks/:symbol/insight', getStockInsight);
 
 module.exports = router;

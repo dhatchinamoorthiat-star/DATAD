@@ -1,14 +1,26 @@
 // Shared tier configuration — single source of truth for all tier visuals.
 // Used by AppShell, TierGate, CrownBadge, SubscribePage, and any tier badge.
+//
+// The ranks here MIRROR server/subscription/tierHierarchy.js. When the server
+// renamed the top tier 'max' → 'placement', this file was not updated, so
+// TIER_RANK['placement'] was undefined and SubscriptionContext's
+//   (TIER_RANK[tier] ?? 0) >= (TIER_RANK[required] ?? 1)
+// scored every Placement Pass holder as rank 0 — a paying student was gated out
+// of the entire toolkit they had just bought, shown no tier ring or badge, and
+// rendered in Pro's amber by tierTheme(). normalizeTier() below keeps any
+// remaining 'max' — persisted state, an old JWT, a stale prop — working.
 
-export const TIER_RANK = { free: 0, trial: 1, pro: 2, max: 3 };
+export const TIER_RANK = { free: 0, trial: 1, pro: 2, placement: 3 };
+
+/** Fold the retired 'max' alias onto 'placement'. */
+export const normalizeTier = (tier) => (tier === 'max' ? 'placement' : tier);
 
 // Avatar ring styles — applied to the user avatar circle.
 export const TIER_RING = {
   free:  null,
   trial: 'ring-2 ring-indigo-400 dark:ring-indigo-500',
   pro:   'ring-2 ring-amber-400 dark:ring-amber-500',
-  max:   'ring-2 ring-purple-500 dark:ring-purple-400',
+  placement: 'ring-2 ring-purple-500 dark:ring-purple-400',
 };
 
 // Status dot styles — small dot indicator.
@@ -16,7 +28,7 @@ export const TIER_DOT = {
   free:  null,
   trial: 'bg-indigo-500',
   pro:   'bg-amber-400',
-  max:   'bg-purple-500',
+  placement: 'bg-purple-500',
 };
 
 // Badge/pill styles — used for the tier label in avatar menu and inline badges.
@@ -24,11 +36,12 @@ export const TIER_BADGE_STYLE = {
   free:  'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
   trial: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
   pro:   'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  max:   'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+  placement: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
 };
 
-// Tier gate / plan card color themes (indigo = trial, amber = pro, purple = max).
-// Each theme includes all visual tokens needed for plan cards, gates, and badges.
+// Tier gate / plan card color themes (indigo = trial, amber = pro,
+// purple = placement). Each theme includes all visual tokens needed for plan
+// cards, gates, and badges.
 export const TIER_COLORS = {
   indigo: {
     bg:     'bg-indigo-50 dark:bg-indigo-950/30',
@@ -66,7 +79,7 @@ export const TIER_COLORS = {
 export const TIER_COLOR_MAP = {
   trial: 'indigo',
   pro: 'amber',
-  max: 'purple',
+  placement: 'purple',
 };
 
 // Human-readable tier names.
@@ -74,12 +87,13 @@ export const TIER_LABEL = {
   free:  'Free',
   trial: 'Trial',
   pro:   'Pro',
-  max:   'Max',
+  placement: 'Placement Pass',
 };
 
 // Resolve a tier ID to its label + colour theme in one call.
 // Falls back to Pro so an unknown tier degrades to a sensible gate.
 export const tierTheme = (tier) => {
-  const key = TIER_COLOR_MAP[tier] ? tier : 'pro';
+  const t = normalizeTier(tier);
+  const key = TIER_COLOR_MAP[t] ? t : 'pro';
   return { label: TIER_LABEL[key], colors: TIER_COLORS[TIER_COLOR_MAP[key]] };
 };

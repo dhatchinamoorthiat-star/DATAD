@@ -49,7 +49,7 @@ function requireFeature(feature) {
 function getAvailableCapabilities(user) {
   const effectiveTier = getEffectiveTier(user);
   const { getFeaturesForTier } = require('./featureRegistry');
-  return getFeaturesForTier(effectiveTier);
+  return getFeaturesForTier(effectiveTier, { isAdmin: user?.role === 'admin' });
 }
 
 // The JWT bakes in `tier` at login time and can go stale for up to its

@@ -62,6 +62,18 @@ const resumeSchema = new mongoose.Schema(
     // window forward — so a student who resubmitted every few minutes silently
     // never received the mail at all.
     lastEmailedAt: Date,
+
+    // Audit trail for copies mailed to an address other than the account's.
+    // This is the one path that lets an authenticated user send mail to an
+    // address they did not prove they own, so every send is recorded: the log
+    // is what makes abuse visible, and the timestamps are what the daily cap in
+    // controllers/resumeController.js counts. Trimmed to the newest entries on
+    // write so a determined sender cannot grow the document without bound.
+    externalSends: {
+      type: [{ to: short(160), at: { type: Date, default: Date.now } }],
+      validate: cap(50),
+      default: undefined,
+    },
   },
   { timestamps: true }
 );

@@ -1,6 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { WORKSPACE_TABS } from '../../utils/workspaces';
-import { CONTAINER } from '../common/motion';
 
 // Rounded pill segmented control: the active page reads through a soft
 // filled pill, matching the product's "rounded navigation" language.
@@ -11,9 +10,9 @@ const tabClass = ({ isActive }) =>
       : 'font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800/60 dark:hover:text-gray-100'
   }`;
 
-// Shared shell for a workspace: a secondary tab row, then the page. The row
-// shares CONTAINER with <Page>, so a tab sits directly above the content it
-// labels instead of floating on a wider measure.
+// Shared shell for a workspace: a secondary tab row, then the page. The row is
+// full-width and centre-aligned, so it stays visually centred over the page
+// body whichever measure that page uses (CONTAINER or CONTAINER_WIDE).
 export default function WorkspaceLayout({ workspace, title, extraTabs = [] }) {
   const tabs = [...(WORKSPACE_TABS[workspace] || []), ...extraTabs];
   return (

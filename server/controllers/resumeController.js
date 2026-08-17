@@ -1,7 +1,7 @@
 const Resume = require('../models/Resume');
 const User = require('../models/User');
 const logger = require('../utils/logger');
-const { sendResumeSubmittedEmail } = require('../config/mailer');
+const { sendResumeSubmittedEmail, sendResumeCopyEmail } = require('../config/mailer');
 const { normalizeResume, scoreResume } = require('../utils/resumeQuality');
 const { renderResumePdf } = require('../utils/resumePdf');
 
@@ -32,6 +32,29 @@ exports.pdfFilename = pdfFilename;
 // A submission confirmation is useful once; the same one every time the student
 // tweaks a bullet point and presses submit is not. Repeat submits still save.
 const EMAIL_COOLDOWN_MS = 15 * 60 * 1000;
+
+// Sending to an address the student typed is the only path here that mails
+// someone who never signed up, so it is capped per user per rolling day. The
+// cap is what keeps a legitimate feature (mail my resume to a recruiter) from
+// doubling as a way to push attachments at arbitrary inboxes from our domain.
+const EXTERNAL_SENDS_PER_DAY = 5;
+const EXTERNAL_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+// Deliberately narrow. Anything exotic-but-valid that this rejects costs a
+// student one retype; anything malformed that it accepts is a header the
+// transport has to make sense of.
+const EMAIL_RE = /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[A-Za-z]{2,}$/;
+
+/**
+ * Normalize and validate a student-supplied recipient.
+ * @returns {{ email: string } | { error: string }}
+ */
+const parseRecipient = (raw) => {
+  const email = String(raw ?? '').trim().toLowerCase();
+  if (!email) return { error: 'Enter an email address to send the resume to' };
+  if (email.length > 160 || !EMAIL_RE.test(email)) return { error: 'That does not look like a valid email address' };
+  return { email };
+};
 
 /** Shared response body so the client always has a fresh score to render. */
 const withScore = (resume) => ({
@@ -98,16 +121,35 @@ exports.saveResume = async (req, res, next) => {
 /**
  * Save, then confirm by email.
  *
- * The mail goes to the *account* address from the database, never to
- * `personal.email` in the request body — otherwise this endpoint would be an
- * authenticated open relay that sends attacker-authored resume content to any
- * address a caller types into the form.
+ * Two destinations, chosen by the student at submit time:
+ *
+ * - `deliverTo: 'account'` (the default) mails the confirmation to the
+ *   *account* address read from the database. It is never taken from
+ *   `personal.email` in the request body — that would make the default path an
+ *   authenticated open relay to any address a caller types into the form.
+ *
+ * - `deliverTo: 'other'` additionally mails a copy of the PDF to
+ *   `recipientEmail`. This one *is* body-supplied and so is fenced in: the
+ *   address is validated, the send is capped per user per day, the message body
+ *   is fixed copy rather than anything the sender authors, and every recipient
+ *   is recorded on the resume document. The account confirmation still goes out
+ *   as well, so the student always has their own record of what was sent.
  *
  * Delivery failure does not fail the request: the resume is already saved, and
  * a student who cannot receive mail should not be blocked from submitting.
  */
 exports.submitResume = async (req, res, next) => {
   try {
+    const wantsCopy = req.body?.deliverTo === 'other';
+    // Validate before persisting: a typo'd address should come back as a
+    // correctable error, not as a saved resume plus a silent non-delivery.
+    let recipient = null;
+    if (wantsCopy) {
+      const parsed = parseRecipient(req.body.recipientEmail);
+      if (parsed.error) return res.status(400).json({ message: parsed.error });
+      recipient = parsed.email;
+    }
+
     const resume = await persist(req.user.userId, req.body);
     const completeness = scoreResume(resume);
 
@@ -119,29 +161,81 @@ exports.submitResume = async (req, res, next) => {
 
     resume.lastSubmittedAt = new Date(now);
 
-    let emailed = false;
-    if (!throttled) {
-      const user = await User.findById(req.user.userId).select('name email').lean();
-      if (user?.email) {
-        // A failed render costs the attachment, not the confirmation itself.
-        let pdf = null;
-        try {
-          pdf = { filename: pdfFilename(resume), content: await renderResumePdf(resume.toObject()) };
-        } catch (err) {
-          logger.warn('Resume PDF render failed — sending confirmation without attachment', {
-            userId: String(req.user.userId),
-            error: err.message,
-          });
-        }
+    const user =
+      (!throttled || wantsCopy)
+        ? await User.findById(req.user.userId).select('name email').lean()
+        : null;
 
-        const result = await sendResumeSubmittedEmail(user, completeness, pdf);
-        emailed = Boolean(result?.delivered);
-        // Only a send that got somewhere starts the cooldown. Stamping it on a
-        // failure would suppress the retry the student most needs.
-        if (emailed) resume.lastEmailedAt = new Date(now);
-        else {
-          logger.warn('Resume submitted but confirmation email not delivered', {
+    // Rendered at most once and shared by both sends — the PDF is the most
+    // expensive thing this request does, and the copy must be byte-identical to
+    // the confirmation so the student and the recruiter hold the same file.
+    // A failed render costs the attachment, not the confirmation itself.
+    let pdf;
+    const getPdf = async () => {
+      if (pdf !== undefined) return pdf;
+      try {
+        pdf = { filename: pdfFilename(resume), content: await renderResumePdf(resume.toObject()) };
+      } catch (err) {
+        pdf = null;
+        logger.warn('Resume PDF render failed — sending confirmation without attachment', {
+          userId: String(req.user.userId),
+          error: err.message,
+        });
+      }
+      return pdf;
+    };
+
+    let emailed = false;
+    if (!throttled && user?.email) {
+      const result = await sendResumeSubmittedEmail(user, completeness, await getPdf());
+      emailed = Boolean(result?.delivered);
+      // Only a send that got somewhere starts the cooldown. Stamping it on a
+      // failure would suppress the retry the student most needs.
+      if (emailed) resume.lastEmailedAt = new Date(now);
+      else {
+        logger.warn('Resume submitted but confirmation email not delivered', {
+          userId: String(req.user.userId),
+          error: result?.error,
+        });
+      }
+    }
+
+    // `copy` reports the second send back to the client so the UI can name the
+    // address that actually received it — or say precisely why it did not.
+    let copy = null;
+    if (wantsCopy) {
+      const recent = (resume.externalSends || []).filter(
+        (s) => now - new Date(s.at).getTime() < EXTERNAL_WINDOW_MS
+      );
+
+      if (recent.length >= EXTERNAL_SENDS_PER_DAY) {
+        copy = { to: recipient, sent: false, reason: 'limit' };
+        logger.warn('Resume copy blocked by daily cap', {
+          userId: String(req.user.userId),
+          sentToday: recent.length,
+        });
+      } else if (!(await getPdf())) {
+        // Without the attachment there is nothing to share, so send nothing —
+        // an empty "here is my resume" mail helps no one.
+        copy = { to: recipient, sent: false, reason: 'render' };
+      } else {
+        const result = await sendResumeCopyEmail(
+          recipient,
+          { name: user?.name || resume.personal?.fullName || 'A DATAD student', email: user?.email },
+          pdf
+        );
+        const sent = Boolean(result?.delivered);
+        copy = { to: recipient, sent, reason: sent ? null : 'delivery' };
+
+        // Recorded only on a send that got somewhere, and trimmed to the
+        // window's worth of history the cap actually reads.
+        if (sent) {
+          resume.externalSends = [...recent, { to: recipient, at: new Date(now) }].slice(-EXTERNAL_SENDS_PER_DAY * 2);
+          logger.info('Resume copy emailed', { userId: String(req.user.userId), to: recipient });
+        } else {
+          logger.warn('Resume copy not delivered', {
             userId: String(req.user.userId),
+            to: recipient,
             error: result?.error,
           });
         }
@@ -150,7 +244,7 @@ exports.submitResume = async (req, res, next) => {
 
     await resume.save();
 
-    res.json({ ...withScore(resume), completeness, emailed, emailThrottled: throttled });
+    res.json({ ...withScore(resume), completeness, emailed, emailThrottled: throttled, copy });
   } catch (err) {
     next(err);
   }

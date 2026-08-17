@@ -9,28 +9,69 @@ const { primaryClientUrl } = require('../utils/clientUrl');
  * Returns the transport's delivery result rather than undefined, so a caller
  * that must not fail silently — registration, above all — can check it.
  */
-const send = async ({ to, subject, html, kind = 'transactional', attachments }) => {
+const send = async ({ to, subject, html, kind = 'transactional', attachments, replyTo }) => {
   const toAddresses = to.map((r) => (r.name ? `"${r.name}" <${r.email}>` : r.email));
-  return mailTransport.deliver({ toAddresses, subject, html, kind, attachments });
+  return mailTransport.deliver({ toAddresses, subject, html, kind, attachments, replyTo });
 };
 
 exports.send = send;
 exports.isConfigured = mailTransport.isConfigured;
 
+/**
+ * The DATAD mark, for email.
+ *
+ * Three constraints shape this, and they are why it does not match the way the
+ * logo is done in the app:
+ *
+ *  - SVG is stripped by Gmail and Outlook, so the mark ships as a PNG served
+ *    from the client host. It is drawn at 96px and displayed at 48 so it stays
+ *    sharp on retina, with width/height set as attributes because Outlook
+ *    ignores CSS sizing on images.
+ *  - Most clients block remote images until the reader allows them, so the
+ *    wordmark stays live text beside the image rather than being baked into
+ *    it. With images off the mail still says DATAD; the alt text carries the
+ *    mark's slot.
+ *  - Flexbox does not exist in Outlook, so the lockup is a table.
+ *
+ * The 1/3-of-the-mark gap from the brand spec is the 16px cell between them.
+ *
+ * The mark is served from a CDN rather than from the client host, because the
+ * client host is not a valid image source for mail: in development CLIENT_URL is
+ * http://localhost:5173, which resolves to the *reader's* machine and renders as
+ * a broken image in every inbox. Any absolute, publicly reachable URL works —
+ * MAIL_LOGO_URL overrides, and the fallback is the copy uploaded to Cloudinary.
+ */
+const CLOUDINARY_MARK_URL =
+  'https://res.cloudinary.com/dmtsr85ly/image/upload/brand/datad-mark-email.png';
+
+const markUrl = () => process.env.MAIL_LOGO_URL || CLOUDINARY_MARK_URL;
+
 const wrap = (heading, body) => `
   <div style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:24px">
-    <p style="font-size:22px;font-weight:800;margin:0 0 4px">
-      <span style="color:#4f46e5">DATAD</span>
-    </p>
-    <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin:0 0 20px">
-      Technology · Psychology · Impact
-    </p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:0 0 20px">
+      <tr>
+        <td style="vertical-align:middle;padding:0">
+          <img src="${markUrl()}" alt="DATAD" width="48" height="48"
+               style="display:block;width:48px;height:48px;border:0;outline:none;text-decoration:none" />
+        </td>
+        <td style="vertical-align:middle;padding:0 0 0 16px">
+          <p style="font-size:22px;font-weight:800;letter-spacing:0.02em;margin:0 0 2px;color:#080B14">DATAD</p>
+          <p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#9ca3af;margin:0">
+            Technology · Psychology · Impact
+          </p>
+        </td>
+      </tr>
+    </table>
     <h2 style="font-size:18px;margin:0 0 12px">${heading}</h2>
     <div style="font-size:14px;line-height:1.6;color:#374151">${body}</div>
     <p style="font-size:12px;color:#9ca3af;margin-top:24px">
       You're receiving this because you have an account on DATAD.
     </p>
   </div>`;
+
+// Exported so every mail-sending module shares one header rather than
+// hand-rolling its own — see automation/reminders/calendarEventReminder.
+exports.wrap = wrap;
 
 exports.sendWelcomeEmail = (user) =>
   send({
@@ -74,7 +115,7 @@ exports.sendVerificationEmail = (user, link) =>
       `<p>Hi ${user.name},</p>
        <p>Confirm this address to finish creating your DATAD account.</p>
        <p><a href="${link}"
-         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+         style="display:inline-block;background:#4D7CFF;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
          Confirm email
        </a></p>
        <p style="color:#6b7280">This link expires in 24 hours. If you didn't sign up for DATAD, ignore this email — no account is created without confirming.</p>`
@@ -96,7 +137,7 @@ exports.sendProgramReadyEmail = (user, programLabel) =>
        <p>News, companies, career paths, study resources and your community feed are all
        scoped to your program now — you'll only see what's relevant to you.</p>
        <p><a href="${process.env.CLIENT_URL || 'https://datad.app'}/dashboard"
-         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+         style="display:inline-block;background:#4D7CFF;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
          Open DATAD
        </a></p>`
     ),
@@ -109,7 +150,7 @@ exports.sendPasswordResetEmail = (user, link) =>
     html: wrap(
       'Password reset requested',
       `<p>We received a request to reset your password. This link is valid for <strong>30 minutes</strong>:</p>
-       <p><a href="${link}" style="display:inline-block;background:#4f46e5;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Reset password</a></p>
+       <p><a href="${link}" style="display:inline-block;background:#4D7CFF;color:#ffffff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Reset password</a></p>
        <p>If the button doesn't work, copy this URL into your browser:<br/>
        <span style="color:#6b7280;word-break:break-all">${link}</span></p>
        <p>If you didn't request this, you can safely ignore this email.</p>`
@@ -121,6 +162,8 @@ const esc = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
   );
+
+exports.esc = esc;
 
 /**
  * Confirmation that a resume was submitted, with the completeness score, the
@@ -164,7 +207,7 @@ exports.sendResumeSubmittedEmail = (user, completeness = {}, pdf = null) => {
        ${bar}
        ${gaps}
        <p style="margin-top:20px"><a href="${resumeUrl}"
-         style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">
+         style="display:inline-block;background:#4D7CFF;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">
          View your resume
        </a></p>
        ${attachmentNote}`
@@ -174,6 +217,43 @@ exports.sendResumeSubmittedEmail = (user, completeness = {}, pdf = null) => {
     return { delivered: false, error: err.message };
   });
 };
+
+/**
+ * A copy of the resume PDF sent to an address the student typed in — a
+ * recruiter, a mentor, a personal address away from the college domain.
+ *
+ * Every visible line here is fixed copy. Only the sender's name and the
+ * attachment filename vary, both escaped, and the resume text itself travels
+ * as the PDF rather than as HTML in the body. That is deliberate: this is the
+ * one send where the recipient never opted in, so the message must not be a
+ * surface for the sender to author arbitrary content into a stranger's inbox.
+ * The account address goes in Reply-To so a recruiter can answer the student
+ * directly, and it is named in the body so the recipient can see who sent it.
+ *
+ * @param {string} to  validated recipient; the caller enforces the daily cap.
+ * @param {{filename:string, content:Buffer}} pdf  required — a copy with no
+ *   attachment would be a bare unsolicited email, which is not worth sending.
+ */
+exports.sendResumeCopyEmail = (to, sender, pdf) =>
+  send({
+    to: [{ email: to }],
+    subject: `Resume from ${sender.name}`,
+    replyTo: sender.email ? { email: sender.email, name: sender.name } : undefined,
+    attachments: [{ filename: pdf.filename, content: pdf.content, contentType: 'application/pdf' }],
+    html: wrap(
+      `Resume from ${esc(sender.name)}`,
+      `<p>${esc(sender.name)} has shared their resume with you from DATAD.</p>
+       <p>It is attached as <strong>${esc(pdf.filename)}</strong>.</p>
+       <p style="font-size:13px;color:#6b7280;margin-top:20px">
+         You can reply to this email to reach ${esc(sender.name)} directly.
+         This message was sent because they entered your address on their resume
+         page — DATAD will not email you again unless they send another copy.
+       </p>`
+    ),
+  }).catch((err) => {
+    logger.error('Resume copy email failed:', { error: err.message });
+    return { delivered: false, error: err.message };
+  });
 
 /**
  * Bulk fan-out. Marked `kind: 'bulk'` so an unconfigured mailer logs at warn

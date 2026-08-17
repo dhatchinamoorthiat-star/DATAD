@@ -5,6 +5,7 @@ import { getQuestionBank } from '../../api/companies';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import TierGate from '../../components/common/TierGate';
+import { FEATURE } from '../../utils/planFeatures';
 import { Page } from '../../components/common/motion';
 
 const CATEGORY_META = {
@@ -83,7 +84,7 @@ export default function InterviewQuestionsPage() {
       </div>
 
       <TierGate
-        required="pro"
+        feature={FEATURE.INTERVIEW_QUESTIONS}
         description="Access real HR, technical, case study and guesstimate questions sourced from company prep cards — organised by type and searchable."
       >
         {!hasAny ? (

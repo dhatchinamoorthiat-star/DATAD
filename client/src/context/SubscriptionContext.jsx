@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { getSubscriptionStatus } from '../api/subscription';
+import { TIER_RANK, normalizeTier } from '../utils/tiers';
 
 const SubscriptionContext = createContext(null);
 
-// Mirrors server/subscription/tierHierarchy.js.
-const TIER_RANK = { free: 0, trial: 1, pro: 2, placement: 3 };
+const MAX_RANK = Math.max(...Object.values(TIER_RANK));
 
 export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
@@ -34,8 +34,15 @@ export function SubscriptionProvider({ children }) {
     ? Math.max(0, Math.ceil((tierExpiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
     : null;
 
-  const hasAccess = (required) =>
-    (TIER_RANK[tier] ?? 0) >= (TIER_RANK[required] ?? 1);
+  // Unknown `required` values fail CLOSED. This previously fell back to `?? 1`,
+  // i.e. trial — so `<TierGate required="max">` (a tier the server retired)
+  // resolved to a trial-level gate and showed the Placement-only Career Advisor
+  // to trial users, who then got a 403 from the API. A gate we cannot resolve
+  // must be the strictest one, never the loosest.
+  const hasAccess = (required) => {
+    const need = TIER_RANK[normalizeTier(required)];
+    return (TIER_RANK[normalizeTier(tier)] ?? 0) >= (need ?? MAX_RANK);
+  };
 
   const hasFeature = (feature) => capabilities[feature] === true;
 

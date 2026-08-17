@@ -6,6 +6,7 @@ import toast from '../../utils/toast';
 import { summariseDoc, reviewResume, askCareerAdvice, semanticSearch, simulateInterview, compareCompanies } from '../../api/dax';
 import { listCompanies } from '../../api/companies';
 import TierGate from '../../components/common/TierGate';
+import { FEATURE } from '../../utils/planFeatures';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { Page } from '../../components/common/motion';
 
@@ -59,7 +60,7 @@ function DocumentSummarizer() {
   };
 
   return (
-    <TierGate required="pro">
+    <TierGate feature={FEATURE.AI_SUMMARISE}>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -91,7 +92,7 @@ function ResumeReviewer() {
   };
 
   return (
-    <TierGate required="pro">
+    <TierGate feature={FEATURE.AI_RESUME_REVIEW}>
       <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">Dax will analyse your saved resume and return structured feedback on each section.</p>
       <button onClick={run} disabled={loading} className="flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSearch className="h-4 w-4" />}
@@ -119,7 +120,7 @@ function CareerAdvisor() {
   };
 
   return (
-    <TierGate required="max">
+    <TierGate feature={FEATURE.AI_CAREER_ADVICE}>
       <div className="flex gap-2">
         <input
           value={question}
@@ -157,7 +158,7 @@ function SmartSearch() {
   const TYPE_COLORS = { note: 'bg-blue-100 text-blue-700', news: 'bg-amber-100 text-amber-700', company: 'bg-emerald-100 text-emerald-700' };
 
   return (
-    <TierGate required="pro">
+    <TierGate feature={FEATURE.SEMANTIC_SEARCH}>
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -213,7 +214,7 @@ function InterviewSimulator() {
   };
 
   return (
-    <TierGate required="max" description="A realistic mock interview round tailored to your resume — question, framework, model answer, and the traps to avoid.">
+    <TierGate feature={FEATURE.AI_INTERVIEW_SIMULATOR} description="A realistic mock interview round tailored to your resume — question, framework, model answer, and the traps to avoid.">
       <div className="mb-3 grid gap-2 sm:grid-cols-2">
         <input
           value={role}
@@ -269,7 +270,7 @@ function CompanyComparator() {
     'flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:border-indigo-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900';
 
   return (
-    <TierGate required="max" description="Pit two recruiters against each other and get a decisive verdict from Dax on where to focus your preparation.">
+    <TierGate feature={FEATURE.AI_COMPARE_COMPANIES} description="Pit two recruiters against each other and get a decisive verdict from Dax on where to focus your preparation.">
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <select value={slugA} onChange={(e) => setSlugA(e.target.value)} className={selectCls} aria-label="First company">
           <option value="">First company…</option>

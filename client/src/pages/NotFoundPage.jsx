@@ -6,7 +6,7 @@ export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <div className="mb-8">
-        <DatadMark className="text-4xl" />
+        <DatadMark size="lg" />
       </div>
 
       <p className="mb-2 text-7xl font-black tabular-nums text-gray-200 dark:text-gray-800">404</p>

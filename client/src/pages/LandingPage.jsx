@@ -2,10 +2,12 @@ import { useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, BrainCircuit, CalendarDays, Briefcase, FileText,
-  Gauge, Users, Wallet, HeartHandshake, Sparkles, ArrowRight, ShieldCheck, Sun,
+  Gauge, Users, Wallet, HeartHandshake, Sparkles, ArrowRight, ShieldCheck, Sun, Moon,
 } from 'lucide-react';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import { Stagger } from '../components/common/motion';
+import { DatadMark } from '../components/common/Logo';
+import { useTheme } from '../context/ThemeContext';
 
 // Google's four brand colours — used sparingly, as accents on hover only.
 // The page itself stays white/neutral; colour is a reward for interaction,
@@ -92,7 +94,7 @@ const FEATURES = [
 // updated on pointer move, consumed by a radial-gradient layer that's only
 // opaque on hover. Cheaper than a JS-driven animation loop — the browser
 // repaints the gradient, nothing re-renders.
-function FeatureCard({ feature, color, onOpen }) {
+function FeatureCard({ feature, color, onOpen, dark }) {
   const ref = useRef(null);
 
   const handleMove = useCallback((e) => {
@@ -108,7 +110,7 @@ function FeatureCard({ feature, color, onOpen }) {
       ref={ref}
       onMouseMove={handleMove}
       onClick={() => onOpen(feature.to)}
-      className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98]"
+      className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] dark:border-gray-800 dark:bg-gray-900 dark:shadow-none dark:hover:shadow-black/40"
       style={{ '--accent': color }}
     >
       {/* Gradient border glow, tracks the cursor, only visible on hover */}
@@ -123,17 +125,29 @@ function FeatureCard({ feature, color, onOpen }) {
           maskComposite: 'exclude',
         }}
       />
-      <feature.icon className="mb-3 h-6 w-6 text-gray-400 opacity-100 transition-opacity duration-200 group-hover:opacity-0" />
+      {/* On dark the same cursor gradient also washes the card face — an
+          accent glow reads as light in the dark, where a hairline alone is lost. */}
+      {dark && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{
+            background: `radial-gradient(220px circle at var(--x, 50%) var(--y, 50%), var(--accent), transparent 70%)`,
+            mixBlendMode: 'soft-light',
+          }}
+        />
+      )}
+      <feature.icon className="mb-3 h-6 w-6 text-gray-400 opacity-100 transition-opacity duration-200 group-hover:opacity-0 dark:text-gray-500" />
       <span
         aria-hidden
         className="absolute left-5 top-5 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
       >
         <feature.icon className="h-6 w-6" style={{ color }} />
       </span>
-      <p className="mb-1 font-semibold text-gray-900">{feature.title}</p>
-      <p className="text-sm leading-relaxed text-gray-500">{feature.desc}</p>
+      <p className="mb-1 font-semibold text-gray-900 dark:text-gray-100">{feature.title}</p>
+      <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{feature.desc}</p>
       <span
-        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors group-hover:text-gray-900"
+        className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-gray-400 transition-colors group-hover:text-gray-900 dark:text-gray-500 dark:group-hover:text-gray-100"
       >
         Open after login <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -142,32 +156,23 @@ function FeatureCard({ feature, color, onOpen }) {
 }
 
 // Google-style wordmark: each letter takes one of the four brand colours.
-function Wordmark({ className }) {
-  const letters = ['D', 'A', 'T', 'A', 'D'];
-  return (
-    <p className={className}>
-      {letters.map((ch, i) => (
-        <span key={i} style={{ color: ACCENTS[i % ACCENTS.length] }}>{ch}</span>
-      ))}
-    </p>
-  );
-}
-
 export default function LandingPage() {
   useDocumentTitle('DATAD — Your student OS');
   const navigate = useNavigate();
+  const { dark, toggle } = useTheme();
 
   const enter = (to) => navigate(`/login?next=${encodeURIComponent(to)}`);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-white text-gray-900">
+    <div className="relative min-h-screen overflow-hidden bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* A quiet field behind the type — a faint dot grid, no motion. Colour
-          is reserved for interaction (card hover, wordmark), not ambience. */}
+          is reserved for the brand mark and interaction (card hover), not
+          ambience. */}
       <div className="pointer-events-none absolute inset-0">
         <div
-          className="absolute inset-0 opacity-[0.05]"
+          className="absolute inset-0 opacity-[0.05] dark:opacity-[0.12]"
           style={{
-            backgroundImage: 'radial-gradient(#9ca3af 1px, transparent 1px)',
+            backgroundImage: `radial-gradient(${dark ? '#6b7280' : '#9ca3af'} 1px, transparent 1px)`,
             backgroundSize: '28px 28px',
           }}
         />
@@ -175,14 +180,26 @@ export default function LandingPage() {
 
       {/* Nav */}
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <Wordmark className="text-xl font-black tracking-tight" />
+        <Link to="/" aria-label="DATAD — home" className="flex items-center">
+          <DatadMark size="sm" />
+        </Link>
         <div className="flex items-center gap-2">
-          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-pressed={dark}
+            aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+            title={dark ? 'Light theme' : 'Dark theme'}
+            className="rounded-xl border border-gray-200 p-2 text-gray-600 transition-colors hover:border-gray-400 hover:text-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-100"
+          >
+            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100">
             Log in
           </Link>
           <Link
             to="/register"
-            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700"
+            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
           >
             Join your campus
           </Link>
@@ -191,10 +208,10 @@ export default function LandingPage() {
 
       {/* Hero */}
       <Stagger className="relative z-10 mx-auto max-w-4xl px-6 pt-14 text-center sm:pt-20">
-        <p className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
+        <p className="mx-auto mb-4 inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
           <ShieldCheck className="h-3.5 w-3.5" /> Built by students, for students · No ads · No tracking
         </p>
-        <h1 className="text-4xl font-black leading-tight tracking-tight text-gray-900 sm:text-6xl">
+        <h1 className="text-4xl font-black leading-tight tracking-tight text-gray-900 sm:text-6xl dark:text-white">
           Your entire student life,
           <br />
           <span
@@ -208,7 +225,7 @@ export default function LandingPage() {
             one calm place.
           </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg">
+        <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-500 sm:text-lg dark:text-gray-400">
           Notes, career prep, planning, money and wellbeing — everything a student juggles,
           designed to make you a little better every single day, whatever you're studying.
           Not louder. Better.
@@ -216,14 +233,14 @@ export default function LandingPage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/login"
-            className="group inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-7 py-3.5 text-base font-semibold text-white transition-colors duration-150 hover:bg-gray-700"
+            className="group inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-7 py-3.5 text-base font-semibold text-white transition-colors duration-150 hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
           >
             Enter the portal
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
             to="/register"
-            className="rounded-2xl border border-gray-300 px-7 py-3.5 text-base font-medium text-gray-700 transition-colors hover:border-gray-500 hover:text-gray-900"
+            className="rounded-2xl border border-gray-300 px-7 py-3.5 text-base font-medium text-gray-700 transition-colors hover:border-gray-500 hover:text-gray-900 dark:border-gray-700 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:text-white"
           >
             Create an account
           </Link>
@@ -232,12 +249,12 @@ export default function LandingPage() {
 
       {/* Feature grid */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pb-10 pt-16 sm:pt-24">
-        <p className="animate-in mb-6 text-center text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+        <p className="animate-in mb-6 text-center text-xs font-semibold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
           Tap anything — it&rsquo;s waiting for you inside
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <FeatureCard key={f.title} feature={f} color={ACCENTS[i % ACCENTS.length]} onOpen={enter} />
+            <FeatureCard key={f.title} feature={f} color={ACCENTS[i % ACCENTS.length]} onOpen={enter} dark={dark} />
           ))}
         </div>
       </section>
@@ -245,25 +262,34 @@ export default function LandingPage() {
       {/* Closing CTA */}
       <section className="relative z-10 mx-auto max-w-3xl px-6 pb-20 text-center">
         <div
-          className="animate-in rounded-3xl border border-gray-200 p-10"
-          style={{ background: 'linear-gradient(135deg, rgba(66,133,244,0.06), rgba(52,168,83,0.06))' }}
+          className="animate-in rounded-3xl border border-gray-200 p-10 dark:border-gray-800"
+          style={{
+            background: dark
+              ? 'linear-gradient(135deg, rgba(66,133,244,0.14), rgba(52,168,83,0.14))'
+              : 'linear-gradient(135deg, rgba(66,133,244,0.06), rgba(52,168,83,0.06))',
+          }}
         >
-          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+          <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">
             Six months from now, you&rsquo;ll be glad you started today.
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm text-gray-500">
+          <p className="mx-auto mt-3 max-w-xl text-sm text-gray-500 dark:text-gray-400">
             More organised, more career-ready, more financially aware — and a lot less stressed.
             That&rsquo;s the whole point of DATAD.
           </p>
           <Link
             to="/register"
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
           >
             Start free <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-        <p className="mt-10 text-xs text-gray-400">
+        <p className="mt-10 text-xs text-gray-400 dark:text-gray-500">
           A D² Labs product · Independent, community-backed software · Your data belongs to you
+        </p>
+        <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">
+          <Link to="/brand" className="transition-colors hover:text-gray-600 dark:hover:text-gray-300">
+            The story behind our logo
+          </Link>
         </p>
       </section>
     </div>

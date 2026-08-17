@@ -6,11 +6,18 @@
 // alignment is why the width lives in one place instead of per page.
 export const CONTAINER = 'mx-auto w-full max-w-3xl px-4';
 
+// The wider measure, for pages whose content is card grids and tiles rather
+// than prose. Prose stays on CONTAINER: past ~768px a line of body copy gets
+// tiring to read, which is the whole reason that measure is narrow.
+export const CONTAINER_WIDE = 'mx-auto w-full max-w-5xl px-4';
+
 // Page-level entrance wrapper + canonical measure.
 // Pass `bare` for pages that own their own full-bleed layout (editors, landing).
-export function Page({ children, className, bare = false }) {
+// Pass `wide` for card/grid pages that read better on the wider measure.
+export function Page({ children, className, bare = false, wide = false }) {
+  const measure = wide ? CONTAINER_WIDE : CONTAINER;
   return (
-    <div className={`animate-in ${bare ? '' : `${CONTAINER} py-6`} ${className || ''}`}>
+    <div className={`animate-in ${bare ? '' : `${measure} py-6`} ${className || ''}`}>
       {children}
     </div>
   );

@@ -14,7 +14,7 @@ async function aiQuota(req, res, next) {
 
     if (!credits.limit) {
       return res.status(403).json({
-        message: 'AI features require a trial, Pro or Max plan.',
+        message: 'AI features require a trial, Pro or the Placement Pass.',
         upgradeUrl: '/subscribe',
       });
     }

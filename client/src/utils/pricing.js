@@ -15,7 +15,7 @@ export const PRICES = {
   free:      { monthly: 0, yearly: 0 },
   trial:     { monthly: 0, yearly: 0 },
   pro:       { monthly: 149, yearly: 1199 },
-  placement: { oneTime: 1299, durationMonths: 3 },
+  placement: { oneTime: 999, durationMonths: 4 },
 };
 
 export function yearlySavings(planId) {
@@ -52,7 +52,7 @@ export const PLANS = [
     id: 'free',
     label: 'Free',
     tagline: 'Everything your batch shares.',
-    description: 'Notes, planner, journal, community, directory and finance tools. 20 Dax messages a day.',
+    description: 'Notes, planner, journal, community, directory, finance tools and company browsing. 20 Dax messages a day.',
     monthlyPrice: 0,
     yearlyPrice: 0,
     cta: 'Start Free',
@@ -74,8 +74,8 @@ export const PLANS = [
   {
     id: 'pro',
     label: 'Pro',
-    tagline: 'Your everyday study assistant.',
-    description: '500 AI credits/day, semantic search across your notes, dashboard insights and finance assist.',
+    tagline: 'Your everyday study and career toolkit.',
+    description: '500 AI credits/day, ATS resume scoring, the interview question bank, company research, the LinkedIn Enhancer, semantic search and dashboard insights.',
     monthlyPrice: 149,
     yearlyPrice: 1199,
     cta: 'Upgrade to Pro',
@@ -88,28 +88,32 @@ export const PLANS = [
     id: 'placement',
     label: 'Placement Pass',
     tagline: 'For the season that decides the offer.',
-    description: 'Everything in Pro, plus ATS scoring, interview simulator, company research and readiness tracking. One payment, three months.',
+    description: 'Everything in Pro, plus the interview simulator, readiness tracking, company comparison, salary bands, market intelligence and the roadmap generator. One payment, four months.',
     // One-time purchase — the same price whichever billing toggle is showing.
     oneTime: true,
-    durationMonths: 3,
-    monthlyPrice: 1299,
-    yearlyPrice: 1299,
+    durationMonths: 4,
+    monthlyPrice: 999,
+    yearlyPrice: 999,
     cta: 'Get the Pass',
     color: 'purple',
     icon: 'Crown',
-    badge: '3 Months',
+    badge: '4 Months',
   },
 ];
 
+// Column values MIRROR server/subscription/featureRegistry.js — a row may only
+// say `pro: true` if that feature's minimum tier is pro or lower. Asserted by
+// server/tests/pricing.test.js.
 export const FEATURE_ROWS = [
   // These two rows must match CREDIT_LIMITS and CHAT_QUOTAS on the server.
-  { label: 'AI Credits per day', free: '0', trial: '150', pro: '500', placement: '1,500' },
-  { label: 'Dax messages per day', free: '20', trial: '50', pro: '200', placement: '500' },
+  { label: 'AI Credits per day', free: '0', trial: '150', pro: '500', placement: '2,500' },
+  { label: 'Dax messages per day', free: '20', trial: '50', pro: '200', placement: '750' },
 
   { label: 'Notes & Planner', free: true, trial: true, pro: true, placement: true },
   { label: 'Personal Journal', free: true, trial: true, pro: true, placement: true },
   { label: 'Community & Feed', free: true, trial: true, pro: true, placement: true },
   { label: 'Directory & Finance', free: true, trial: true, pro: true, placement: true },
+  { label: 'Browse Companies', free: true, trial: true, pro: true, placement: true },
 
   { label: 'AI Summarise', free: false, trial: true, pro: true, placement: true },
   { label: 'Resume Review', free: false, trial: true, pro: true, placement: true },
@@ -117,31 +121,42 @@ export const FEATURE_ROWS = [
   { label: 'Flashcards & Quizzes', free: false, trial: true, pro: true, placement: true },
   { label: 'Daily Briefing & Case', free: false, trial: true, pro: true, placement: true },
 
+  { label: 'Resume ATS Score', free: false, trial: false, pro: true, placement: true },
+  { label: 'Interview Questions', free: false, trial: false, pro: true, placement: true },
+  { label: 'Company Research', free: false, trial: false, pro: true, placement: true },
+  { label: 'LinkedIn Enhancer', free: false, trial: false, pro: true, placement: true },
   { label: 'Semantic Search', free: false, trial: false, pro: true, placement: true },
   { label: 'Dashboard Insights', free: false, trial: false, pro: true, placement: true },
   { label: 'Finance Assist', free: false, trial: false, pro: true, placement: true },
 
-  { label: 'Resume ATS Score', free: false, trial: false, pro: false, placement: true },
   { label: 'Interview Simulator', free: false, trial: false, pro: false, placement: true },
-  { label: 'Interview Questions', free: false, trial: false, pro: false, placement: true },
-  { label: 'Company Research', free: false, trial: false, pro: false, placement: true },
-  { label: 'Compare Companies', free: false, trial: false, pro: false, placement: true },
   { label: 'Career Readiness Score', free: false, trial: false, pro: false, placement: true },
+  { label: 'Compare Companies', free: false, trial: false, pro: false, placement: true },
   { label: 'Career Advice', free: false, trial: false, pro: false, placement: true },
+  { label: 'Salary Bands & Hiring Rounds', free: false, trial: false, pro: false, placement: true },
   { label: 'Market Intelligence', free: false, trial: false, pro: false, placement: true },
-  { label: 'Knowledge Graph', free: false, trial: false, pro: false, placement: true },
-  { label: 'Advanced AI Memory', free: false, trial: false, pro: false, placement: true },
+  { label: 'Career Roadmap Generator', free: false, trial: false, pro: false, placement: true },
 ];
 
+// Deliberately NOT sold here: multi_workspace, advanced_ai_memory,
+// knowledge_graph, autonomous_ai and case_generator. They exist in the server
+// registry as roadmap slots but have no enforcement point anywhere in the
+// codebase, and two of them are not products at all — "workspaces" is just the
+// app's own navigation, and AI memory is baseline Dax behaviour injected into
+// every prompt for every user. Listing them was selling things a paying student
+// could not receive. Add the row back when the feature has a real gate.
+
 export const FAQ_ITEMS = [
-  { q: 'What is the Placement Pass?', a: 'A one-time purchase that unlocks the placement toolkit — ATS scoring, interview simulator, company research, compare companies and readiness tracking — for three months. It includes everything in Pro. It is not a subscription and does not renew.' },
+  { q: 'What is the Placement Pass?', a: 'A one-time purchase that unlocks the placement-season toolkit — the interview simulator, readiness tracking, company comparison, career advice, salary bands and hiring rounds, market intelligence and the career roadmap generator — for four months. It includes everything in Pro. It is not a subscription and does not renew.' },
+  { q: 'What is the difference between Pro and the Placement Pass?', a: 'Pro is what you use all year: ATS resume scoring, the interview question bank, company research, the LinkedIn Enhancer, semantic search across your notes and dashboard insights. The Pass adds the tools you only need in the weeks around your interviews — mock interview rounds, readiness tracking, company comparison, salary bands and hiring rounds, and the career roadmap generator. If you are not in placement season yet, Pro is the one you want.' },
   { q: 'Why is the Placement Pass one-time instead of monthly?', a: 'Because that is how placement season works. You need these tools intensely for a few weeks, not evenly all year. One payment for the season is simpler than remembering to cancel.' },
-  { q: 'How many AI credits do I get?', a: 'Trial: 150/day. Pro: 500/day. Placement Pass: 1,500/day. Dax chat is counted separately and never uses credits — Free gets 20 messages a day, Trial 50, Pro 200, Placement Pass 500.' },
+  { q: 'How many AI credits do I get?', a: 'Trial: 150/day. Pro: 500/day. Placement Pass: 2,500/day. Dax chat is counted separately and never uses credits — Free gets 20 messages a day, Trial 50, Pro 200, Placement Pass 750.' },
   { q: 'How are AI credits calculated?', a: 'A credit reflects the compute a request uses. A short question costs 1–2 credits; a heavier task like a resume review or company research costs more. Chatting with Dax costs no credits at all.' },
   { q: 'Will unused AI credits roll over?', a: 'No. Credits reset daily at midnight so every day starts fresh. They do not accumulate.' },
+  { q: 'What does the trial include?', a: 'The AI study tools for 14 days: summaries, resume review, planner suggestions, flashcards, quizzes and the daily briefing and case. It is a subset of Pro, so upgrading adds the career toolkit rather than just a bigger allowance.' },
   { q: 'What happens after my trial?', a: 'Your account returns to Free after 14 days. Nothing is deleted — your notes, planner and journal stay exactly as they were, and you can upgrade whenever you want.' },
   { q: 'Can I cancel anytime?', a: 'Yes. Pro can be cancelled at any point and stays active until the end of the period you have paid for. The Placement Pass is a one-time purchase, so there is nothing to cancel.' },
-  { q: 'Can I buy the Placement Pass while on Pro?', a: 'Yes. The Pass includes everything in Pro, so it simply takes over for its three months.' },
+  { q: 'Can I buy the Placement Pass while on Pro?', a: 'Yes. The Pass includes everything in Pro, so it simply takes over for its four months.' },
   { q: 'Do yearly Pro subscribers save money?', a: 'Yes — ₹1,199 a year against ₹149 a month works out to roughly two months free.' },
   { q: 'How do I pay?', a: 'By UPI. You will see a QR code and a UPI ID at checkout; pay from any UPI app and submit the reference number. Your plan is activated once the payment is verified, usually within 24 hours.' },
 ];

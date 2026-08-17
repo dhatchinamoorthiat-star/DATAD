@@ -10,6 +10,16 @@
    never fill a background. Motion: 150–250ms, ease-out, subtle. */
 
 @layer base {
+  /* Pin the UA colour scheme to our own theme. Without this, a light-theme
+     page on an OS set to dark gets black-filled form controls, because the
+     browser styles any input we have not given an explicit background. */
+  :root {
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-gray-50 text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11'; /* Inter: open digits & alternates */

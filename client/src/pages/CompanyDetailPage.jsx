@@ -20,6 +20,7 @@ import { getCompany, getCompanyNews } from '../api/companies';
 import { sectorMeta, QUESTION_LABELS } from '../utils/companies';
 import { FeedSkeleton } from '../components/common/Skeleton';
 import TierGate from '../components/common/TierGate';
+import { FEATURE } from '../utils/planFeatures';
 
 function Section({ icon: Icon, title, children }) {
   return (
@@ -195,12 +196,19 @@ export default function CompanyDetailPage() {
             )}
           </div>
         </div>
-        {company.salaryRange && (
+        {company.salaryRange ? (
           <div className="shrink-0 rounded-xl bg-white/80 px-4 py-2 text-center dark:bg-gray-900/60">
             <p className="flex items-center justify-center gap-1 text-sm font-bold text-emerald-600 dark:text-emerald-400">
               <IndianRupee className="h-4 w-4" /> {company.salaryRange.replace(/^₹\s*/, '')}
             </p>
             <p className="text-[10px] text-gray-400">indicative — verify at the drive</p>
+          </div>
+        ) : company._salaryLocked && (
+          // The server strips the band rather than sending it and hiding it, so
+          // there is nothing here to read out of the response.
+          <div className="shrink-0 rounded-xl bg-white/80 px-4 py-2 text-center dark:bg-gray-900/60">
+            <p className="mb-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">Salary band</p>
+            <TierGate feature={FEATURE.COMPANY_PREMIUM} inline />
           </div>
         )}
       </div>
@@ -223,8 +231,16 @@ export default function CompanyDetailPage() {
             </Section>
           )}
 
-          {(company.roles?.length > 0 || company.rounds?.length > 0) && (
+          {(company.roles?.length > 0 || company.rounds?.length > 0 || company._salaryLocked) && (
             <Section icon={ListChecks} title="Roles & hiring process">
+              {company._salaryLocked && (
+                <div className="mb-3">
+                  <p className="mb-1.5 text-sm text-gray-500 dark:text-gray-400">
+                    The round-by-round hiring process is part of the Placement Pass.
+                  </p>
+                  <TierGate feature={FEATURE.COMPANY_PREMIUM} inline />
+                </div>
+              )}
               {company.roles?.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {company.roles.map((r) => (
@@ -254,8 +270,8 @@ export default function CompanyDetailPage() {
         </div>
 
         <TierGate
-          required="pro"
-          description="See real interview questions, hiring rounds, salary ranges, and expert prep tips — curated for every company."
+          feature={FEATURE.COMPANY_RESEARCH}
+          description="See the questions they actually ask and expert prep tips — curated for every company."
         >
           <>
           {company.interviewQuestions?.length > 0 && (

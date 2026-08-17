@@ -12,7 +12,7 @@ const logger = require('../utils/logger');
 // exactly these, and previously did not: it advertised 30/250/800 against
 // actual limits of 500/500/2000. Worse, trial and pro were both 500, so the
 // paid tier offered no credit advantage at all over the free trial.
-const CREDIT_LIMITS = { free: 0, trial: 150, pro: 500, placement: 1500 };
+const CREDIT_LIMITS = { free: 0, trial: 150, pro: 500, placement: 2500 };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 

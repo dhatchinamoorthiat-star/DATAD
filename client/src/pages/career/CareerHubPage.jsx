@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Building2, MessageSquare, ArrowRight, ExternalLink, Lock } from 'lucide-react';
+import { FileText, Building2, MessageSquare, ArrowRight, ExternalLink, Lock, Contact } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { track } from '../../utils/analytics';
 import { useSubscription } from '../../context/SubscriptionContext';
@@ -76,8 +76,9 @@ export default function CareerHubPage() {
 
       <div className="mb-8">
         <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-4">Quick Links</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <QuickLink to="/career/resume" icon={FileText} label="Resume" />
+          <QuickLink to="/career/linkedin" icon={Contact} label="LinkedIn" />
           <QuickLink to="/career/companies" icon={Building2} label="Companies" />
           <QuickLink to="/career/questions" icon={MessageSquare} label="Interview Qs" />
           <QuickLink to="/career/opportunities" icon={ArrowRight} label="Opportunities" />

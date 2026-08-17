@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap"
       rel="stylesheet"
     />
 
@@ -20,7 +20,7 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Theme color (shown in browser chrome & Android task switcher) -->
-    <meta name="theme-color" content="#0B0D10" />
+    <meta name="theme-color" content="#080B14" />
     <meta name="color-scheme" content="dark light" />
 
     <!-- Theme resolution, before first paint. Mirrors ThemeContext's rule
@@ -40,9 +40,11 @@
       })();
     </script>
 
-    <!-- Favicon -->
+    <!-- Favicon — brand marks live in /brand (see components/common/Logo.jsx).
+         The 32/16 PNGs are the two-step cut, which stays legible below 24px. -->
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/brand/favicon-16.png" />
 
     <!-- iOS / Safari PWA -->
     <meta name="mobile-web-app-capable" content="yes" />
@@ -55,7 +57,7 @@
     <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
 
     <!-- Windows tiles -->
-    <meta name="msapplication-TileColor" content="#4f46e5" />
+    <meta name="msapplication-TileColor" content="#4D7CFF" />
     <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
 
     <!-- Open Graph -->

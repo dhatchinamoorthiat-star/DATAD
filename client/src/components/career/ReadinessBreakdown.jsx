@@ -6,6 +6,7 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ArrowRight, TrendingUp, Zap } from 'lucide-react';
 import TierGate from '../common/TierGate';
+import { FEATURE } from '../../utils/planFeatures';
 import { RowSkeleton } from '../common/Skeleton';
 
 const COMPONENT_LINKS = {
@@ -38,7 +39,7 @@ export default function ReadinessBreakdown({ data }) {
 
   return (
     <TierGate
-      required="pro"
+      feature={FEATURE.READINESS_SCORE}
       description="See where your score comes from — your strengths, your next steps, and one clear action for each area."
     >
       {!data ? (

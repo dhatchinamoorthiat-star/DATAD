@@ -99,6 +99,8 @@ export default {
           'sans-serif',
         ],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        // Brand wordmark only ("DATAD" in the Terrace lockup) — never body copy.
+        brand: ['Syne', 'Inter', 'ui-sans-serif', 'sans-serif'],
       },
       transitionTimingFunction: {
         out: 'cubic-bezier(0.16, 1, 0.3, 1)',

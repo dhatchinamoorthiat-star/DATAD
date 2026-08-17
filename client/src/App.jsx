@@ -18,7 +18,6 @@ import Loader from './components/common/Loader';
 import SectionTransition from './components/common/SectionTransition';
 import RouteBeacon from './components/common/RouteBeacon';
 import ErrorBoundary from './components/common/ErrorBoundary';
-import PitchGate from './components/common/PitchGate';
 
 
 // Route-level code splitting: each page loads on demand, keeping the initial
@@ -63,6 +62,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const EntertainmentDetailPage = lazy(() => import('./pages/EntertainmentDetailPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const BrandPage = lazy(() => import('./pages/BrandPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const SubscribePage = lazy(() => import('./pages/SubscribePage'));
 const DeveloperPage = lazy(() => import('./pages/DeveloperPage'));
@@ -81,6 +81,7 @@ const WorkPage = lazy(() => import('./pages/study/WorkPage'));
 const CareerHubPage = lazy(() => import('./pages/career/CareerHubPage'));
 const OpportunitiesPage = lazy(() => import('./pages/career/OpportunitiesPage'));
 const InterviewQuestionsPage = lazy(() => import('./pages/career/InterviewQuestionsPage'));
+const LinkedInPage = lazy(() => import('./pages/career/LinkedInPage'));
 const CommunityHubPage  = lazy(() => import('./pages/community/CommunityHubPage'));
 const AnnouncementsPage = lazy(() => import('./pages/community/AnnouncementsPage'));
 const StreamPage        = lazy(() => import('./pages/community/StreamPage'));
@@ -189,6 +190,7 @@ export default function App() {
               <Route path="/creator" element={<CreatorPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/psw" element={<PSWPage />} />
+              <Route path="/brand" element={<BrandPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               {/* "/" is reserved for the public landing page — always, logged in or not. */}
@@ -208,7 +210,7 @@ export default function App() {
                 <Route path="/roadmap" element={<Navigate to="/career/roadmap" replace />} />
                 <Route path="/briefing" element={<IntelligencePage />} />
 
-                <Route path="/study" element={<PitchGate title="Study"><WorkspaceLayout workspace="study" title="Study" /></PitchGate>}>
+                <Route path="/study" element={<WorkspaceLayout workspace="study" title="Study" />}>
                   <Route index element={<StudyHubPage />} />
                   <Route path="notes" element={<NotesListPage />} />
                   <Route path="notes/new" element={<NoteEditorPage />} />
@@ -232,31 +234,32 @@ export default function App() {
                   <Route index element={<CareerHubPage />} />
                   <Route path="resume" element={<ResumePage />} />
                   <Route path="resume/preview" element={<ResumePreviewPage />} />
+                  <Route path="linkedin" element={<LinkedInPage />} />
                   <Route path="companies" element={<CompaniesPage />} />
                   <Route path="companies/:slug" element={<CompanyDetailPage />} />
                   <Route path="questions" element={<InterviewQuestionsPage />} />
-                  <Route path="opportunities" element={<PitchGate title="Opportunities"><OpportunitiesPage /></PitchGate>} />
+                  <Route path="opportunities" element={<OpportunitiesPage />} />
                   {/* Merged/moved tabs — old URLs keep working */}
                   <Route path="readiness" element={<Navigate to="/career" replace />} />
                   <Route path="placements" element={<Navigate to="/career/opportunities" replace />} />
                   <Route path="internships" element={<Navigate to="/career/opportunities?view=internships" replace />} />
                   <Route path="skills" element={<Navigate to="/community/skills" replace />} />
-                  <Route path="roadmap" element={<PitchGate title="Roadmap"><PivotPage mode="roadmap" /></PitchGate>} />
-                  <Route path="pivot" element={<PitchGate title="Pivot"><PivotPage /></PitchGate>} />
-                  <Route path="stories" element={<PitchGate title="STAR Stories"><StarStoriesPage /></PitchGate>} />
+                  <Route path="roadmap" element={<PivotPage mode="roadmap" />} />
+                  <Route path="pivot" element={<PivotPage />} />
+                  <Route path="stories" element={<StarStoriesPage />} />
                 </Route>
 
                 <Route path="/community" element={<WorkspaceLayout workspace="community" title="Community" />}>
                   <Route index element={<CommunityHubPage />} />
                   <Route path="announcements" element={<AnnouncementsPage />} />
                   <Route path="feed" element={<StreamPage />} />
-                  <Route path="memories" element={<PitchGate title="BatchVault"><MemoriesPage /></PitchGate>} />
+                  <Route path="memories" element={<MemoriesPage />} />
                   <Route path="archive/:category/:slug" element={<EntertainmentDetailPage />} />
-                  <Route path="directory" element={<PitchGate title="Directory"><DirectoryPage /></PitchGate>} />
-                  <Route path="events" element={<PitchGate title="Events"><EventsPage /></PitchGate>} />
+                  <Route path="directory" element={<DirectoryPage />} />
+                  <Route path="events" element={<EventsPage />} />
                   {/* No top tab — reachable from the Community overview */}
-                  <Route path="marketplace" element={<PitchGate title="Marketplace"><MarketplacePage /></PitchGate>} />
-                  <Route path="skills" element={<PitchGate title="Skills"><SkillExchangePage /></PitchGate>} />
+                  <Route path="marketplace" element={<MarketplacePage />} />
+                  <Route path="skills" element={<SkillExchangePage />} />
                   {/* Merged tabs — old URLs keep working */}
                   <Route path="discussions" element={<Navigate to="/community/feed?view=discussions" replace />} />
                   <Route path="gallery" element={<Navigate to="/community/memories" replace />} />
@@ -268,9 +271,9 @@ export default function App() {
                   <Route path="planner" element={<PlannerPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="program" element={<ProgramSettingsPage />} />
-                  <Route path="journal" element={<PitchGate title="Journal"><JournalPage /></PitchGate>} />
-                  <Route path="reflection" element={<PitchGate title="Reflection"><ReflectionPage /></PitchGate>} />
-                  <Route path="calendar" element={<PitchGate title="Calendar"><CalendarPage /></PitchGate>} />
+                  <Route path="journal" element={<JournalPage />} />
+                  <Route path="reflection" element={<ReflectionPage />} />
+                  <Route path="calendar" element={<CalendarPage />} />
                 </Route>
 
                 <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Finance" />}>
@@ -279,21 +282,21 @@ export default function App() {
                   <Route path="calculator" element={<FinanceCalculatorPage />} />
                   <Route path="stocks" element={<FinanceStocksPage />} />
                   <Route path="learn" element={<FinanceLearnPage />} />
-                  <Route path="roi" element={<PitchGate title="ROI"><FinanceROIPage /></PitchGate>} />
+                  <Route path="roi" element={<FinanceROIPage />} />
                 </Route>
 
                 <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Wellbeing" />}>
                   <Route index element={<WellbeingPage />} />
                   <Route path="study" element={<WellbeingStudyPage />} />
-                  <Route path="memory" element={<PitchGate title="Memory"><WellbeingMemoryPage /></PitchGate>} />
-                  <Route path="routines" element={<PitchGate title="Routines"><WellbeingRoutinesPage /></PitchGate>} />
+                  <Route path="memory" element={<WellbeingMemoryPage />} />
+                  <Route path="routines" element={<WellbeingRoutinesPage />} />
                   <Route path="support" element={<WellbeingSupportPage />} />
                 </Route>
 
-                <Route path="/search" element={<PitchGate title="Search"><SearchPage /></PitchGate>} />
+                <Route path="/search" element={<SearchPage />} />
 
-                <Route path="/subscribe" element={<PitchGate title="Subscribe"><SubscribePage /></PitchGate>} />
-                <Route path="/developer" element={<PitchGate title="Developer"><DeveloperPage /></PitchGate>} />
+                <Route path="/subscribe" element={<SubscribePage />} />
+                <Route path="/developer" element={<DeveloperPage />} />
                 <Route path="/support" element={<SupportPage />} />
                 <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                 <Route path="/admin/students" element={<AdminRoute><AdminStudentsPage /></AdminRoute>} />

@@ -7,8 +7,8 @@ export default function LegalLayout({ title, updated, children }) {
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-gray-200 dark:border-gray-800">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link to="/" className="flex items-baseline gap-1.5 font-semibold">
-            <DatadMark />
+          <Link to="/" className="flex items-center font-semibold">
+            <DatadMark size="sm" />
           </Link>
           <Link to="/" className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
             Home

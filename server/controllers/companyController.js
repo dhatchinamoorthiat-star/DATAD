@@ -9,7 +9,12 @@ const cache = require('../utils/cache');
 const LIST_CACHE_TTL = 5 * 60 * 1000;
 const NEWS_CACHE_TTL = 10 * 60 * 1000;
 
-const PREMIUM_FIELDS = ['interviewQuestions', 'prepTips', 'rounds', 'salaryRange'];
+// The prep card is stripped in two bands rather than one, so each plan has
+// something concrete to show for itself. Pro unlocks the material you work
+// through all year; the Pass unlocks the numbers that only matter once an offer
+// conversation is actually coming.
+const RESEARCH_FIELDS = ['interviewQuestions', 'prepTips'];   // Pro
+const PLACEMENT_FIELDS = ['rounds', 'salaryRange'];           // Placement Pass
 
 const slugify = (name) =>
   name
@@ -65,13 +70,22 @@ exports.getCompanyBySlug = async (req, res, next) => {
       { upsert: true }
     ).catch(() => {});
 
-    if (!canAccessFeature(dbUser, FEATURE.INTERVIEW_QUESTIONS)) {
-      const stripped = { ...company };
-      PREMIUM_FIELDS.forEach((f) => delete stripped[f]);
-      return res.json({ ...stripped, _prepLocked: true });
-    }
+    const canResearch = canAccessFeature(dbUser, FEATURE.COMPANY_RESEARCH);
+    const canPlacement = canAccessFeature(dbUser, FEATURE.COMPANY_PREMIUM);
+    if (canResearch && canPlacement) return res.json(company);
 
-    res.json(company);
+    // Everyone still gets the profile itself; only the bands they have not paid
+    // for are removed. The flags let the client render a specific gate instead
+    // of an empty section.
+    const stripped = { ...company };
+    if (!canResearch) RESEARCH_FIELDS.forEach((f) => delete stripped[f]);
+    if (!canPlacement) PLACEMENT_FIELDS.forEach((f) => delete stripped[f]);
+
+    res.json({
+      ...stripped,
+      _prepLocked: !canResearch,
+      _salaryLocked: !canPlacement,
+    });
   } catch (err) {
     next(err);
   }

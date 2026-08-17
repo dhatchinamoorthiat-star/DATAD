@@ -305,7 +305,7 @@ function scheduleBrevoVerification(cfg, messageId, subject) {
   schedule();
 }
 
-async function deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind }) {
+async function deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind, replyTo }) {
   const res = await fetch(BREVO_ENDPOINT, {
     method: 'POST',
     headers: {
@@ -317,6 +317,7 @@ async function deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, k
     body: JSON.stringify({
       sender: cfg.sender,
       to: toAddresses.map(parseRecipient),
+      ...(replyTo && { replyTo }),
       subject,
       htmlContent: html,
       // Brevo wants attachment content as base64, not raw bytes.
@@ -355,10 +356,11 @@ async function deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, k
   return messageId;
 }
 
-async function deliverViaSmtp(cfg, { toAddresses, subject, html, attachments }) {
+async function deliverViaSmtp(cfg, { toAddresses, subject, html, attachments, replyTo }) {
   const info = await cfg.transporter.sendMail({
     from: cfg.from,
     to: toAddresses.join(', '),
+    ...(replyTo && { replyTo: replyTo.name ? `"${replyTo.name}" <${replyTo.email}>` : replyTo.email }),
     subject,
     html,
     ...(attachments?.length && { attachments }),
@@ -382,7 +384,7 @@ async function deliverViaSmtp(cfg, { toAddresses, subject, html, attachments }) 
  * @returns {Promise<{delivered:boolean, provider:string|null, messageId?:string|null,
  *                    attempts:number, error?:string}>}
  */
-async function deliver({ toAddresses, subject, html, kind = 'transactional', attachments }) {
+async function deliver({ toAddresses, subject, html, kind = 'transactional', attachments, replyTo }) {
   const cfg = getTransport();
 
   if (!cfg) {
@@ -405,8 +407,8 @@ async function deliver({ toAddresses, subject, html, kind = 'transactional', att
     try {
       const messageId =
         cfg.kind === 'brevo'
-          ? await deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind })
-          : await deliverViaSmtp(cfg, { toAddresses, subject, html, attachments });
+          ? await deliverViaBrevo(cfg, { toAddresses, subject, html, attachments, kind, replyTo })
+          : await deliverViaSmtp(cfg, { toAddresses, subject, html, attachments, replyTo });
 
       logger.info('Mail delivered', {
         provider: cfg.kind, kind, subject, recipients: toAddresses.length, messageId, attempts: attempt,

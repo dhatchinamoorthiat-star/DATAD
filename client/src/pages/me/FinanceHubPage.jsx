@@ -127,7 +127,7 @@ export default function FinanceHubPage() {
 
 
       <div className="mb-6">
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800" />
+        <input type="month" aria-label="Filter by month" value={month} onChange={(e) => setMonth(e.target.value)} className="input w-auto py-1.5" />
       </div>
 
       {loading ? (
@@ -152,7 +152,7 @@ export default function FinanceHubPage() {
             </div>
             {budgetEdit ? (
               <div className="flex items-center gap-2">
-                <input type="number" value={budget ?? ''} onChange={(e) => setBudgetState(Number(e.target.value))} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" placeholder="Monthly budget" />
+                <input type="number" aria-label="Monthly budget" value={budget ?? ''} onChange={(e) => setBudgetState(Number(e.target.value))} className="input flex-1" placeholder="Monthly budget" />
                 <Button variant="primary" size="sm" onClick={saveBudget}>Save</Button>
               </div>
             ) : (
@@ -201,22 +201,22 @@ export default function FinanceHubPage() {
             <label className="flex items-center gap-2 text-sm"><input type="radio" value="income" {...register('kind')} /> Income</label>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Category / Source</label>
-            <select {...register('category')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
+            <label htmlFor="txn-category" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category / Source</label>
+            <select id="txn-category" {...register('category')} className="input">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Amount (₹)</label>
-            <input type="number" step="0.01" {...register('amount', { required: true })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="txn-amount" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Amount (₹)</label>
+            <input id="txn-amount" type="number" step="0.01" {...register('amount', { required: true })} className="input" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Note</label>
-            <input {...register('note')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" />
+            <label htmlFor="txn-note" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Note</label>
+            <input id="txn-note" {...register('note')} className="input" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-            <DateInput {...register('date')} />
+            <label htmlFor="txn-date" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Date</label>
+            <DateInput id="txn-date" {...register('date')} />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" size="sm" onClick={() => setShowModal(false)}>Cancel</Button>

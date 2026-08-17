@@ -24,8 +24,13 @@ const PLAN_PRICING = {
   placement: {
     // One-time purchase, not a subscription: no renewal, no recurring mandate
     // to collect — which matters because payment is manual UPI today.
-    onetime: 1299,
-    durationMonths: 3,
+    //
+    // Was ₹1299 for 3 months, which cost more than a full year of Pro (₹1199)
+    // and so read as incoherent next to it. ₹999 for 4 months lands under the
+    // yearly price, covers a whole placement season rather than most of one,
+    // and is an easier decision at the moment a student actually reaches for it.
+    onetime: 999,
+    durationMonths: 4,
   },
 };
 

@@ -9,6 +9,126 @@ import { reviewResume } from '../api/dax';
 import { FeedSkeleton } from '../components/common/Skeleton';
 import AIBadge from '../components/common/AIBadge';
 import Button from '../components/common/Button';
+import Modal from '../components/common/Modal';
+import { useAuth } from '../context/AuthContext';
+
+/** One radio row in SendDialog — the whole card is the label, so the hit target
+ *  is the card rather than the 16px radio itself. */
+function DeliveryChoice({ value, selected, onSelect, title, detail }) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded-xl border p-4 transition-colors ${
+        selected === value
+          ? 'border-indigo-500 bg-indigo-50/60 dark:border-indigo-500 dark:bg-indigo-950/30'
+          : 'border-gray-200 hover:border-gray-300 dark:border-gray-800 dark:hover:border-gray-700'
+      }`}
+    >
+      <input
+        type="radio"
+        name="resume-delivery"
+        value={value}
+        checked={selected === value}
+        onChange={() => onSelect(value)}
+        // The visible title sits in a nested span for layout, which a screen
+        // reader would otherwise announce only as unlabelled radio.
+        aria-label={title}
+        className="mt-0.5 h-4 w-4 accent-indigo-600"
+      />
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-gray-900 dark:text-gray-100">{title}</span>
+        <span className="mt-0.5 block break-words text-xs text-gray-500 dark:text-gray-400">{detail}</span>
+      </span>
+    </label>
+  );
+}
+
+/**
+ * Asked before the resume is submitted, because "submit" quietly meaning "email
+ * my own account" is the kind of thing a student only discovers afterwards —
+ * and the address they actually want the PDF at is often a recruiter's, not
+ * their own. The account address is the default; the other option reveals a
+ * field rather than living in a second, easily-missed button.
+ *
+ * The dialog collects the choice only. Validation and rate limiting are the
+ * server's, since nothing enforced here survives a crafted request.
+ */
+// Mounted only while open (see the call site), so its state starts fresh every
+// time — a recruiter's address left sitting in the box from last week is the one
+// mistake this dialog must not invite.
+function SendDialog({ onClose, accountEmail, submitting, onConfirm }) {
+  const [mode, setMode] = useState('account');
+  const [email, setEmail] = useState('');
+  const [touched, setTouched] = useState(false);
+
+  const trimmed = email.trim();
+  const looksValid = /^[^\s@,;]+@[^\s@,;]+\.[A-Za-z]{2,}$/.test(trimmed);
+  const blocked = mode === 'other' && !looksValid;
+
+  const confirm = () => {
+    setTouched(true);
+    if (blocked) return;
+    onConfirm(mode === 'other' ? { deliverTo: 'other', recipientEmail: trimmed } : { deliverTo: 'account' });
+  };
+
+  return (
+    <Modal open onClose={onClose} title="Where should we send it?">
+      <div className="space-y-3">
+        <DeliveryChoice
+          value="account"
+          selected={mode}
+          onSelect={setMode}
+          title="My registered email"
+          detail={accountEmail || 'The address on your DATAD account'}
+        />
+        <DeliveryChoice
+          value="other"
+          selected={mode}
+          onSelect={setMode}
+          title="A different email address"
+          detail="Send the PDF to a recruiter, a mentor, or a personal address"
+        />
+
+        {mode === 'other' && (
+          <div className="pl-1">
+            <label className="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400" htmlFor="resume-recipient">
+              Recipient&apos;s email
+            </label>
+            <input
+              id="resume-recipient"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && confirm()}
+              onBlur={() => setTouched(true)}
+              placeholder="name@company.com"
+              className={`input ${touched && blocked ? 'border-rose-300 dark:border-rose-500/60' : ''}`}
+            />
+            {touched && blocked && (
+              <p className="mt-1 text-xs text-rose-500">Enter a valid email address</p>
+            )}
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              They receive your resume as a PDF, with replies coming back to you.
+              You&apos;ll still get your own copy at {accountEmail || 'your registered address'}.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={submitting}>Cancel</Button>
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={submitting}
+          className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {submitting ? 'Sending…' : 'Send resume'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
 
 function AIReviewPanel() {
   const [state, setState] = useState('idle');
@@ -135,6 +255,8 @@ export default function ResumePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
+  const { user } = useAuth();
 
   const { register, control, handleSubmit, reset, getValues, setValue, formState: { errors } } =
     useForm({ defaultValues: EMPTY_RESUME });
@@ -198,15 +320,28 @@ export default function ResumePage() {
     setSaving(false);
   };
 
-  // Save + email the confirmation. Separate from the draft save so a student
-  // editing over several sittings is not mailed on every keystroke-and-save.
-  const onFinalSubmit = async (data) => {
+  // Save + email. Separate from the draft save so a student editing over
+  // several sittings is not mailed on every keystroke-and-save. `delivery`
+  // comes from SendDialog and decides whether a copy also goes to an address
+  // the student typed.
+  const onFinalSubmit = (delivery) => async (data) => {
     setSubmitting(true);
     try {
-      const res = await submitResume(data);
-      if (res.data?.emailed) toast.success('Resume submitted — confirmation sent to your email');
+      const res = await submitResume(data, delivery);
+      const { copy } = res.data || {};
+
+      // The copy is the thing the student was actually watching, so when one
+      // was requested its outcome — not the confirmation's — leads the toast.
+      if (copy?.sent) toast.success(`Resume sent to ${copy.to}`);
+      else if (copy?.reason === 'limit') toast.error("You've sent your resume to a few addresses today — try again tomorrow");
+      else if (copy) toast.error(`Resume saved, but we couldn't email ${copy.to}`);
+      else if (res.data?.emailed) toast.success('Resume submitted — confirmation sent to your email');
       else if (res.data?.emailThrottled) toast.success('Resume submitted');
       else toast.success("Resume submitted — we couldn't email you just now");
+
+      // A failed copy keeps the dialog open with the address still in it, so
+      // the fix is a retry rather than retyping from a closed dialog.
+      if (!copy || copy.sent) setSendOpen(false);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Could not submit');
     }
@@ -251,7 +386,7 @@ export default function ResumePage() {
         </Section>
 
         <Section title="Professional Summary">
-          <textarea rows={3} {...register('summary')} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" placeholder="Brief overview of your background and goals…" />
+          <textarea rows={3} {...register('summary')} className="input" placeholder="Brief overview of your background and goals…" />
         </Section>
 
         <Section title="Skills">
@@ -263,7 +398,7 @@ export default function ResumePage() {
             ))}
           </div>
           <div className="flex gap-2">
-            <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())} className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" placeholder="Add a skill…" />
+            <input value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())} className="input flex-1" placeholder="Add a skill…" />
             <Button type="button" variant="ghost" size="sm" onClick={addSkill}>Add</Button>
           </div>
         </Section>
@@ -290,7 +425,7 @@ export default function ResumePage() {
                 <Input label="Duration" {...register(`experience.${i}.duration`)} />
               </div>
               {/* One line per bullet — the preview splits this on newlines. */}
-              <textarea rows={3} {...register(`experience.${i}.description`)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800" placeholder={'One achievement per line, e.g.\nCut report turnaround from 3 days to 4 hours'} />
+              <textarea rows={3} {...register(`experience.${i}.description`)} className="input" placeholder={'One achievement per line, e.g.\nCut report turnaround from 3 days to 4 hours'} />
               <p className="mt-1 text-xs text-gray-400">Each line becomes a bullet. Lead with the result, not the task.</p>
             </ArrayItem>
           ))}
@@ -303,7 +438,7 @@ export default function ResumePage() {
                 <Input label="Title" {...register(`projects.${i}.title`)} />
                 <Input label="Link" {...register(`projects.${i}.link`)} />
               </div>
-              <textarea rows={2} {...register(`projects.${i}.description`)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 mt-2" placeholder="Description…" />
+              <textarea rows={2} {...register(`projects.${i}.description`)} className="input mt-2" placeholder="Description…" />
               <div className="mt-2">
                 <Input label="Technologies" {...register(`projects.${i}.technologies`)} />
               </div>
@@ -345,17 +480,33 @@ export default function ResumePage() {
 
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-800">
           <p className="mr-auto flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-            <Mail className="h-3.5 w-3.5" /> Submitting emails a copy of your score to your DATAD address.
+            <Mail className="h-3.5 w-3.5" /> Submitting lets you email the PDF to yourself or to someone else.
           </p>
           <button type="submit" disabled={saving || submitting} className="flex items-center gap-1.5 rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
             <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save draft'}
           </button>
-          <button type="button" onClick={handleSubmit(onFinalSubmit)} disabled={saving || submitting} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
+          <button type="button" onClick={() => setSendOpen(true)} disabled={saving || submitting} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             {submitting ? 'Submitting…' : 'Submit resume'}
           </button>
         </div>
       </form>
+
+      {sendOpen && <SendDialog
+        onClose={() => !submitting && setSendOpen(false)}
+        accountEmail={user?.email}
+        submitting={submitting}
+        // handleSubmit runs the form's validation first, so an incomplete
+        // resume never reaches a recruiter's inbox on a stray click.
+        onConfirm={(delivery) =>
+          handleSubmit(onFinalSubmit(delivery), () => {
+            // Otherwise the button just does nothing and the invalid field is
+            // behind the backdrop, unseen.
+            setSendOpen(false);
+            toast.error('Fill in the highlighted fields before submitting');
+          })()
+        }
+      />}
     </div>
   );
 }
@@ -391,7 +542,7 @@ function Input({ label, error, ...props }) {
   return (
     <div>
       {label && <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>}
-      <input {...props} className={`w-full rounded-lg border ${error ? 'border-rose-300' : 'border-gray-200'} px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800`} />
+      <input {...props} className={`input ${error ? 'border-rose-300 dark:border-rose-500/60' : ''}`} />
       {error && <p className="mt-0.5 text-xs text-rose-500">Required</p>}
     </div>
   );

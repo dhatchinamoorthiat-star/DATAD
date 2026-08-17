@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Expense = require('../models/Expense');
 const Budget = require('../models/Budget');
 const StockQuote = require('../models/StockQuote');
+const { refreshStocksIfStale } = require('../services/stockFetcher');
+const { getStockInsight } = require('../services/stockInsightService');
 const { notify } = require('./notificationController');
 const events = require('../events/domainEvents');
 
@@ -111,10 +113,38 @@ exports.getSummary = async (req, res, next) => {
 
 exports.listStockQuotes = async (req, res, next) => {
   try {
-    const quotes = await StockQuote.find().sort({ symbol: 1 });
+    // Refresh on read when what we hold has gone stale, rather than trusting
+    // the 1am cron — on a free instance that cron often never fires (see
+    // services/stockFetcher.js). An empty collection blocks on the fetch so a
+    // cold start still renders something; otherwise we serve the cached quotes
+    // immediately and let the refresh land in the next poll, so the page never
+    // waits on Yahoo.
+    const count = await StockQuote.estimatedDocumentCount();
+    if (count === 0) {
+      await refreshStocksIfStale();
+    } else {
+      refreshStocksIfStale().catch(() => {});
+    }
+
+    const filter = {};
+    if (req.query.sector) filter.sector = req.query.sector;
+    const quotes = await StockQuote.find(filter).sort({ symbol: 1 }).lean();
     res.json(quotes);
   } catch (err) {
     next(err);
+  }
+};
+
+exports.getStockInsight = async (req, res, next) => {
+  try {
+    const insight = await getStockInsight(req.params.symbol);
+    if (!insight) return res.status(404).json({ message: 'Stock not tracked' });
+    res.json(insight);
+  } catch (err) {
+    // A rejected or failed generation must not read as a broken page — the
+    // quote itself is still perfectly good without Dax's commentary on it.
+    console.error('Stock insight failed:', err.message);
+    res.status(503).json({ message: "Dax couldn't explain this one right now." });
   }
 };
 

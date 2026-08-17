@@ -11,13 +11,13 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 
 // Legacy count-based limits — superseded by credit metering (CREDIT_LIMITS
 // in ai/usageMeter.js); kept exported for one release for rollback safety.
-const DAILY_AI_LIMITS = { free: 0, trial: 150, pro: 500, placement: 1500 };
+const DAILY_AI_LIMITS = { free: 0, trial: 150, pro: 500, placement: 2500 };
 
 // Chat is metered by message count, separately from credits, and costs zero
 // credits. Free gets a genuinely usable allowance on purpose: the notes, feed
 // and directory only get good with volume, so suppressing the free tier
 // suppresses the content the paid tiers are sold on.
-const CHAT_QUOTAS = { free: 20, trial: 50, pro: 200, placement: 500 };
+const CHAT_QUOTAS = { free: 20, trial: 50, pro: 200, placement: 750 };
 
 // Credit-weighted: a request costs 1–5 credits depending on the model.
 async function getRemainingAiQuota(userId, tier) {
