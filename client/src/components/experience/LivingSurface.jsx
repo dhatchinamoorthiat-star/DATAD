@@ -14,6 +14,9 @@ import { getTodayCase } from '../../api/dailyCase';
 import { getMyResume } from '../../api/resume';
 import { listInternships } from '../../api/internships';
 import { daxChat, dashboardInsights } from '../../api/dax';
+import {
+  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReplyPlain,
+} from '../../dax/maintenance';
 import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -27,21 +30,35 @@ import { ProgramHeader } from '../program/ProgramHeader';
 
 // ── 1. Arrival — a personalised morning briefing, not a chat window ────────
 
-function greeting() {
-  const h = new Date().getHours();
+function greeting(date = new Date()) {
+  const h = date.getHours();
+  if (h < 5) return 'Still up';
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 21) return 'Good evening';
+  return 'Good night';
+}
+
+// Keeps the greeting and date honest on a tab that stays open across midnight
+// or across a greeting boundary.
+function useNow(intervalMs = 60_000) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
 }
 
 function Arrival({ firstName, brief, briefLoading }) {
+  const now = useNow();
   return (
     <div className="py-10 sm:py-14">
       <p className="text-sm font-medium text-gray-400">
-        {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+        {now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
       </p>
       <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-gray-50 sm:text-4xl">
-        {greeting()}, {firstName}.
+        {greeting(now)}, {firstName}.
       </h1>
       <div className="mt-4 max-w-2xl">
         {briefLoading ? (
@@ -182,7 +199,7 @@ function StudentSnapshot({ readiness, tasks, resume, streak, loading }) {
 
 // ── 5. Ask Dax — a spotlight-style input, not a chat window ────────────────
 
-const ASK_SUGGESTIONS = [
+const ASK_SUGGESTIONS = DAX_MAINTENANCE ? DAX_MAINTENANCE_PROMPTS : [
   'Plan my week',
   'Summarize my notes',
   'Generate quiz questions',
@@ -201,6 +218,16 @@ function AskDax() {
     if (!q || loading) return;
     setLoading(true);
     setReply(null);
+    // Maintenance: answered locally from the fixed set — no request leaves the
+    // browser. See ../../dax/maintenance.js.
+    if (DAX_MAINTENANCE) {
+      setTimeout(() => {
+        setReply(maintenanceReplyPlain(q));
+        setLoading(false);
+        setMessage('');
+      }, 450);
+      return;
+    }
     try {
       const res = await daxChat(q);
       setReply(res.data?.reply || res.data?.message || res.data?.result || 'Done.');
@@ -216,6 +243,11 @@ function AskDax() {
     <section>
       <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Ask Dax</h2>
       <Card padding="md">
+        {DAX_MAINTENANCE && (
+          <p className="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-xs text-gray-600 dark:bg-primary-950/20 dark:text-gray-300">
+            {DAX_MAINTENANCE_BANNER}
+          </p>
+        )}
         <form
           onSubmit={(e) => { e.preventDefault(); ask(); }}
           className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:border-primary-400 dark:border-gray-800 dark:bg-gray-950"
@@ -438,7 +470,12 @@ export default function LivingSurface() {
   }), [tasks, caseData, roadmapPending, roadmapNext, canCreateRoadmap]);
 
   return (
-    <Page wide>
+    <Page wide overview={{
+      pageKey: 'dashboard',
+      title: 'Your day, assembled',
+      blurb: 'What is due, what needs attention and what changed since you were last here, pulled from every section.',
+      takeaway: "Work top-down — Today's Focus is ordered by what actually matters now.",
+    }}>
       {/* The measure comes from <Page wide> — an inner max-w here would just
           fight it (the old max-w-4xl was already dead under the 3xl cap). */}
       <div className="space-y-12 pb-16">
