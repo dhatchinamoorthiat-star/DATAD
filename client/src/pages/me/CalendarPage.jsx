@@ -56,6 +56,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', date: '', time: '', type: 'event', description: '' });
+  const [error, setError] = useState('');
 
   const days = useMemo(() => buildCalendarDays(year, month), [year, month]);
 
@@ -85,18 +86,45 @@ export default function CalendarPage() {
     return map;
   }, [holidays, events]);
 
+  // Holidays are fetched a year at a time, so this must not depend on `month`
+  // — it was refiring the same request on every arrow click.
   useEffect(() => {
-    getHolidays(year).then((res) => setHolidays(res.data.holidays || [])).catch(() => {});
-    getEvents(year, month + 1).then((res) => setEvents(res.data.events || [])).catch(() => {});
+    let cancelled = false;
+    getHolidays(year)
+      .then((res) => { if (!cancelled) setHolidays(res.data.holidays || []); })
+      .catch(() => { if (!cancelled) setHolidays([]); });
+    return () => { cancelled = true; };
+  }, [year]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Drop the old month's events up front: without this, a slow or failed
+    // fetch left the previous month's list rendered under the new heading.
+    setEvents([]);
+    setError('');
+    getEvents(year, month + 1)
+      .then((res) => { if (!cancelled) setEvents(res.data.events || []); })
+      .catch(() => { if (!cancelled) setError('Could not load events for this month.'); });
+    return () => { cancelled = true; };
   }, [year, month]);
 
+  // Moving months has to carry the selection with it. Leaving `selectedDate`
+  // behind meant the grid showed one month while the side panel was still
+  // headed with a day from another, and no cell appeared selected at all.
+  function goToMonth(y, m) {
+    setYear(y);
+    setMonth(m);
+    setSelectedDate((cur) => {
+      const lastDay = new Date(y, m + 1, 0).getDate();
+      return new Date(y, m, Math.min(cur.getDate(), lastDay));
+    });
+  }
+
   function prev() {
-    if (month === 0) { setYear((y) => y - 1); setMonth(11); }
-    else setMonth((m) => m - 1);
+    goToMonth(month === 0 ? year - 1 : year, month === 0 ? 11 : month - 1);
   }
   function next() {
-    if (month === 11) { setYear((y) => y + 1); setMonth(0); }
-    else setMonth((m) => m + 1);
+    goToMonth(month === 11 ? year + 1 : year, month === 11 ? 0 : month + 1);
   }
 
   function openForm(d) {
@@ -109,10 +137,18 @@ export default function CalendarPage() {
     if (!form.title || !form.date) return;
     try {
       const res = await createEvent(form);
-      setEvents((prev) => [...prev, res.data.event]);
+      const created = res.data.event;
+      // `events` only ever holds the visible month. Appending an event dated
+      // outside it put a row in state that no cell could render and that the
+      // next fetch would drop, so only keep it when it belongs here.
+      const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      if (created?.date?.startsWith(monthPrefix)) {
+        setEvents((prev) => [...prev, created]);
+      }
+      setError('');
       setShowForm(false);
     } catch {
-      // silently fail
+      setError('Could not save that event. Please try again.');
     }
   }
 
@@ -120,8 +156,9 @@ export default function CalendarPage() {
     try {
       await deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e._id !== id));
+      setError('');
     } catch {
-      // silently fail
+      setError('Could not delete that event. Please try again.');
     }
   }
 
@@ -131,11 +168,22 @@ export default function CalendarPage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'life-calendar',
+      title: 'Everything dated, in one grid',
+      blurb: 'Assignment deadlines, events and your own entries on a single month view.',
+      takeaway: 'Check the week ahead on Sunday so nothing lands as a surprise.',
+    }}>
       <div className="mx-auto w-full max-w-5xl space-y-6 pb-16">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Calendar</h1>
         </div>
+
+        {error && (
+          <p className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 dark:bg-danger-950/30 dark:text-danger-300">
+            {error}
+          </p>
+        )}
 
         <div className="flex flex-col gap-6 lg:flex-row">
           {/* Calendar grid */}
