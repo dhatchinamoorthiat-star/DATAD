@@ -70,12 +70,29 @@ async function send(userId, opts = {}) {
 
       if (similar) {
         // Bump the existing notification instead of creating a duplicate
-        await Notification.findByIdAndUpdate(similar._id, {
-          $set: { body, link, read: false },
-          $inc: { groupCount: 1 },
-        });
+        const updated = await Notification.findByIdAndUpdate(
+          similar._id,
+          { $set: { body, link, read: false }, $inc: { groupCount: 1 } },
+          { new: true }
+        ).lean();
         logger.debug(`[NotificationService] Dedup'd ${type} for ${userId}`);
-        return { ...similar, groupCount: (similar.groupCount || 1) + 1, deduped: true };
+        // Broadcast the bump too — otherwise a live bell only reflects the
+        // dedup'd notification's original content until the next full poll.
+        setImmediate(() => {
+          try {
+            stream.broadcastToUser(userId, {
+              _id: updated._id,
+              type: updated.type,
+              title: updated.title,
+              body: updated.body,
+              link: updated.link,
+              createdAt: updated.createdAt,
+              read: false,
+              groupCount: updated.groupCount || 1,
+            });
+          } catch { /* SSE broadcast is best-effort */ }
+        });
+        return { ...updated, deduped: true };
       }
     } catch (err) {
       // Dedup failure shouldn't block notification delivery
