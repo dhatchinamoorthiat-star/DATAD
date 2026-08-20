@@ -4,9 +4,9 @@
     {
       "name": "client",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "client"],
-      "port": 5173,
-      "autoPort": true
+      "runtimeArgs": ["run", "dev", "--prefix", "client", "--", "--port", "5175", "--strictPort"],
+      "port": 5175,
+      "autoPort": false
     },
     {
       "name": "client-preview",
