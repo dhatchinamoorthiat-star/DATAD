@@ -182,8 +182,14 @@ async function list(userId, currentDeviceId) {
  */
 async function revoke(userId, shortId) {
   const user = await User.findById(userId).select('sessions').lean();
-  const match = (user?.sessions || []).find((s) => s.deviceId.startsWith(shortId));
-  if (!match) return false;
+  // Exact-count match, not "first match": the short id is only an 8-char
+  // prefix, so if two of the user's own sessions happen to share one
+  // (vanishingly unlikely for a random UUID, but the header is client-
+  // supplied and not guaranteed random) an ambiguous request must fail
+  // safe rather than silently evict the wrong device.
+  const matches = (user?.sessions || []).filter((s) => s.deviceId.startsWith(shortId));
+  if (matches.length !== 1) return false;
+  const match = matches[0];
 
   await User.updateOne({ _id: userId }, { $pull: { sessions: { deviceId: match.deviceId } } });
   sessionVersion.invalidate(userId);

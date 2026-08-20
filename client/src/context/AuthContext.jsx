@@ -59,7 +59,7 @@ export function AuthProvider({ children }) {
 
   const switchProgram = async (slug) => {
     const { default: axios } = await import('../api/axios');
-    const res = await axios.post('/api/modules/switch', { slug });
+    const res = await axios.post('/modules/switch', { slug });
     login(res.data.token);
     return res.data;
   };

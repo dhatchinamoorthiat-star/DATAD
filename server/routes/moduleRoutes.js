@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const jwt = require('jsonwebtoken');
+const signToken = require('../utils/signToken');
 const verifyToken = require('../middleware/verifyToken');
 const User = require('../models/User');
 const { getAll, get } = require('../modules/registry');
@@ -54,11 +54,10 @@ router.post('/switch', async (req, res, next) => {
     );
     if (!user) return res.status(400).json({ message: 'You are not enrolled in this program' });
 
-    const freshToken = jwt.sign(
-      { userId: user._id, name: user.name, email: user.email, role: user.role, tier: user.tier, studentType: user.studentType, programs: user.programs, activeProgram: user.activeProgram },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Must go through signToken: verifyToken rejects any token missing `tv`,
+    // and a token minted without the caller's `did` loses its device session.
+    // A hand-rolled payload here authenticates once and 401s on the next call.
+    const freshToken = signToken(user, req.user.deviceId);
 
     res.json({ programs: user.programs, activeProgram: user.activeProgram, token: freshToken });
   } catch (err) { next(err); }
