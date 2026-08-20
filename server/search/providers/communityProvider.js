@@ -15,11 +15,11 @@ module.exports = {
       Post.find({
         $or: [
           { title: { $regex: escaped, $options: 'i' } },
-          { content: { $regex: escaped, $options: 'i' } },
+          { body: { $regex: escaped, $options: 'i' } },
           { tags: { $regex: escaped, $options: 'i' } },
         ],
       })
-        .select('title content tags createdAt')
+        .select('title body tags createdAt')
         .sort({ createdAt: -1 })
         .limit(10)
         .lean(),
@@ -59,7 +59,7 @@ module.exports = {
         id: `post-${p._id}`,
         title: p.title || 'Untitled post',
         subtitle: `Posted ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}`,
-        description: (p.content || '').slice(0, 150),
+        description: (p.body || '').slice(0, 150),
         url: '/community/feed',
         icon: 'MessageCircle',
         tags: [...(p.tags || []), 'post'],

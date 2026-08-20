@@ -24,6 +24,9 @@ exports.listPosts = async (req, res, next) => {
     const { tag, q, page } = req.query;
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const filter = {};
+    // ⭐ Filter by program
+    const programId = req.user?.program?.id;
+    if (programId) filter.program = programId;
     if (tag) filter.tag = tag;
     if (q) filter.$or = [
       { title: { $regex: q.trim(), $options: 'i' } },
@@ -69,7 +72,11 @@ exports.getPost = async (req, res, next) => {
 exports.createPost = async (req, res, next) => {
   try {
     const { title, body, tag } = req.body;
-    const post = await Post.create({ title, body, tag, author: req.user.userId });
+    const post = await Post.create({
+      title, body, tag, author: req.user.userId,
+      // ⭐ Automatically scope post to user's program
+      program: req.user?.program?.id || null,
+    });
     await post.populate('author', 'name');
     notifyMentions(`${title || ''} ${body || ''}`, req.user.userId, req.user.name, '/community/feed').catch(() => {});
     res.status(201).json(post);

@@ -32,10 +32,11 @@ function PostCard({ post: initialPost }) {
   };
 
   const vote = async (idx) => {
+    if (post.myVote != null) return;
     try {
       const res = await votePoll(post._id, idx);
-      setPost((p) => ({ ...p, pollOptions: res.data }));
-    } catch { toast.error('Could not submit vote'); }
+      setPost((p) => ({ ...p, pollOptions: res.data.pollOptions, myVote: res.data.myVote }));
+    } catch (err) { toast.error(err.response?.data?.message || 'Could not submit vote'); }
   };
 
   const totalVotes = post.pollOptions?.reduce((s, o) => s + o.votes, 0) || 0;
@@ -67,11 +68,14 @@ function PostCard({ post: initialPost }) {
         <div className="mb-3 space-y-2">
           {post.pollOptions.map((opt, idx) => {
             const pct = totalVotes ? Math.round((opt.votes / totalVotes) * 100) : 0;
+            const voted = post.myVote === idx;
             return (
-              <button key={idx} onClick={() => vote(idx)}
-                className="relative w-full overflow-hidden rounded-xl border border-gray-200 py-2.5 px-4 text-left text-sm hover:border-indigo-400 dark:border-gray-700">
+              <button key={idx} onClick={() => vote(idx)} disabled={post.myVote != null}
+                className={`relative w-full overflow-hidden rounded-xl border py-2.5 px-4 text-left text-sm disabled:cursor-default ${
+                  voted ? 'border-indigo-400' : 'border-gray-200 hover:enabled:border-indigo-400 dark:border-gray-700'
+                }`}>
                 <div className="absolute inset-0 bg-indigo-50 dark:bg-indigo-900/20" style={{ width: `${pct}%` }} />
-                <span className="relative">{opt.text}</span>
+                <span className="relative">{opt.text}{voted && ' ✓'}</span>
                 <span className="relative float-right font-medium text-indigo-600 dark:text-indigo-400">{pct}%</span>
               </button>
             );
@@ -152,7 +156,12 @@ export default function FeedPage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-feed',
+      title: 'The batch timeline',
+      blurb: 'A fast, casual stream for wins, questions, photos and polls — built so you can post in seconds.',
+      takeaway: "Skim it daily to stay in sync with what everyone's up to.",
+    }}>
       <PageHeader
         icon={MessageSquare}
         title="Community Feed"

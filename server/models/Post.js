@@ -18,7 +18,11 @@ const postSchema = new mongoose.Schema(
     type: { type: String, enum: ['text', 'photo', 'poll', 'achievement'], default: 'text' },
     tags: [{ type: String, trim: true }],
     imageUrl: { type: String, trim: true },
-    pollOptions: [{ text: String, votes: { type: Number, default: 0 } }],
+    pollOptions: [{
+      text: String,
+      votes: { type: Number, default: 0 },
+      voters: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
+    }],
     pinned:              { type: Boolean, default: false },
     // AI moderation
     hidden:              { type: Boolean, default: false },

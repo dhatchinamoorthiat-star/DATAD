@@ -33,7 +33,8 @@ exports.getFeed = async (req, res, next) => {
           counts[e] = reactions.filter((r) => r.emoji === e).length;
         });
         const myReaction = reactions.find((r) => r.user.equals(req.user.userId));
-        return { ...p.toObject(), reactionCounts: counts, myReaction: myReaction?.emoji || null };
+        const myVoteIdx = p.pollOptions?.findIndex((o) => o.voters?.some((v) => v.equals(req.user.userId)));
+        return { ...p.toObject(), reactionCounts: counts, myReaction: myReaction?.emoji || null, myVote: myVoteIdx >= 0 ? myVoteIdx : null };
       })
     );
 
@@ -75,9 +76,9 @@ exports.reactToPost = async (req, res, next) => {
       return res.json(existing);
     }
     const reaction = await PostReaction.create({ post: req.params.id, user: req.user.userId, emoji: emoji || '👍' });
-    // Notify post author
+    // Notify post author (skip self-notifications)
     const post = await Post.findById(req.params.id).select('author title').lean();
-    if (post) {
+    if (post && String(post.author) !== req.user.userId) {
       notify({ user: post.author, type: 'reaction', actor: req.user.userId,
         title: `Someone reacted ${emoji || '👍'} to your post`,
         body: post.title?.slice(0, 60),
@@ -94,9 +95,14 @@ exports.votePoll = async (req, res, next) => {
     if (!post || !post.pollOptions?.length) return res.status(404).json({ message: 'Poll not found' });
     const idx = parseInt(req.params.optionIdx);
     if (idx < 0 || idx >= post.pollOptions.length) return res.status(400).json({ message: 'Invalid option' });
+    const uid = req.user.userId;
+    if (post.pollOptions.some((o) => o.voters?.some((v) => v.equals(uid)))) {
+      return res.status(400).json({ message: 'You already voted in this poll' });
+    }
     post.pollOptions[idx].votes += 1;
+    post.pollOptions[idx].voters.push(uid);
     post.markModified('pollOptions');
     await post.save();
-    res.json(post.pollOptions);
+    res.json({ pollOptions: post.pollOptions, myVote: idx });
   } catch (err) { next(err); }
 };
