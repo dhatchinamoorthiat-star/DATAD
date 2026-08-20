@@ -23,6 +23,7 @@ export const DAX_CAPABILITY = {
   careerCoach:     'Dax Career Coach',
   notifications:   'Dax Notifications',
   summaries:       'Dax Summaries',
+  pageGuide:       'Dax Guide',
 };
 
 // Voice: Dax speaks in first person, never refers to itself in the third

@@ -7,7 +7,7 @@ export default function ConversationView({
   // reads them from config now.
   greeting: _greeting, subtitle: _subtitle, suggestions: _suggestions,
   conversations, activeId, onOpenConversation, onNewChat, introActive,
-  models, selectedModelId, onModelSelect,
+  models, selectedModelId, onModelSelect, maintenance = false,
   ...messageHandlers
 }) {
   // No active workspace — show the home dashboard
@@ -23,6 +23,7 @@ export default function ConversationView({
         models={models}
         selectedModelId={selectedModelId}
         onModelSelect={onModelSelect}
+        maintenance={maintenance}
       />
     );
   }

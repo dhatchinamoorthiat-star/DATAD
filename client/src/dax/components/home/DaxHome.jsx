@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { formatDistanceToNowStrict } from 'date-fns';
 import {
   ArrowUp, ArrowUpRight, MessageSquare, Plus, Pin,
-  Lightbulb, CalendarDays, FileText, MessageCircle,
+  Lightbulb, CalendarDays, FileText, MessageCircle, User, Wrench, Hammer,
 } from 'lucide-react';
 import DaxOrb from '../common/DaxOrb';
 
@@ -43,6 +43,16 @@ const QUICK_ACTIONS = [
   { label: 'Brainstorm ideas', prompt: 'Let\'s brainstorm some ideas. Ask me what I\'m working on.', icon: MessageCircle },
 ];
 
+// While Dax is in maintenance only a fixed set of questions has a real answer
+// (see ../../maintenance.js) — offering the full quick-starts would just walk
+// students into the "I can't answer that yet" reply.
+const MAINTENANCE_ACTIONS = [
+  { label: 'Say hi', prompt: 'Hi', icon: MessageCircle },
+  { label: 'Who are you?', prompt: 'Who are you?', icon: User },
+  { label: 'Who made you?', prompt: 'Who made you?', icon: Hammer },
+  { label: 'What can you do?', prompt: 'What can you do?', icon: Wrench },
+];
+
 export default function DaxHome({
   userName,
   conversations = [],
@@ -50,6 +60,7 @@ export default function DaxHome({
   onNewChat,
   onPickSuggestion,
   introActive = false,
+  maintenance = false,
 }) {
   const reduce = useReducedMotion();
   const [prompt, setPrompt] = useState('');
@@ -121,7 +132,7 @@ export default function DaxHome({
 
           {/* Quick-start chips */}
           <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {QUICK_ACTIONS.map((a, i) => (
+            {(maintenance ? MAINTENANCE_ACTIONS : QUICK_ACTIONS).map((a, i) => (
               <motion.button
                 key={a.label}
                 {...rise(0.3 + i * 0.05, reduce)}

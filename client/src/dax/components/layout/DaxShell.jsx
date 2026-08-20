@@ -6,6 +6,7 @@ export default function DaxShell({
   sidebarOpen,
   sidebarProps,
   headerRight,
+  banner,
   children,
   composer,
   showAIPanel,
@@ -41,6 +42,8 @@ export default function DaxShell({
           <div className="flex-1" />
           {headerRight}
         </header>
+
+        {banner && <div className="shrink-0 px-4 pb-2">{banner}</div>}
 
         <div className="flex min-h-0 flex-1 gap-0">
           <main className="min-w-0 flex-1 overflow-y-auto dax-scrollbar">

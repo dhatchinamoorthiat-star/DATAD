@@ -9,9 +9,12 @@
  * P1 (Calm is the Interface) by making Dax ambient rather than a destination.
  */
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send, Sparkles, PanelRightClose } from 'lucide-react';
+import { MessageCircle, Send, Sparkles, PanelRightClose, Construction } from 'lucide-react';
 import { daxChat } from '../../api/dax';
 import { DAX_WELCOME } from '../../utils/dax';
+import {
+  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReplyPlain,
+} from '../../dax/maintenance';
 
 // Page context descriptors — sent as the first user message when a context
 // is provided, so Dax knows what the student is looking at.
@@ -37,9 +40,15 @@ function chip(text, onClick) {
   );
 }
 
+// Matches the "thinking" beat the maintenance adapter uses on the /dax page,
+// so the typing dots read as a reply rather than a glitch.
+const MAINTENANCE_THINKING_MS = 450;
+
 export default function DaxPanel({ context, position = 'right' }) {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: 'assistant', content: DAX_WELCOME }]);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: DAX_MAINTENANCE ? maintenanceReplyPlain('hi') : DAX_WELCOME },
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
@@ -59,6 +68,16 @@ export default function DaxPanel({ context, position = 'right' }) {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+
+    // Maintenance: answered locally from the fixed set, so this panel makes no
+    // request at all. See ../../dax/maintenance.js.
+    if (DAX_MAINTENANCE) {
+      setTimeout(() => {
+        setMessages((prev) => [...prev, { role: 'assistant', content: maintenanceReplyPlain(msg) }]);
+        setLoading(false);
+      }, MAINTENANCE_THINKING_MS);
+      return;
+    }
 
     try {
       const res = await daxChat(msg);
@@ -112,12 +131,19 @@ export default function DaxPanel({ context, position = 'right' }) {
         </button>
       </div>
 
+      {DAX_MAINTENANCE && (
+        <div className="flex items-start gap-2 border-b border-gray-100 bg-indigo-50/60 px-4 py-2 text-[11px] leading-snug text-indigo-800 dark:border-gray-800 dark:bg-indigo-900/20 dark:text-indigo-200">
+          <Construction className="mt-px h-3.5 w-3.5 shrink-0" />
+          <span>{DAX_MAINTENANCE_BANNER}</span>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3" style={{ minHeight: '200px', maxHeight: '400px' }}>
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 ${msg.role === 'user' ? 'text-right' : ''}`}>
             <div
-              className={`inline-block max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+              className={`inline-block max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2 text-left text-sm ${
                 msg.role === 'user'
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
@@ -144,9 +170,15 @@ export default function DaxPanel({ context, position = 'right' }) {
       {/* Quick chips (shown before first user message) */}
       {messages.length === 1 && !loading && (
         <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-          {chip('What should I focus on?', () => send('What should I focus on today?'))}
-          {chip('Quick study tip', () => send('Give me a quick study framework'))}
-          {chip('Interview help', () => send('How do I answer "Tell me about yourself?"'))}
+          {DAX_MAINTENANCE ? (
+            DAX_MAINTENANCE_PROMPTS.map((p) => chip(p, () => send(p)))
+          ) : (
+            <>
+              {chip('What should I focus on?', () => send('What should I focus on today?'))}
+              {chip('Quick study tip', () => send('Give me a quick study framework'))}
+              {chip('Interview help', () => send('How do I answer "Tell me about yourself?"'))}
+            </>
+          )}
         </div>
       )}
 
