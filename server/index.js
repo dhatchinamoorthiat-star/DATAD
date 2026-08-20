@@ -113,7 +113,20 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: '1mb' }));
+// The raw bytes are kept alongside the parsed body because the Razorpay
+// webhook signs the body exactly as sent. Re-serialising req.body cannot
+// reproduce those bytes — key order and whitespace are not preserved — so
+// without this the signature check can only ever fail. Capped by the same
+// 1mb limit, and it costs nothing on every other route: Node has already
+// buffered this exact Buffer to parse it.
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req, res, buf) => {
+      if (req.originalUrl === '/api/subscription/webhook') req.rawBody = buf;
+    },
+  })
+);
 app.use(mongoSanitize());
 app.use(hpp());
 app.use(compression());
