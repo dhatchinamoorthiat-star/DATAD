@@ -1,13 +1,16 @@
-import { Home, BookOpen, Briefcase, Users, Sun, Sparkles } from 'lucide-react';
+import { Home, BookOpen, Briefcase, Users, Sun, Sparkles, TrendingUp, Wallet, HeartPulse } from 'lucide-react';
 
 // Primary navigation. This list renders as both the desktop rail and the mobile
-// bottom tab bar. Finance and Wellbeing used to sit here; they are sub-sections
-// of Life (the Life hub already linked to both), so they are tabs now.
+// bottom tab bar. Finance and Wellbeing sat here originally, spent a while as
+// Life tabs, and are top-level again — each owns enough sub-categories to be a
+// section in its own right rather than a tab inside someone else's row.
 //
-// Six is the ceiling. Each mobile target is `flex-1`, so six clears the 44pt
-// minimum even on a 320px screen (53px each) — a seventh would not, and the
-// labels would start wrapping before that. Add a seventh item and the bottom
-// bar needs rethinking rather than one more entry.
+// There is no longer a hard ceiling here. The bottom bar used to divide the
+// width by `flex-1`, which capped the list at seven before targets fell under
+// the 44pt minimum; it now scrolls horizontally with fixed-width targets, so
+// the count is a judgement call about how long a row a user will scan, not a
+// layout constraint. Keep it short anyway — items past the fold are easy to
+// miss on a phone.
 export const WORKSPACES = [
   // "/" redirects logged-in users to /dashboard, so an `end`-matched link to
   // "/" could never be active. Point at the URL the user actually lands on.
@@ -18,17 +21,21 @@ export const WORKSPACES = [
   { key: 'dax', label: 'Dax', to: '/dax?home', icon: Sparkles },
   { key: 'study', label: 'Study', to: '/study', icon: BookOpen },
   { key: 'career', label: 'Career', to: '/career', icon: Briefcase },
+  // Roadmap/Pivot/STAR Stories split out of Career into their own primary
+  // section — the Career tab row was carrying too many sub-categories.
+  { key: 'growth', label: 'Growth', to: '/growth', icon: TrendingUp },
   { key: 'community', label: 'Community', to: '/community', icon: Users },
-  // Life owns /me, and now /finance and /wellbeing too — see WORKSPACE_ALIASES.
+  // Life is now the personal-organisation section only — journal, planner,
+  // calendar. Money and health moved out to stand on their own.
   { key: 'me', label: 'Life', to: '/me', icon: Sun },
+  { key: 'finance', label: 'Finance', to: '/finance', icon: Wallet },
+  { key: 'wellbeing', label: 'Wellbeing', to: '/wellbeing', icon: HeartPulse },
 ];
 
-// Extra path prefixes that should light up a primary nav item. Finance and
-// Wellbeing keep their own top-level URLs (bookmarks and legacy redirects point
-// at them), but they belong to Life as far as the nav is concerned.
-const WORKSPACE_ALIASES = {
-  me: ['/finance', '/wellbeing'],
-};
+// Extra path prefixes that should light up a primary nav item. Empty now that
+// Finance and Wellbeing own their own entries — kept because the matcher below
+// reads it and the next section to absorb a stray URL will want it.
+const WORKSPACE_ALIASES = {};
 
 // Shared by the desktop rail and the mobile tab bar so the two can never
 // disagree about which section the user is in.
@@ -42,15 +49,15 @@ export function isWorkspaceActive(pathname, workspace) {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-// The Life tab row, reused by the Finance and Wellbeing workspaces so a student
-// who taps into either still sees where they are in the hierarchy.
+// The Life tab row. Finance and Wellbeing used to be spread into the Finance
+// and Wellbeing rows from here so a student who tapped into either still saw
+// the parent hierarchy; both are their own sections now, so each owns a clean
+// row of its own sub-categories and this list is Life's alone.
 const LIFE_TABS = [
   { to: '/me', label: 'Overview', end: true },
   { to: '/me/journal', label: 'Journal' },
   { to: '/me/planner', label: 'Planner' },
   { to: '/me/calendar', label: 'Calendar' },
-  { to: '/finance', label: 'Finance', end: true },
-  { to: '/wellbeing', label: 'Wellbeing', end: true },
 ];
 
 export const WORKSPACE_TABS = {
@@ -63,16 +70,22 @@ export const WORKSPACE_TABS = {
   ],
   career: [
     { to: '/career', label: 'Overview', end: true },
-    { to: '/career/roadmap', label: 'Roadmap' },
     { to: '/career/companies', label: 'Companies' },
     { to: '/career/opportunities', label: 'Opportunities' },
     { to: '/career/resume', label: 'Resume' },
     { to: '/career/linkedin', label: 'LinkedIn' },
-    // Reachable from the hub's Quick Links but previously unreachable by tab.
     { to: '/career/questions', label: 'Interview Qs' },
-    { to: '/career/pivot', label: 'Pivot' },
-    { to: '/career/stories', label: 'STAR Stories' },
-    { to: '/briefing', label: 'Briefing' },
+    // Roadmap, Pivot and STAR Stories moved to their own primary section
+    // (Growth) — this row was carrying too many sub-categories for the
+    // job-search core to read clearly. Briefing dropped entirely: it's a
+    // global news feature (also surfaced in Study), not career-specific, and
+    // stays reachable from the dashboard/readiness cards instead of a tab here.
+  ],
+  growth: [
+    { to: '/growth', label: 'Overview', end: true },
+    { to: '/growth/roadmap', label: 'Roadmap' },
+    { to: '/growth/pivot', label: 'Pivot' },
+    { to: '/growth/stories', label: 'STAR Stories' },
   ],
   community: [
     { to: '/community', label: 'Overview', end: true },
@@ -86,7 +99,7 @@ export const WORKSPACE_TABS = {
   ],
   me: LIFE_TABS,
   finance: [
-    ...LIFE_TABS,
+    { to: '/finance', label: 'Overview', end: true },
     { to: '/finance/tracker', label: 'Tracker' },
     { to: '/finance/calculator', label: 'Calculator' },
     { to: '/finance/stocks', label: 'Stocks' },
@@ -94,7 +107,7 @@ export const WORKSPACE_TABS = {
     { to: '/finance/roi', label: 'ROI' },
   ],
   wellbeing: [
-    ...LIFE_TABS,
+    { to: '/wellbeing', label: 'Overview', end: true },
     { to: '/wellbeing/study', label: 'Study Tips' },
     { to: '/wellbeing/memory', label: 'Memory' },
     { to: '/wellbeing/routines', label: 'Routines' },

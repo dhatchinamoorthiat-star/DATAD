@@ -201,14 +201,14 @@ export default function AppShell({ children }) {
       <DaxPanel context={routeContext(location.pathname)} />
 
       {/* Mobile bottom tab bar — sits above the iOS home indicator */}
-      <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),8px)] dark:border-gray-800/70 lg:hidden print:hidden">
+      <nav className="glass scroll-ios fixed inset-x-0 bottom-0 z-40 flex items-stretch overflow-x-auto overscroll-x-contain border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),8px)] dark:border-gray-800/70 lg:hidden print:hidden">
         {WORKSPACES.map((w) => {
           const active = isWorkspaceActive(location.pathname, w);
           return (
             <NavLink
               key={w.key}
               to={w.to}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
+              className={`flex w-[4.5rem] shrink-0 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition-colors ${
                 active ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
@@ -219,8 +219,12 @@ export default function AppShell({ children }) {
             </NavLink>
           );
         })}
-        {/* Admin is reachable from the avatar menu and the desktop rail. WORKSPACES
-            is capped at five so each target here clears the 44pt minimum. */}
+        {/* Admin is reachable from the avatar menu and the desktop rail.
+            Targets are a fixed 4.5rem (72px) and the row scrolls rather than
+            dividing the width by `flex-1` — that division is what used to cap
+            WORKSPACES at seven, since an eighth item fell under the 44pt
+            minimum on a 320px screen. Fixed width keeps every target legal at
+            any count; the row simply overflows. */}
       </nav>
     </div>
   );

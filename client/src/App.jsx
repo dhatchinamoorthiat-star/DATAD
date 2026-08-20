@@ -98,6 +98,7 @@ const AdminAIDashboardPage = lazy(() => import('./pages/admin/AdminAIDashboardPa
 const AdminCohortPage = lazy(() => import('./pages/admin/AdminCohortPage'));
 const PivotPage         = lazy(() => import('./pages/career/PivotPage'));
 const StarStoriesPage   = lazy(() => import('./pages/career/StarStoriesPage'));
+const GrowthHubPage     = lazy(() => import('./pages/growth/GrowthHubPage'));
 const FinanceROIPage    = lazy(() => import('./pages/me/FinanceROIPage'));
 const ReflectionPage    = lazy(() => import('./pages/ReflectionPage'));
 const DaxPage           = lazy(() => import('./pages/DaxPage'));
@@ -205,7 +206,7 @@ export default function App() {
               />
               <Route element={<AppLayout />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
-                <Route path="/roadmap" element={<Navigate to="/career/roadmap" replace />} />
+                <Route path="/roadmap" element={<Navigate to="/growth/roadmap" replace />} />
                 <Route path="/briefing" element={<IntelligencePage />} />
 
                 <Route path="/study" element={<WorkspaceLayout workspace="study" title="Study" />}>
@@ -242,6 +243,16 @@ export default function App() {
                   <Route path="placements" element={<Navigate to="/career/opportunities" replace />} />
                   <Route path="internships" element={<Navigate to="/career/opportunities?view=internships" replace />} />
                   <Route path="skills" element={<Navigate to="/community/skills" replace />} />
+                  {/* Roadmap/Pivot/STAR Stories moved out to their own Growth
+                      sub-section (like Finance/Wellbeing under Life) — the
+                      Career tab row was carrying too many sub-categories. */}
+                  <Route path="roadmap" element={<Navigate to="/growth/roadmap" replace />} />
+                  <Route path="pivot" element={<Navigate to="/growth/pivot" replace />} />
+                  <Route path="stories" element={<Navigate to="/growth/stories" replace />} />
+                </Route>
+
+                <Route path="/growth" element={<WorkspaceLayout workspace="growth" title="Growth" />}>
+                  <Route index element={<GrowthHubPage />} />
                   <Route path="roadmap" element={<PivotPage mode="roadmap" />} />
                   <Route path="pivot" element={<PivotPage />} />
                   <Route path="stories" element={<StarStoriesPage />} />
@@ -274,7 +285,7 @@ export default function App() {
                   <Route path="calendar" element={<CalendarPage />} />
                 </Route>
 
-                <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Life" />}>
+                <Route path="/finance" element={<WorkspaceLayout workspace="finance" title="Finance" />}>
                   <Route index element={<FinanceHubPage />} />
                   <Route path="tracker" element={<FinanceTrackerPage />} />
                   <Route path="calculator" element={<FinanceCalculatorPage />} />
@@ -283,7 +294,7 @@ export default function App() {
                   <Route path="roi" element={<FinanceROIPage />} />
                 </Route>
 
-                <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Life" />}>
+                <Route path="/wellbeing" element={<WorkspaceLayout workspace="wellbeing" title="Wellbeing" />}>
                   <Route index element={<WellbeingPage />} />
                   <Route path="study" element={<WellbeingStudyPage />} />
                   <Route path="memory" element={<WellbeingMemoryPage />} />

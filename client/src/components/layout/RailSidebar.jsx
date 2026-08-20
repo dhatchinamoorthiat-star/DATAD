@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Search, Crown, HeartHandshake, Gem, Menu } from 'lucide-react';
+import { Search, Crown, Gem, Menu } from 'lucide-react';
 import { DatadGlyph, DatadMark } from '../common/Logo';
 import { WORKSPACES } from '../../utils/workspaces';
 
@@ -18,6 +18,7 @@ const ICON_ACCENT = {
   dax: '#8B5CF6',
   study: '#06B6D4',
   career: '#F97316',
+  growth: '#6366F1',
   community: '#0D9488',
   me: '#F59E0B',
   finance: '#10B981',
@@ -233,14 +234,6 @@ export default function RailSidebar({ isAdmin, onOpenPalette }) {
               <>
                 <IconTile accent="me" isActive={isActive} icon={Gem} />
                 <span className={label}>Upgrade plan</span>
-              </>
-            )}
-          </NavLink>
-          <NavLink to="/wellbeing" title="Feeling stressed? Reach out" className={link()}>
-            {({ isActive }) => (
-              <>
-                <IconTile accent="wellbeing" isActive={isActive} icon={HeartHandshake} />
-                <span className={label}>Feeling stressed? Reach out</span>
               </>
             )}
           </NavLink>
