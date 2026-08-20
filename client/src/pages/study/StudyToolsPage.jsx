@@ -1,14 +1,16 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import toast from '../../utils/toast';
 import {
   Timer, CheckSquare, Flame, BarChart2, Play, Pause, RotateCcw,
   Coffee, Zap, Brain, BookOpen, ChevronDown, ChevronUp, Music2, Target,
+  Shuffle, Smartphone, PenLine, Repeat, Moon,
 } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { getTodayLog, updateLog, getStreak, getWeekStats } from '../../api/studyTools';
 import { RowSkeleton } from '../../components/common/Skeleton';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { Page } from '../../components/common/motion';
+import { rotatedPages } from '../../utils/rotation';
 
 const MODES = [
   { key: 'focus', label: 'Focus', mins: 25, color: 'bg-primary-600 text-white', ring: 'text-primary-500' },
@@ -113,12 +115,75 @@ const POMODORO_STEPS = [
   { icon: Zap, color: 'text-warn-600 bg-warn-50 dark:bg-warn-950/40', n: '4', label: 'Repeat × 4', desc: 'After 4 rounds, take a longer 15–30 min break before the next set.' },
 ];
 
+// Two of these show at a time, rotating daily — the full set filled the card
+// with advice nobody was going to act on in one sitting, on a page whose actual
+// job is the timer. The rest are a tap away via the shuffle control below.
 const FOCUS_TIPS = [
   { icon: Brain, title: 'One tab rule', tip: 'Close everything except what you need for this session. Notifications off.' },
   { icon: Music2, title: 'Background audio', tip: 'Lo-fi, brown noise, or rain sounds help many people enter flow. Try it.' },
   { icon: Target, title: 'Define "done"', tip: 'Before starting, write one sentence: "This session is successful if I ___."' },
   { icon: Coffee, title: 'Breaks are mandatory', tip: 'Skipping breaks doesn\'t help — it depletes working memory faster.' },
+  { icon: Smartphone, title: 'Phone in another room', tip: 'Face-down on the desk still costs attention. Distance beats willpower.' },
+  { icon: PenLine, title: 'Park the stray thought', tip: 'Mid-session ideas go on a scrap list, not into a new tab. Deal with them after.' },
+  { icon: Repeat, title: 'Start absurdly small', tip: 'Stuck? Commit to two minutes. Starting is the hard part, not continuing.' },
+  { icon: Moon, title: 'Protect the last hour', tip: 'Sleep is when today\'s studying gets filed. A late cram trades away what you learnt.' },
 ];
+
+// How many tips are on screen at once. Two fits the two-column grid and keeps
+// the card shorter than the timer above it, which is the point.
+const TIPS_PER_PAGE = 2;
+
+// Tips card with a manual stepper. The daily rotation decides where the deck
+// starts (so the card still changes on its own for someone who never touches
+// it), and this control walks forward through the same deck without reloading
+// the page. Page state is intentionally not persisted — it's a browsing gesture
+// for the current sitting, not a preference.
+function FocusTips() {
+  const pages = useMemo(() => rotatedPages(FOCUS_TIPS, TIPS_PER_PAGE, 'study-focus-tips'), []);
+  const [page, setPage] = useState(0);
+  const tips = pages[page] || [];
+
+  return (
+    <div className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="font-semibold flex items-center gap-2"><Brain className="h-4 w-4 text-primary-500" /> Focus Tips</p>
+        {pages.length > 1 && (
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-1.5">
+              {pages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i)}
+                  aria-label={`Show tips ${i + 1} of ${pages.length}`}
+                  aria-current={i === page}
+                  className={`h-1.5 rounded-full transition-all ${i === page ? 'w-4 bg-primary-500' : 'w-1.5 bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600'}`}
+                />
+              ))}
+            </div>
+            <button
+              onClick={() => setPage((p) => (p + 1) % pages.length)}
+              className="flex items-center gap-1 rounded-full border border-gray-200 px-2.5 py-1 text-[11px] font-medium text-gray-500 transition-colors hover:border-primary-200 hover:text-primary-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-primary-800 dark:hover:text-primary-400"
+            >
+              <Shuffle className="h-3 w-3" /> Another two
+            </button>
+          </div>
+        )}
+      </div>
+      {/* Keyed on the page so the swap re-runs the fade instead of snapping. */}
+      <div key={page} className="animate-in grid sm:grid-cols-2 gap-3">
+        {tips.map((tip) => (
+          <div key={tip.title} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
+            <div className="rounded-full bg-primary-50 p-2 dark:bg-primary-950/40"><tip.icon className="h-4 w-4 text-primary-500" /></div>
+            <div>
+              <p className="text-xs font-semibold">{tip.title}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{tip.tip}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function StudyToolsPage() {
   useDocumentTitle('Focus');
@@ -168,7 +233,12 @@ export default function StudyToolsPage() {
   );
 
   return (
-    <Page className="space-y-5">
+    <Page className="space-y-5" overview={{
+      pageKey: 'study-focus',
+      title: 'Deep work, timed',
+      blurb: 'Pomodoro timers, session tracking and streaks that measure focused hours instead of hours at the desk.',
+      takeaway: 'Start one timed session now — the streak only counts finished sessions.',
+    }}>
       <PageHeader icon={Timer} title="Focus" subtitle="Deep work tools that build streaks, not stress" />
 
       {/* Stats row */}
@@ -243,20 +313,7 @@ export default function StudyToolsPage() {
       </div>
 
       {/* Focus Tips */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
-        <p className="mb-4 font-semibold flex items-center gap-2"><Brain className="h-4 w-4 text-primary-500" /> Focus Tips</p>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {FOCUS_TIPS.map((tip) => (
-            <div key={tip.title} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
-              <div className="rounded-full bg-primary-50 p-2 dark:bg-primary-950/40"><tip.icon className="h-4 w-4 text-primary-500" /></div>
-              <div>
-                <p className="text-xs font-semibold">{tip.title}</p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{tip.tip}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <FocusTips />
 
       {/* Week Heatmap */}
       {weekStats && (

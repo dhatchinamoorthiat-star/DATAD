@@ -6,6 +6,7 @@ import { FeedSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import TierGate from '../../components/common/TierGate';
 import { FEATURE } from '../../utils/planFeatures';
+import { pickDaily } from '../../utils/rotation';
 import { Page } from '../../components/common/motion';
 
 const CATEGORY_META = {
@@ -66,6 +67,17 @@ export default function InterviewQuestionsPage() {
   const categories = Object.keys(CATEGORY_META);
   const hasAny = categories.some((c) => (bank[c] || []).length > 0);
 
+  // Unlike the static pools elsewhere, this rotates over data fetched from the
+  // server, so the pool grows as admins add companies. Sorting first makes the
+  // pick independent of whatever order the API happened to return — otherwise
+  // "today's question" would change on a refetch rather than on a new day.
+  const questionOfTheDay = pickDaily(
+    categories
+      .flatMap((c) => (bank[c] || []).map((q) => ({ ...q, category: c })))
+      .sort((a, b) => a.question.localeCompare(b.question)),
+    'interview-qotd'
+  );
+
   const filtered = (questions) => {
     if (!filter.trim()) return questions;
     const q = filter.toLowerCase();
@@ -75,7 +87,12 @@ export default function InterviewQuestionsPage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'career-questions',
+      title: 'Questions people actually got asked',
+      blurb: 'A batch-sourced bank of real interview questions, tagged by company and round.',
+      takeaway: 'Filter to the company you are interviewing with and rehearse those answers out loud.',
+    }}>
       <div className="mb-4">
         <h1 className="text-xl font-bold">Interview Question Bank</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -95,6 +112,28 @@ export default function InterviewQuestionsPage() {
           />
         ) : (
           <>
+            {/* Hidden while filtering — during a search the reader is looking
+                for something specific and a featured card is in the way. */}
+            {questionOfTheDay && !filter.trim() && (
+              <section className="mb-4 rounded-2xl border border-primary-200 bg-primary-50/60 p-5 dark:border-primary-900/50 dark:bg-primary-950/20">
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
+                    Question of the day
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${CATEGORY_META[questionOfTheDay.category]?.color || ''}`}>
+                    {CATEGORY_META[questionOfTheDay.category]?.label}
+                  </span>
+                </div>
+                <p className="text-sm font-medium">{questionOfTheDay.question}</p>
+                <Link
+                  to={`/career/companies/${questionOfTheDay.companySlug}`}
+                  className="mt-1.5 inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+                >
+                  Asked at {questionOfTheDay.company} <ExternalLink className="h-3 w-3" />
+                </Link>
+              </section>
+            )}
+
             <input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}

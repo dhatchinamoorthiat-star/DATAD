@@ -17,6 +17,9 @@ import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import DateInput from '../components/common/DateInput';
 import Button from '../components/common/Button';
+import { Page } from '../components/common/motion';
+import { JOURNAL_PROMPTS } from '../utils/prompts';
+import { pickDaily } from '../utils/rotation';
 
 const MOODS = [
   { value: 'great', label: '😄 Great' },
@@ -29,6 +32,12 @@ const MOODS = [
 const moodEmoji = (mood) => MOODS.find((m) => m.value === mood)?.label.split(' ')[0] || '🙂';
 
 export default function JournalPage() {
+  // A blank box is the main reason an entry never gets written, so the empty
+  // state and the composer both offer today's prompt. It is a suggestion, not a
+  // field — nothing is prefilled, so an entry never starts as someone else's
+  // words.
+  const prompt = pickDaily(JOURNAL_PROMPTS, 'journal-prompt');
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null); // entry _id to delete
@@ -82,7 +91,12 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
+    <Page overview={{
+      pageKey: 'life-journal',
+      title: 'A private log, just yours',
+      blurb: 'Dated entries nobody else can read — for thinking something through rather than performing it.',
+      takeaway: 'Write one honest paragraph today; the value shows up when you reread it in a month.',
+    }}>
       <div className="mb-1 flex items-center justify-between">
         <h1 className="flex items-center gap-2 text-xl font-bold">
           <BookLock className="h-5 w-5 text-indigo-500" /> My Journal
@@ -101,7 +115,7 @@ export default function JournalPage() {
         <EmptyState
           icon={BookLock}
           title="Your journal is empty"
-          subtitle="Capture a memory, a thought, or how today went"
+          subtitle={prompt ? `Today's prompt — ${prompt}` : 'Capture a memory, a thought, or how today went'}
         />
       ) : (
         <div className="space-y-3">
@@ -187,10 +201,17 @@ export default function JournalPage() {
               placeholder="Write freely — this stays between you and the page…"
               className="input"
             />
+            {/* Only offered on a new entry; when editing, the reader already has
+                something on the page and a prompt is just noise. */}
+            {!editing && prompt && (
+              <p className="mt-1.5 text-xs text-gray-400">
+                Stuck? {prompt}
+              </p>
+            )}
           </div>
           <Button type="submit" fullWidth disabled={formState.isSubmitting}>{formState.isSubmitting ? 'Saving…' : 'Save entry'}</Button>
         </form>
       </Modal>
-    </div>
+    </Page>
   );
 }

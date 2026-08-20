@@ -1,17 +1,25 @@
-import { Link } from 'react-router-dom';
-import { Lightbulb, ArrowRight } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { Page } from '../../components/common/motion';
+import { STUDY_TECHNIQUES } from '../../utils/wellbeingContent';
+import RotatingTechniques from '../../components/common/RotatingTechniques';
 
-const STUDY_TECHNIQUES = [
-  { title: 'Active recall', body: 'Close the book and write everything you remember, then check. Retrieval — not re-reading — is what builds memory.' },
-  { title: 'Spaced repetition', body: 'Review a topic after 1 day, 3 days, then a week. Each spaced review roughly doubles how long it sticks.' },
-  { title: 'The Feynman method', body: 'Explain the concept out loud as if teaching a junior. Wherever you stumble is exactly what you don\'t yet understand.' },
-  { title: 'One-topic focus blocks', body: 'One subject, 25–45 minutes, phone in another room. Try the timer on the Focus page.', link: { to: '/study/focus', label: 'Open Focus' } },
-];
+// The pool is 22 dense paragraphs. Printing all of them made the page a wall
+// nobody read past the third item, which defeats the point of writing them
+// carefully. RotatingTechniques handles the disclosure — see that file for why
+// it steps through the list rather than re-rolling at random.
+const ACCENT = {
+  card: 'border-amber-200 bg-amber-50/60 dark:border-amber-900/50 dark:bg-amber-950/20',
+  label: 'text-amber-600 dark:text-amber-400',
+};
 
 export default function WellbeingStudyPage() {
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'wellbeing-study',
+      title: 'How to study, not what',
+      blurb: 'Evidence-backed technique — spaced repetition, active recall, and why rereading notes feels productive but is not.',
+      takeaway: 'Swap one rereading session this week for self-testing and compare how much sticks.',
+    }}>
       <div className="mb-5">
         <h1 className="flex items-center gap-2 text-xl font-bold">
           <Lightbulb className="h-5 w-5 text-amber-500" /> Study techniques that actually work
@@ -20,21 +28,13 @@ export default function WellbeingStudyPage() {
           Evidence-based methods used by top learners — not cramming.
         </p>
       </div>
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-6 dark:border-gray-800/80 dark:bg-gray-900">
-        <ul className="space-y-5">
-          {STUDY_TECHNIQUES.map((t) => (
-            <li key={t.title}>
-              <p className="text-sm font-medium">{t.title}</p>
-              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{t.body}</p>
-              {t.link && (
-                <Link to={t.link.to} className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
-                  {t.link.label} <ArrowRight className="h-3 w-3" />
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+
+      <RotatingTechniques
+        items={STUDY_TECHNIQUES}
+        seedKey="wellbeing-study"
+        todayLabel="Today's technique"
+        accent={ACCENT}
+      />
     </Page>
   );
 }
