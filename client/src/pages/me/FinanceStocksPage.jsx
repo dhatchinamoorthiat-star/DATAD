@@ -5,7 +5,7 @@ import { Page } from '../../components/common/motion';
 import { Skeleton } from '../../components/common/Skeleton';
 import Modal from '../../components/common/Modal';
 import { listStockQuotes, getStockInsight } from '../../api/finance';
-import { SECTORS, sectorMeta } from '../../utils/stocks';
+import { SECTORS, sectorMeta, dailyRotation } from '../../utils/stocks';
 import { DAX, DAX_CAPABILITY, DAX_THINKING } from '../../utils/dax';
 
 const inr = (n) => '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 2 });
@@ -175,17 +175,20 @@ function StockCard({ stock }) {
 // It was previously written to localStorage, which meant a student ticked the
 // box once — possibly months ago, on a machine they share — and the risk notice
 // never appeared again. An acknowledgement nobody re-reads is not an
-// acknowledgement. sessionStorage scopes it to the browser tab: accept once and
-// it stays out of your way while you're working, but a new session asks again.
+// acknowledgement. It is deliberately not persisted anywhere: the gate is state
+// only, so it comes back on every mount — every reload, and every time the page
+// is navigated to afresh. Accepting is a decision about this sitting of the
+// page, not a preference to be remembered.
 const RISK_ACK_KEY = 'finance:stocks:riskAck';
 
 export default function FinanceStocksPage() {
   const [riskAccepted, setRiskAccepted] = useState(() => {
-    // Same key previously lived in localStorage. Clear that permanent grant,
-    // or anyone who accepted under the old behaviour never sees the notice
-    // again — which is exactly the state this page was found in.
+    // Earlier versions stored the grant in localStorage, then sessionStorage.
+    // Clear both, or anyone carrying an old grant keeps skipping a gate that is
+    // no longer written — which is exactly the state this page was found in.
     localStorage.removeItem(RISK_ACK_KEY);
-    return sessionStorage.getItem(RISK_ACK_KEY) === 'true';
+    sessionStorage.removeItem(RISK_ACK_KEY);
+    return false;
   });
   const [riskChecked, setRiskChecked] = useState(false);
   const [stocks, setStocks] = useState([]);
@@ -225,9 +228,12 @@ export default function FinanceStocksPage() {
     [stocks]
   );
 
+  // Built from the unfiltered fetch, so the strip is one-per-sector regardless
+  // of which chip is active — it is simply not rendered while a chip is on.
+  const rotation = useMemo(() => dailyRotation(stocks), [stocks]);
+
   const acceptRisk = () => {
     if (!riskChecked) return;
-    sessionStorage.setItem(RISK_ACK_KEY, 'true');
     setRiskAccepted(true);
   };
 
@@ -277,7 +283,12 @@ export default function FinanceStocksPage() {
   }
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'finance-stocks',
+      title: 'Where NSE names are sitting',
+      blurb: 'Well-known Indian stocks placed against their 52-week range, as a starting point for reading a chart.',
+      takeaway: 'Treat this as practice at reading ranges, not as a buy list.',
+    }}>
       <div className="mb-5">
         <h1 className="text-xl font-bold">Stocks</h1>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
@@ -309,6 +320,30 @@ export default function FinanceStocksPage() {
         </p>
       ) : (
         <>
+          {/* Only when unfiltered: picking a sector is an explicit request to
+              see that sector whole, and a rotation strip on top of it would be
+              showing one of the same cards twice. */}
+          {!sector && rotation.length > 0 && (
+            <section className="mb-8">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                  Today&rsquo;s rotation
+                </h2>
+                <p className="text-[11px] text-gray-400">
+                  One per sector, changes daily
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {rotation.map((s) => <StockCard key={`rot-${s.symbol}`} stock={s} />)}
+              </div>
+            </section>
+          )}
+
+          {!sector && rotation.length > 0 && (
+            <h2 className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-100">
+              All tracked stocks
+            </h2>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {stocks.map((s) => <StockCard key={s.symbol} stock={s} />)}
           </div>
@@ -319,6 +354,20 @@ export default function FinanceStocksPage() {
           )}
         </>
       )}
+
+      {/* The risk acknowledgement above is a one-time session gate, so it is
+          gone for the rest of the session the moment it is accepted — and this
+          view is the one actually being read. The disclaimer has to stand here
+          too, outside the loading/error branches, so it is present on every
+          state of the page rather than only when quotes happen to load. */}
+      <div className="mt-6 flex items-start gap-2 border-t border-gray-100 pt-4 text-[11px] leading-relaxed text-gray-400 dark:border-gray-800">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p>
+          Educational only — not financial advice. Prices come from a public market data feed and
+          lag real time by roughly 15 minutes. Markets carry risk and past range doesn&rsquo;t
+          predict what happens next. Talk to a licensed advisor before investing real money.
+        </p>
+      </div>
     </Page>
   );
 }
