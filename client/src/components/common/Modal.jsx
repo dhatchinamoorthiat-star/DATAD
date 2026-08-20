@@ -12,9 +12,19 @@ import { X } from 'lucide-react';
 export default function Modal({ open, onClose, title, children, blur = true }) {
   const closeRef = useRef(null);
 
+  // Callers almost always pass an inline `onClose`, so it is a fresh function
+  // on every render. Depending on it directly re-ran this whole effect on each
+  // keystroke inside the dialog: the autofocus timer fired again and yanked
+  // focus to the X button mid-typing, and the re-run captured an already
+  // 'hidden' body overflow as the value to "restore", leaving the page
+  // scroll-locked after the dialog closed. Route it through a ref so the
+  // effect depends only on `open`.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => { if (e.key === 'Escape') onCloseRef.current(); };
     document.addEventListener('keydown', onKey);
     const t = setTimeout(() => closeRef.current?.focus(), 50);
 
@@ -30,7 +40,7 @@ export default function Modal({ open, onClose, title, children, blur = true }) {
       clearTimeout(t);
       document.body.style.overflow = prevOverflow;
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (
