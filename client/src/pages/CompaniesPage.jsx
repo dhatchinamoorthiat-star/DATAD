@@ -5,6 +5,7 @@ import { listCompanies } from '../api/companies';
 import { SECTORS, sectorMeta } from '../utils/companies';
 import { CardGridSkeleton } from '../components/common/Skeleton';
 import EmptyState from '../components/common/EmptyState';
+import { Page } from '../components/common/motion';
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState(null);
@@ -32,7 +33,12 @@ export default function CompaniesPage() {
   }, [sector]);
 
   return (
-    <div className="animate-in mx-auto w-full max-w-3xl px-4 py-6">
+    <Page overview={{
+      pageKey: 'career-companies',
+      title: 'Who hires from here',
+      blurb: 'Company profiles with sector, roles, pay ranges and the questions past batches were asked.',
+      takeaway: 'Open a company before you apply so you know its process going in.',
+    }}>
       <div className="mb-6 text-center">
         <h1 className="text-3xl font-bold">
           Company <span className="accent-text">prep cards</span>
@@ -150,6 +156,6 @@ export default function CompaniesPage() {
           })}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

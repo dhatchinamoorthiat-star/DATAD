@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { Plus, Trash2, Wallet, TrendingUp, Download } from 'lucide-react';
 import { listExpenses, createExpense, deleteExpense } from '../../api/finance';
-import { formatDate } from '../../utils/dateUtils';
+import { formatDate, localDateKey, localMonthKey } from '../../utils/dateUtils';
 import Loader from '../../components/common/Loader';
 import EmptyState from '../../components/common/EmptyState';
 import Modal from '../../components/common/Modal';
@@ -14,7 +14,7 @@ import { Page } from '../../components/common/motion';
 const CATEGORIES = ['Food', 'Travel', 'Rent', 'Books & Courses', 'Entertainment', 'Shopping', 'Other'];
 const SOURCES    = ['Allowance', 'Stipend', 'Salary', 'Freelance', 'Scholarship', 'Gift', 'Other'];
 const formatINR  = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+const currentMonth = () => localMonthKey();
 
 const exportCSV = (expenses, month) => {
   const rows = [['Date', 'Type', 'Category / Source', 'Note', 'Amount (INR)']];
@@ -74,7 +74,12 @@ export default function FinanceTrackerPage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'finance-tracker',
+      title: 'Every rupee, logged',
+      blurb: 'Record what you spend by category and see the monthly pattern instead of guessing at it.',
+      takeaway: 'Log expenses the day they happen — reconstructing a week later never works.',
+    }}>
       <div className="mb-5">
         <h1 className="text-xl font-bold">Tracker</h1>
         <p className="mt-0.5 text-xs text-gray-400">All your income and expenses, month by month.</p>
@@ -173,7 +178,7 @@ export default function FinanceTrackerPage() {
           </div>
           <div>
             <label htmlFor="finance-tracker-date" className="mb-1 block text-sm font-medium">Date</label>
-            <DateInput id="finance-tracker-date" defaultValue={new Date().toISOString().slice(0, 10)} {...expenseForm.register('date')} />
+            <DateInput id="finance-tracker-date" defaultValue={localDateKey()} {...expenseForm.register('date')} />
           </div>
           <button type="submit" disabled={expenseForm.formState.isSubmitting}
             className={`w-full rounded-lg py-2 text-sm font-medium text-white disabled:opacity-50 ${entryModal === 'income' ? 'bg-green-600 hover:bg-green-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>

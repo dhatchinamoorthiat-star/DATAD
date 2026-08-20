@@ -11,6 +11,7 @@ import AIBadge from '../components/common/AIBadge';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import { useAuth } from '../context/AuthContext';
+import { Page } from '../components/common/motion';
 
 /** One radio row in SendDialog — the whole card is the label, so the hit target
  *  is the card rather than the 16px radio itself. */
@@ -351,7 +352,12 @@ export default function ResumePage() {
   if (loading) return <div className="mx-auto max-w-3xl px-4 py-10"><FeedSkeleton count={6} /></div>;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <Page overview={{
+      pageKey: 'career-resume',
+      title: 'Build the resume once',
+      blurb: 'A structured resume builder with a completeness score and an AI review, exported as a typeset PDF.',
+      takeaway: 'Clear every gap the completeness meter lists before you submit it.',
+    }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Resume</h1>
@@ -507,7 +513,7 @@ export default function ResumePage() {
           })()
         }
       />}
-    </div>
+    </Page>
   );
 }
 

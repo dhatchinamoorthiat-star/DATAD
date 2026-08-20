@@ -153,8 +153,13 @@ export default function StarStoriesPage() {
   };
 
   return (
-    <Page bare>
-      <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-6">
+    <Page overview={{
+      pageKey: 'growth-stories',
+      title: 'One story, one answer',
+      blurb: 'Your past work written up as Situation-Task-Action-Result, so behavioural questions have a ready answer.',
+      takeaway: 'Write three stories covering conflict, failure and impact — they cover most of what gets asked.',
+    }}>
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <PageHeader
           title="STAR Story Bank"
           subtitle="Your prior work experience, structured for behavioral interviews. One story = one interview answer."

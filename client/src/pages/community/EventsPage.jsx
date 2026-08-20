@@ -128,7 +128,12 @@ export default function EventsPage() {
   const myRsvpEvents = myRsvps.filter((r) => r.status !== 'not-going' && r.event);
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-events',
+      title: 'Never miss a batch event',
+      blurb: 'Campus events with RSVPs, in one place instead of scattered across group chats.',
+      takeaway: 'RSVP early — organizers plan around it.',
+    }}>
       <PageHeader
         icon={CalendarRange}
         title="Events"

@@ -75,7 +75,12 @@ export default function SkillExchangePage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-skills',
+      title: 'Teach, learn, collaborate',
+      blurb: 'A peer-to-peer skill board — batchmates offering to teach something, and batchmates looking to learn it.',
+      takeaway: 'Offer a skill you know, or book a session with someone who does.',
+    }}>
       <PageHeader
         icon={GraduationCap}
         title="Skill Exchange"

@@ -4,7 +4,12 @@ import { Page } from '../../components/common/motion';
 
 export default function WellbeingSupportPage() {
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'wellbeing-support',
+      title: 'When you need a person',
+      blurb: 'Counselling contacts and helplines, for stress and burnout that a better routine will not fix on its own.',
+      takeaway: 'Save one number now, while you do not need it.',
+    }}>
       <div className="mb-5">
         <h1 className="flex items-center gap-2 text-xl font-bold">
           <HeartHandshake className="h-5 w-5 text-indigo-500" /> Support

@@ -87,7 +87,12 @@ export default function OpportunitiesPage() {
     .sort((a, b) => new Date(a.deadline || 0) - new Date(b.deadline || 0));
 
   return (
-    <Page className="space-y-6">
+    <Page className="space-y-6" overview={{
+      pageKey: 'career-opportunities',
+      title: 'Open roles and internships',
+      blurb: 'Placements, internships and off-campus openings shared for your batch, with deadlines attached.',
+      takeaway: 'Sort by deadline and apply to the ones closing this week first.',
+    }}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowRight, BookOpen, PenSquare, Sparkles } from 'lucide-react';
 import DailyCaseCard from '../../components/dashboard/DailyCaseCard';
+import CourseNewsCard from '../../components/dashboard/CourseNewsCard';
 import TodayFocus from '../../components/dashboard/TodayFocus';
 import { listNotes } from '../../api/notes';
 import { listTasks } from '../../api/tasks';
@@ -11,6 +12,7 @@ import { Skeleton } from '../../components/common/Skeleton';
 import ErrorState from '../../components/common/ErrorState';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
+import DailyTip from '../../components/common/DailyTip';
 import { Page } from '../../components/common/motion';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import useAsync from '../../hooks/useAsync';
@@ -194,7 +196,12 @@ export default function StudyHubPage() {
   }
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'study-hub',
+      title: 'Where your coursework lives',
+      blurb: 'Notes, assignments, projects, resources and focus tools for the semester, pulled into one view.',
+      takeaway: 'Check what is due here first, then open the tab you need.',
+    }}>
       {/* TOP BAR — greeting + secondary action */}
       <div className="flex items-center justify-between py-4">
         <div>
@@ -212,6 +219,8 @@ export default function StudyHubPage() {
 
       {/* TODAY'S FOCUS — roadmap suggestion (if applicable) */}
       {data && <div className="mt-6"><TodayFocus data={data} /></div>}
+
+      <DailyTip workspace="study" className="mt-6" />
 
       {/* CONTINUE WHERE YOU LEFT OFF — the card IS the hero */}
       <div className="mt-6">
@@ -365,6 +374,12 @@ export default function StudyHubPage() {
       <div className="border-t border-gray-100 dark:border-gray-800/60" />
       <div className="py-10" id="daily-case">
         <DailyCaseCard />
+      </div>
+
+      {/* COURSE NEWS — live, personalized to the program picked at registration */}
+      <div className="border-t border-gray-100 dark:border-gray-800/60" />
+      <div className="py-10">
+        <CourseNewsCard />
       </div>
 
       {/* FOOTNOTE */}

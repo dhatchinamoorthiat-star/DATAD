@@ -8,6 +8,7 @@ import EmptyState from '../components/common/EmptyState';
 import ErrorState from '../components/common/ErrorState';
 import { CardGridSkeleton } from '../components/common/Skeleton';
 import useAsync from '../hooks/useAsync';
+import { Page } from '../components/common/motion';
 
 export default function NotesListPage() {
   const { data: notes, error, loading, reload } = useAsync(() => listNotes({}), []);
@@ -25,7 +26,12 @@ export default function NotesListPage() {
   }, [notes, subject, query]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
+    <Page wide overview={{
+      pageKey: 'study-notes',
+      title: 'Your subject notes',
+      blurb: 'Every note you have written, filterable by subject and searchable by title or body text.',
+      takeaway: 'Search before you write — the note you need may already be here.',
+    }}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Notes</h1>
@@ -101,6 +107,6 @@ export default function NotesListPage() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

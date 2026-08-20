@@ -11,6 +11,7 @@ import Modal from '../components/common/Modal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import DateInput from '../components/common/DateInput';
 import Button from '../components/common/Button';
+import { Page } from '../components/common/motion';
 
 export default function PlannerPage() {
   const [tasks, setTasks] = useState([]);
@@ -36,7 +37,7 @@ export default function PlannerPage() {
 
   const openCreate = () => {
     setEditingTask(null);
-    reset({ title: '', type: 'assignment', subject: '', dueDate: '' });
+    reset({ title: '', type: 'other', subject: '', dueDate: '' });
     setShowForm(true);
   };
 
@@ -90,7 +91,12 @@ export default function PlannerPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <Page overview={{
+      pageKey: 'life-planner',
+      title: 'Today, in order',
+      blurb: 'A simple task list with due dates and priorities — everything you owe yourself, not just coursework.',
+      takeaway: 'Keep it to what you can actually finish today; overdue items turn red for a reason.',
+    }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Planner</h1>
@@ -148,7 +154,7 @@ export default function PlannerPage() {
             <div>
               <label htmlFor="task-type" className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
               <select id="task-type" {...register('type')} className="input">
-                {TASK_TYPES?.map((t) => <option key={t} value={t}>{t}</option>)}
+                {TASK_TYPES?.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div>
@@ -164,7 +170,7 @@ export default function PlannerPage() {
       </Modal>
 
       <ConfirmModal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} title="Delete task?" message="This cannot be undone." confirmLabel="Delete" />
-    </div>
+    </Page>
   );
 }
 

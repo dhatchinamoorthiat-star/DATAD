@@ -20,7 +20,12 @@ export default function AnnouncementsPage() {
   }
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-announcements',
+      title: 'Official batch updates',
+      blurb: 'Admin announcements, pinned and dated, so nothing important gets buried in chat.',
+      takeaway: "Check pinned items first — they're usually time-sensitive.",
+    }}>
       <h1 className="mb-4 text-xl font-bold">Announcements</h1>
       {announcements.length === 0 ? (
         <EmptyState icon={Megaphone} title="No announcements yet" subtitle="Batch updates from the admin will appear here." />

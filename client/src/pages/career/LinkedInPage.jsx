@@ -115,7 +115,12 @@ export default function LinkedInPage() {
   const analysis = state?.analysis;
 
   return (
-    <Page className="mx-auto max-w-3xl px-4 py-8">
+    <Page overview={{
+      pageKey: 'career-linkedin',
+      title: 'Profile audit, role by role',
+      blurb: 'Scores your LinkedIn profile against the job you actually want and names the specific lines to rewrite.',
+      takeaway: 'Run it against one target role, then fix the headline and About section it flags.',
+    }}>
       <PageHeader
         icon={Contact}
         title="LinkedIn Enhancer"

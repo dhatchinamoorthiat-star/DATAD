@@ -9,6 +9,7 @@ import { listTasks } from '../../api/tasks';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
 import { Skeleton } from '../../components/common/Skeleton';
 import ErrorState from '../../components/common/ErrorState';
+import DailyTip from '../../components/common/DailyTip';
 import { Page } from '../../components/common/motion';
 
 const FEATURE_CARDS = [
@@ -68,7 +69,12 @@ export default function MeHubPage() {
     .slice(0, 6);
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'life-hub',
+      title: 'Keeping yourself organised',
+      blurb: 'Your journal, task planner and calendar — the personal side of the week, separate from coursework and the job hunt.',
+      takeaway: 'Check the planner first; anything dated is already on the calendar.',
+    }}>
       {/* TOP BAR — date + snapshot label */}
       <div className="flex items-center justify-between py-4">
         <span className="text-xs font-medium tracking-wide text-gray-400">
@@ -103,8 +109,10 @@ export default function MeHubPage() {
         </div>
       </div>
 
+      <DailyTip workspace="me" className="mt-6" />
+
       {/* FEATURE CARDS — 2×2 grid */}
-      <div className="mt-8 grid grid-cols-2 gap-3">
+      <div className="mt-6 grid grid-cols-2 gap-3">
         {FEATURE_CARDS.map((c) => (
           <Link
             key={c.to}

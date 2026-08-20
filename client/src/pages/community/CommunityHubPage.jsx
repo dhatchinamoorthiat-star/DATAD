@@ -9,6 +9,7 @@ import { listPosts } from '../../api/posts';
 import { formatDate } from '../../utils/dateUtils';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import ErrorState from '../../components/common/ErrorState';
+import DailyTip from '../../components/common/DailyTip';
 import { Page } from '../../components/common/motion';
 import useAsync from '../../hooks/useAsync';
 
@@ -41,11 +42,18 @@ export default function CommunityHubPage() {
   }
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-hub',
+      title: 'Your Community home base',
+      blurb: 'One jump-off point for everything the batch shares — feed, announcements, gallery, marketplace and skills.',
+      takeaway: 'Start here, then dive into whichever section you need.',
+    }}>
       <div className="mb-4">
         <h1 className="text-xl font-bold">Community</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">Everything the batch shares</p>
       </div>
+
+      <DailyTip workspace="community" className="mb-4" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Feed preview */}

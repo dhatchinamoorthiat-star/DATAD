@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { listExpenses, createExpense, getSummary, setBudget } from '../../api/finance';
+import { localDateKey, localMonthKey } from '../../utils/dateUtils';
 import Modal from '../../components/common/Modal';
 import DateInput from '../../components/common/DateInput';
 import Button from '../../components/common/Button';
@@ -18,7 +19,7 @@ import { Skeleton } from '../../components/common/Skeleton';
 
 const CATEGORIES = ['Food', 'Travel', 'Rent', 'Books & Courses', 'Entertainment', 'Shopping', 'Other'];
 const formatINR  = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
-const currentMonth = () => new Date().toISOString().slice(0, 7);
+const currentMonth = () => localMonthKey();
 
 const exportCSV = (expenses, month) => {
   const rows = [['Date', 'Type', 'Category / Source', 'Note', 'Amount (INR)']];
@@ -83,7 +84,7 @@ export default function FinanceHubPage() {
       await createExpense({ ...data, month });
       toast.success(data.kind === 'income' ? 'Income added' : 'Expense added');
       setShowModal(false);
-      reset({ kind: 'expense', category: '', source: '', amount: '', note: '', date: new Date().toISOString().slice(0, 10) });
+      reset({ kind: 'expense', category: '', source: '', amount: '', note: '', date: localDateKey() });
       fetchData(month);
     } catch (err) { toast.error(err.response?.data?.message || 'Could not save'); }
   };
@@ -116,7 +117,12 @@ export default function FinanceHubPage() {
     .sort((a, b) => b.total - a.total);
 
   return (
-    <Page className="mx-auto max-w-2xl px-4 py-8">
+    <Page overview={{
+      pageKey: 'finance-hub',
+      title: 'Where the money goes',
+      blurb: 'Spend tracking, loan and SIP calculators, stock basics and an MBA ROI model, sized for a student budget.',
+      takeaway: 'Log a week of real spending in Tracker before trusting any of the projections.',
+    }}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Finance</h1>
@@ -124,7 +130,7 @@ export default function FinanceHubPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" icon={Download} onClick={() => exportCSV(expenses, month)}>CSV</Button>
-          <Button variant="primary" size="sm" icon={Plus} onClick={() => { reset({ kind: 'expense', category: '', source: '', amount: '', note: '', date: new Date().toISOString().slice(0, 10) }); setShowModal(true); }}>Add</Button>
+          <Button variant="primary" size="sm" icon={Plus} onClick={() => { reset({ kind: 'expense', category: '', source: '', amount: '', note: '', date: localDateKey() }); setShowModal(true); }}>Add</Button>
         </div>
       </div>
 

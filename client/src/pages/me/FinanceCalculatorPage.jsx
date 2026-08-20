@@ -133,7 +133,12 @@ function EmiCalculator() {
 
 export default function FinanceCalculatorPage() {
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'finance-calculator',
+      title: 'Run the numbers first',
+      blurb: 'EMI, SIP and compounding calculators for education loans and early investing decisions.',
+      takeaway: 'Model the loan EMI against a realistic starting salary, not the best-case one.',
+    }}>
       <div className="mb-5">
         <h1 className="text-xl font-bold">Calculator</h1>
         <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">

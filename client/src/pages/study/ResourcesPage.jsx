@@ -114,7 +114,12 @@ export default function ResourcesPage() {
   const folderItems = openFolder ? (items || []).filter((i) => (i.subject || 'General') === openFolder) : [];
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'study-resources',
+      title: 'The shared resource library',
+      blurb: 'Books, links, slides and past papers collected by subject so nobody hunts for the same PDF twice.',
+      takeaway: 'Filter by your subject before an exam, and upload anything you had to search for.',
+    }}>
       <PageHeader
         icon={FileText}
         title="Resource Library"

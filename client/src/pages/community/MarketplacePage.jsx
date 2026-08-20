@@ -71,7 +71,12 @@ export default function MarketplacePage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-marketplace',
+      title: 'Buy and sell within the batch',
+      blurb: 'Books, electronics, prep material — zero commission, zero hassle.',
+      takeaway: "List what you don't need; check here before buying new.",
+    }}>
       <PageHeader
         icon={ShoppingBag}
         title="Marketplace"

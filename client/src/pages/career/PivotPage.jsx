@@ -206,6 +206,22 @@ export default function PivotPage({ mode }) {
     ? 'Your personalised 3-month plan — know exactly what to learn next.'
     : 'From your current domain to your target role — map the gap, track the journey.';
 
+  // One component backs two sub-tabs (/growth/roadmap and /growth/pivot), so the
+  // guide copy has to follow `mode` the same way the title and subtitle do.
+  const overview = isRoadmap
+    ? {
+        pageKey: 'growth-roadmap',
+        title: 'What to learn next, in order',
+        blurb: 'A three-month plan generated from your target role, broken into skill gaps with a daily check-in.',
+        takeaway: 'Check in daily — the plan reorders itself around what you have actually closed.',
+      }
+    : {
+        pageKey: 'growth-pivot',
+        title: 'Mapping the switch',
+        blurb: 'Set where you are now and where you want to land, and see the skill gap between the two.',
+        takeaway: 'Name the target role first — everything else here is derived from it.',
+      };
+
   if (loading) {
     return (
       <Page bare>
@@ -222,8 +238,8 @@ export default function PivotPage({ mode }) {
   }
 
   return (
-    <Page bare>
-      <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-6">
+    <Page overview={overview}>
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <PageHeader title={title} subtitle={subtitle} />
 
         {/* ── Roadmap Hero (roadmap mode only) ──────────────────────────── */}

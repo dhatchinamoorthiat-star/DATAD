@@ -1,3 +1,5 @@
+import PageOverview from './PageOverview';
+
 // Entrance animations are CSS-driven (see index.css) so content always settles
 // visible even if the tab is backgrounded / the JS animation loop is throttled.
 
@@ -14,7 +16,36 @@ export const CONTAINER_WIDE = 'mx-auto w-full max-w-5xl px-4';
 // Page-level entrance wrapper + canonical measure.
 // Pass `bare` for pages that own their own full-bleed layout (editors, landing).
 // Pass `wide` for card/grid pages that read better on the wider measure.
-export function Page({ children, className, bare = false, wide = false }) {
+// `wide` and `overview` compose: the guide card sits beside the wider measure.
+// Pass `overview` ({ pageKey, title, blurb, takeaway }) to add a Dax-explains-
+// this-page card in a sticky right-hand column (xl screens and up). That
+// column is a flex sibling of the (unconstrained-width) row, not nested
+// inside a further mx-auto max-w wrapper — nesting it left a blank gutter
+// between the card and the true right edge on wide screens, which defeated
+// the point of putting a card there at all.
+export function Page({ children, className, bare = false, wide = false, overview = null }) {
+  if (overview) {
+    return (
+      <div className="animate-in flex w-full gap-6 px-4 py-6 xl:px-6">
+        <div className="min-w-0 flex-1">
+          {/* `className` lands here, not on the flex row — it means "classes for
+              the page's content" in the non-overview branch too, and a spacing
+              utility like space-y-5 on the row would silently retarget itself
+              at [content column, aside] and drop the page's own rhythm. */}
+          {/* `wide` still means what it means without an overview — a card-grid
+              page does not become a prose page just because it grew a guide
+              card. It is a cap, not a floor: the aside claims its 288px first,
+              so the column only reaches 5xl on genuinely wide screens. */}
+          <div className={`mx-auto w-full ${wide ? 'max-w-5xl' : 'max-w-3xl'} ${className || ''}`}>{children}</div>
+        </div>
+        <aside className="hidden w-72 shrink-0 xl:block">
+          <div className="sticky top-24">
+            <PageOverview {...overview} />
+          </div>
+        </aside>
+      </div>
+    );
+  }
   const measure = wide ? CONTAINER_WIDE : CONTAINER;
   return (
     <div className={`animate-in ${bare ? '' : `${measure} py-6`} ${className || ''}`}>

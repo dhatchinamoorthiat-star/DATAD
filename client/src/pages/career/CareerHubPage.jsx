@@ -9,6 +9,7 @@ import PlacementCountdown from '../../components/career/PlacementCountdown';
 import PlacementJourney from '../../components/career/PlacementJourney';
 import ReadinessBreakdown from '../../components/career/ReadinessBreakdown';
 import { getReadiness } from '../../api/readiness';
+import DailyTip from '../../components/common/DailyTip';
 import { Page } from '../../components/common/motion';
 
 const NEWS_LIMIT = 6;
@@ -47,11 +48,18 @@ export default function CareerHubPage() {
   const newsCount = Object.values(newsMap).flat().length;
 
   return (
-    <Page className="mx-auto max-w-4xl px-4 py-8">
+    <Page overview={{
+      pageKey: 'career-hub',
+      title: 'Your job-search command centre',
+      blurb: 'Readiness score, target companies, open roles, resume and interview prep gathered in one place.',
+      takeaway: 'Fix whatever your readiness score flags as weakest before applying anywhere.',
+    }}>
       <div className="mb-8">
         <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">Career</h1>
         <p className="text-sm text-gray-500 mt-0.5">Your placement journey</p>
       </div>
+
+      <DailyTip workspace="career" className="mb-8" />
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">

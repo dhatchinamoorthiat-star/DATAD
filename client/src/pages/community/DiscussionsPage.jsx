@@ -445,7 +445,12 @@ export default function DiscussionsPage() {
   };
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-discussions',
+      title: 'Longer-form conversations',
+      blurb: 'For questions and updates that deserve replies and threads, not just a like.',
+      takeaway: 'Ask here when you want real answers, not just reactions.',
+    }}>
       <div className="mb-4">
         <h1 className="text-xl font-bold">Discussions</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">Ask questions, share wins, help batchmates</p>

@@ -60,8 +60,13 @@ export default function FinanceROIPage() {
   const net10yr       = salaryjump * 10 - totalInvestment - totalInterest;
 
   return (
-    <Page bare>
-      <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-8">
+    <Page overview={{
+      pageKey: 'finance-roi',
+      title: 'Is the degree worth it',
+      blurb: 'Weighs total course cost and loan interest against the salary jump to give a payback period and 10-year net.',
+      takeaway: 'Enter your real fee and a conservative salary figure — optimism here hides the payback year.',
+    }}>
+      <div className="mx-auto w-full max-w-2xl space-y-8">
         <PageHeader
           title="MBA ROI Calculator"
           subtitle="Is the MBA worth it? Plug in your numbers and find out — payback period, EMI, and 10-year net gain."

@@ -98,7 +98,12 @@ export default function DirectoryPage() {
   const domains = [...new Set(profiles?.map((p) => p.priorDomain).filter(Boolean) || [])];
 
   return (
-    <Page>
+    <Page overview={{
+      pageKey: 'community-directory',
+      title: 'Find the right batchmate',
+      blurb: 'A searchable profile directory — skills, interests, prior background — so you know who to ask for what.',
+      takeaway: 'Fill in your own profile so others can find you too.',
+    }}>
       <PageHeader
         icon={Users}
         title="Student Directory"
