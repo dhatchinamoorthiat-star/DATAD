@@ -287,13 +287,23 @@ function isWriteTool(name) {
 }
 
 /**
- * Whether a model is trusted with write tools.
+ * Whether a model is CAPABLE of write tools.
  *
  * Write proposals are only as useful as the arguments behind them: the 8B
  * default has been observed sending booleans as strings and duplicating calls,
  * and while the proposal layer stops that becoming a bad write, it still
  * produces a confusing card. Models below the reasoning bar get read-only
  * tools, so writes appear on capable models rather than degrading everywhere.
+ *
+ * This answers ONLY "can this model be trusted to form the request". Whether
+ * the student is entitled to write tools is a separate, commercial question —
+ * see tierAllowsWriteTools(). Both must pass.
+ *
+ * They were conflated until 2026-08-18, and the conflation was actively
+ * harmful: because reasoningScore >= 78 was the sole gate, upgrading the free
+ * tier to a better model would silently have handed free users a paid feature,
+ * and the only way to keep writes paid was to deliberately keep free users on
+ * a weaker model. A capability number was deciding a pricing question.
  */
 const MIN_WRITE_REASONING = Number(process.env.DAX_WRITE_TOOLS_MIN_REASONING || 78);
 
@@ -309,12 +319,33 @@ function supportsWriteTools(modelName) {
   }
 }
 
+/**
+ * Which subscription tiers are entitled to propose writes.
+ *
+ * Deliberately a plain allowlist rather than anything derived from the model:
+ * this is a product boundary, and it should be readable and changeable without
+ * reasoning about capability scores. Overridable so a tier can be opened up
+ * (e.g. for a trial promotion) without a deploy.
+ */
+const WRITE_TIERS = new Set(
+  (process.env.DAX_WRITE_TOOL_TIERS || 'pro,placement')
+    .split(',')
+    .map((t) => t.trim())
+    .filter(Boolean)
+);
+
+function tierAllowsWriteTools(tier) {
+  return WRITE_TIERS.has(String(tier || '').trim());
+}
+
 module.exports = {
   TOOL_DEFINITIONS,
   WRITE_TOOL_DEFINITIONS,
   executeTool,
   isWriteTool,
   supportsWriteTools,
+  tierAllowsWriteTools,
+  WRITE_TIERS,
   MIN_WRITE_REASONING,
   EXECUTORS,
 };

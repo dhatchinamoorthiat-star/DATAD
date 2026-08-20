@@ -11,7 +11,7 @@ const {
 const { search } = require('./embeddings/semanticSearch');
 const { upsertEmbedding } = require('./embeddings/vectorStore');
 const { parseJSON } = require('./parser');
-const { TOOL_DEFINITIONS, WRITE_TOOL_DEFINITIONS, supportsWriteTools } = require('./tools');
+const { TOOL_DEFINITIONS, WRITE_TOOL_DEFINITIONS, supportsWriteTools, tierAllowsWriteTools } = require('./tools');
 const modelRouterV2 = require('./runtime-v2/modelRouterV2');
 const cacheLayer = require('./runtime-v2/cacheLayer');
 const circuitBreaker = require('./runtime-v2/circuitBreaker');
@@ -46,6 +46,34 @@ const { computeDailyCaseStreak } = require('../utils/streak');
 // non-streaming chat paths.
 const ORIGIN_QUESTION_RE =
   /\b(who\s+(is|are|was)?\s*(your|dax'?s)\s+(creator|founder|maker|owner|developer)s?\b|who\s+(created|made|built|trained|founded|developed|owns)\s+(you|dax)\b|(creator|founder)s?\s+of\s+dax\b)/i;
+
+/**
+ * A turn that is purely social — nothing to look up.
+ *
+ * The prompt tells Dax not to call tools on small talk, and the stronger
+ * models obey. The free tier's model does not obey reliably: across live runs
+ * on 2026-08-18 a bare "hi" fetched the resume on one attempt and nothing on
+ * the next, and "thanks!" pulled the overdue task list and answered a
+ * thank-you with "You have an overdue task...". Withholding the tools outright
+ * makes it deterministic instead of a coin flip, and costs a small model
+ * nothing it could have used.
+ *
+ * Anchored to the WHOLE message, so "hi, what are my tasks?" is not caught.
+ *
+ * Deliberately excludes bare affirmations — "ok", "sure", "yes", "got it" —
+ * even though they look like small talk. Any of them can be the student
+ * agreeing to something Dax just offered to do, and a turn that might mean
+ * "yes, go ahead" must keep its tools.
+ */
+const SMALL_TALK_RE =
+  /^(hi+|hey+|hello+|yo|hola|namaste|sup|greetings|good\s+(?:morning|afternoon|evening|night)|thanks(?:\s+a\s+lot)?|thank\s+you|thx|ty|cheers|bye|goodbye|see\s+you|see\s+ya)(\s+dax)?[\s!.,?]*$/i;
+
+function isSmallTalk(message) {
+  const trimmed = String(message || '').trim();
+  // A length guard as well as the anchor: anything longer than a bare
+  // pleasantry is carrying a real request, whatever it opens with.
+  return trimmed.length <= 40 && SMALL_TALK_RE.test(trimmed);
+}
 const ORIGIN_ANSWER = `
 ## The Visionary Behind Dax
 
@@ -223,11 +251,42 @@ class ValidationError extends Error {
 const HISTORY_WINDOW = 30;
 const TOPIC_MAX_LEN = 80;
 
-async function getUserPreferredProvider(userId) {
+/**
+ * The student's EXPLICIT provider choice, or null if they have none.
+ *
+ * Returning null rather than a default matters: callers now derive the
+ * provider from the model when there is no explicit choice, so that a model id
+ * is never sent to a provider that does not serve it. See providerForModel().
+ */
+async function getExplicitProvider(userId) {
   try {
     const pref = await UserModelPref.findOne({ user: userId }).lean();
     if (pref && pref.provider) return pref.provider;
   } catch {}
+  return null;
+}
+
+/**
+ * Which provider serves a given model id, per the model registry.
+ *
+ * Model ids are provider-namespaced, so choosing a model implicitly chooses a
+ * provider. Deriving it here removes a whole class of bug: on 2026-08-18 a live
+ * probe found the free-tier model (`llama-3.1-8b-instant`) 404ing because Groq
+ * had removed every Llama model from the account, while the chat path still
+ * sent Groq's namespace by default. The request survived only by failing over.
+ */
+function providerForModel(model) {
+  if (!model) return null;
+  try {
+    return require('./runtime-v2/modelRegistry').getModel(model)?.provider || null;
+  } catch {
+    return null;
+  }
+}
+
+async function getUserPreferredProvider(userId) {
+  const explicit = await getExplicitProvider(userId);
+  if (explicit) return explicit;
   // This is the actual primary provider for every user without an explicit
   // preference — it wins over PROVIDER_ORDER in providers/index.js, since
   // whatever this returns gets prepended to the candidate chain. Was
@@ -270,8 +329,51 @@ function selectTierModel(tier, userModel) {
   // gpt-oss-20b was the only other Groq model verified clean of that
   // failure mode in the same testing, so both tiers use it until a second
   // verified-clean model is found to give 'max' a distinct, stronger option.
-  if (tier === 'placement' || tier === 'pro') return 'openai/gpt-oss-20b'; // 20B, ~300-500ms
-  return 'llama-3.1-8b-instant'; // lightweight, ~250ms
+  //
+  // UPDATE 2026-08-18, from a live probe of the account catalogue: Groq no
+  // longer serves ANY Llama model, so `llama-3.1-8b-instant` — the free-tier
+  // default since this function was written — 404s on every free request. It
+  // survived only because the failover chain rerouted it, silently answering
+  // from another provider's model and paying a wasted round trip each time.
+  //
+  // Groq has no plain small instruct model left to replace it with: gpt-oss-*
+  // are reasoning models (they returned empty content under a tight token
+  // budget, consistent with the reasoning_content problem described above) and
+  // qwen3.6-27b emits visible <think> blocks. So the free tier moves to
+  // NVIDIA's plain instruct 8B, verified reachable at ~542ms.
+  //
+  // Crossing provider namespaces is safe now because callers derive the
+  // provider from the model (providerForModel) instead of assuming Groq.
+  //
+  // UPDATE 2026-08-18 (second revision), from a measured comparison of 11
+  // free-tier-reachable models on 6 objective placement/finance questions plus
+  // a strict-JSON task and a live tool call:
+  //
+  //   openai/gpt-oss-20b (groq)                    6/6   656ms
+  //   @cf/meta/llama-3.3-70b-instruct-fp8-fast     5/6   739ms
+  //   meta/llama-3.1-8b-instruct (nvidia)          4/6  1104ms   <- was here
+  //   @cf/meta/llama-3.2-3b-instruct               3/6  1062ms
+  //
+  // The free tier was on a model that was both less accurate AND slower than a
+  // freely available 70B. Small models are a poor fit for this domain
+  // specifically: the questions are quantitative (WACC, break-even, ratios),
+  // which is exactly where they fail.
+  //
+  // Free tier no longer needs to be held back to keep writes paid — that is
+  // now enforced by tierAllowsWriteTools(), not by picking a weak model. See
+  // ai/tools/index.js.
+  // UPDATE 2026-08-18 (third revision): placement now gets its own model.
+  // benchmarkModels.js found gpt-oss-120b on the live Groq account, verified
+  // clean — 6/6, valid JSON, well-formed tool_calls, no CoT leak, ~1341ms.
+  // That is the "second verified-clean model" the note above was waiting for,
+  // so the top tier no longer shares pro's model.
+  //
+  // Honest caveat: the 6-question set scored 120b and 20b IDENTICALLY. The
+  // split is a product decision (highest tier gets the larger model, and the
+  // extra ~700ms is acceptable there) rather than a measured quality win.
+  if (tier === 'placement') return 'openai/gpt-oss-120b'; // 120B, ~1341ms, Groq
+  if (tier === 'pro') return 'openai/gpt-oss-20b';        // 20B, ~657ms, Groq
+  return '@cf/meta/llama-3.3-70b-instruct-fp8-fast';      // 70B, ~739ms, Cloudflare
 }
 
 const HANDLERS = {
@@ -797,7 +899,49 @@ const HANDLERS = {
 // message array (system prompt + history + new message) that gets handed to
 // the AI gateway. Returns { _error, ... } on quota exceeded, matching the
 // existing HANDLERS.*.execute()-returns-an-error-shape convention.
-async function buildChatTurn(userId, message, conversationId, clientId) {
+/**
+ * The single decision about whether this turn can propose writes.
+ *
+ * Both gates in one place, because the system prompt and the tool list MUST
+ * agree. They did not: on 2026-08-18 a live run had a free-tier student ask
+ * Dax to create a task, and it replied "Got it. I've added a task for you"
+ * having created nothing — the write tools were withheld by tier, but the
+ * prompt still described Dax as able to propose changes, so the model narrated
+ * the action instead of performing it. Telling a student a task exists when it
+ * does not is worse than refusing.
+ *
+ *   entitled = commercial (subscription tier)
+ *   capable  = can this model be trusted to form the call
+ */
+function resolveWriteAccess(tier, userModel) {
+  const effectiveModel = selectTierModel(tier, userModel);
+  return {
+    effectiveModel,
+    canWrite: tierAllowsWriteTools(tier) && supportsWriteTools(effectiveModel),
+  };
+}
+
+/**
+ * Conversation rules that depend on whether Dax can actually act, derived from
+ * the same resolveWriteAccess() result as the tool list.
+ */
+function writeCapabilityRules(canWrite) {
+  if (canWrite) {
+    return `- When you propose a change (creating, rescheduling, or completing a task), the
+  student sees a confirmation card and must approve it. Say what you have
+  suggested — never claim it is already done.`;
+  }
+  return `- You CANNOT create, reschedule, or complete anything in this conversation.
+  You have look-up tools only. If the student asks you to add a task, schedule
+  something, or mark work done, say plainly that you cannot do it for them and
+  point them at their planner — then still help with the substance (what the
+  task should say, when it should be due, how to break it down).
+- NEVER say you have added, created, scheduled, updated, or completed anything.
+  Not "I've added that", not "done", not "I've put it in your planner". You did
+  not. Claiming it leaves the student believing something exists that does not.`;
+}
+
+async function buildChatTurn(userId, message, conversationId, clientId, { modelId } = {}) {
   if (!message?.trim()) throw new ValidationError('Message is required');
   // Cap matches ChatMessage.content maxlength — large enough to paste a case
   // study or job description, bounded so one turn cannot flood the context.
@@ -854,6 +998,11 @@ async function buildChatTurn(userId, message, conversationId, clientId) {
     ? `Has a resume on file. Skills: ${(resume.skills || []).slice(0, 8).join(', ') || 'not listed'}.`
     : 'No resume built yet.';
 
+  // Same decision that selects the tool list, so the prompt can never promise
+  // an ability this turn does not have.
+  const { effectiveModel, canWrite } = resolveWriteAccess(tier, modelId ? modelId.replace(/^[^:]+:/, '') : undefined);
+  const writeRules = writeCapabilityRules(canWrite);
+
   const systemPrompt = withDaxIdentity(`You are in conversation with the student.
 
 ${formatMemoryContext(memory)}
@@ -877,13 +1026,27 @@ Rules for this conversation:
 - You excel at: concepts (strategy, finance, marketing, ops, HR), case interview frameworks, placement prep, study planning, resume advice, and general motivation.
 - When asked for a framework, give a crisp structured answer (bullets, numbered steps).
 - You have tools for looking things up: search_my_notes (the student's own
-  notes), list_my_tasks (their deadlines), get_my_resume, and look_up_company
-  (the placement database). Call them instead of guessing or asking the student
-  to paste something you could fetch. If a tool returns nothing, say so plainly
-  rather than inventing a plausible answer.
-- When you propose a change (creating, rescheduling, or completing a task), the
-  student sees a confirmation card and must approve it. Say what you have
-  suggested — never claim it is already done.
+  notes), list_my_tasks (their full task list), get_my_resume, and
+  look_up_company (the placement database). Use them instead of guessing, or
+  instead of asking the student to paste something you could fetch yourself.
+- Reach for a tool only when you need something you do not already have. The
+  context above ALREADY gives you their next deadlines, their resume skills,
+  and their profile — answer from it rather than calling a tool to re-fetch
+  what is already in front of you. Call list_my_tasks only for tasks beyond
+  the few listed above (the complete list, or a filter); call get_my_resume
+  only for resume detail beyond the skills line.
+- NEVER call a tool on a greeting, a thank-you, an acknowledgement, or small
+  talk. "hi", "hey", "thanks", "ok", "cool" get a brief, warm reply in your
+  own voice — greet them back and offer to help — and nothing else. Do not
+  open with their task list or a status report. Tested 2026-08-18: without
+  this rule the free-tier model answers a bare "hi" by fetching tasks, resume
+  and notes, then leading with "You have 1 pending task and 1 overdue
+  task..."; with an earlier, terser version of this rule it swung the other
+  way and replied with just "Hi".
+- Never call the same tool twice with the same arguments in one turn. If a
+  tool came back empty, that IS the answer — say so plainly rather than
+  retrying it or inventing a plausible result.
+${writeRules}
 - Never mention the tools, functions, parameters, or "the response" to the
   student — they are your private means of looking things up, not part of the
   conversation. Say "you have no tasks due" or "I couldn't find a note on that",
@@ -919,7 +1082,7 @@ Rules for this conversation:
     ...historyMessages,
   ];
 
-  return { fullMessages, quota, todayCount, tier, trimmedMessage, conversation };
+  return { fullMessages, quota, todayCount, tier, trimmedMessage, conversation, effectiveModel, canWrite };
 }
 
 // ── Conversations ───────────────────────────────────────────────────────────
@@ -1110,7 +1273,7 @@ async function importConversations(userId, payload) {
 // isn't visible to `for await`, so the sentinel is the reliable way to hand
 // the final { remaining } (or { _error }) back to the route.
 async function* streamChat(userId, message, { signal, modelId, conversationId, clientConversationId } = {}) {
-  const turn = await buildChatTurn(userId, message, conversationId, clientConversationId);
+  const turn = await buildChatTurn(userId, message, conversationId, clientConversationId, { modelId });
   if (turn._error) {
     yield { done: true, _error: turn._error, message: turn.message, requiredTier: turn.requiredTier, upgradeUrl: turn.upgradeUrl };
     return;
@@ -1128,14 +1291,26 @@ async function* streamChat(userId, message, { signal, modelId, conversationId, c
     return;
   }
 
-  const provider = await getUserPreferredProvider(userId);
-  const modelName = modelId ? modelId.replace(/^[^:]+:/, '') : undefined;
+  // Model and write access were resolved inside buildChatTurn, which used the
+  // same values to write the system prompt. Reusing them here is what stops the
+  // prompt and the tool list from disagreeing — the defect behind Dax telling a
+  // free-tier student it had created a task it could not create.
+  const { effectiveModel, canWrite } = turn;
 
-  // Route to tier-appropriate model (see selectTierModel() for current
-  // defaults). User-selected model overrides tier default.
-  const effectiveModel = selectTierModel(turn.tier, modelName);
-  const canWrite = supportsWriteTools(effectiveModel);
-  const tools = canWrite ? [...TOOL_DEFINITIONS, ...WRITE_TOOL_DEFINITIONS] : TOOL_DEFINITIONS;
+  // The model is chosen first, then the provider that serves it. An explicit
+  // student preference still wins; otherwise sending the model to whatever
+  // provider happened to be default is how a valid model id ends up 404ing on
+  // a provider that never served it.
+  const provider =
+    (await getExplicitProvider(userId)) || providerForModel(effectiveModel) || 'groq';
+
+  // Small talk gets no tools at all — there is nothing to look up, and the
+  // free-tier model otherwise answers "hi" with a status report. The gateway
+  // treats an empty tool list as "plain stream", so this also skips the
+  // tool-capable code path entirely and returns a greeting in one round.
+  const tools = isSmallTalk(turn.trimmedMessage)
+    ? []
+    : (canWrite ? [...TOOL_DEFINITIONS, ...WRITE_TOOL_DEFINITIONS] : TOOL_DEFINITIONS);
 
   // Proposals surface mid-stream; collected here and emitted on the terminal
   // yield so the client receives them alongside the finished reply.
@@ -1266,6 +1441,9 @@ async function clearChat(userId) {
 module.exports = {
   process,
   streamChat,
+  // Exported so the small-talk tool gate can be asserted directly, without
+  // standing up a provider call to reach it through streamChat.
+  isSmallTalk,
   getMemory,
   patchMemory,
   deleteMemory,
@@ -1276,6 +1454,11 @@ module.exports = {
   // thread vs. legacy no-id contract) can be asserted directly, without
   // standing up a provider call to reach them through streamChat.
   resolveConversation,
+  // Exported for the same reason: the prompt and the tool list must agree
+  // about whether Dax can act, and that agreement is worth asserting without
+  // a live model call.
+  resolveWriteAccess,
+  writeCapabilityRules,
   createConversation,
   getConversation,
   updateConversation,
