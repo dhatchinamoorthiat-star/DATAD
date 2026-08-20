@@ -47,7 +47,7 @@ exports.getStats = async (req, res, next) => {
       Note.countDocuments(),
       Photo.countDocuments(),
       Task.countDocuments(),
-      JournalEntry.countDocuments({ user: req.user.userId }),
+      JournalEntry.countDocuments(),
       User.countDocuments({ updatedAt: { $gte: sevenDaysAgo } }),
       User.countDocuments({ status: 'pending' }),
       SubscriptionRequest.countDocuments({ status: 'pending' }),

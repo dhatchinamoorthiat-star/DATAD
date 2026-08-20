@@ -26,6 +26,10 @@ export default function SubscribePage() {
   const [trialLoading, setTrialLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submittedPlan, setSubmittedPlan] = useState(null);
+  // A Razorpay payment is already verified by the time we get here, so the
+  // confirmation must not tell the student to wait 24 hours for a review that
+  // has already happened.
+  const [instant, setInstant] = useState(false);
   const [dbStatus, setDbStatus] = useState(null);
   const now = useNow();
 
@@ -36,6 +40,7 @@ export default function SubscribePage() {
   }, []);
 
   const currentTier = dbStatus?.tier ?? user?.tier ?? 'free';
+  const gateway = dbStatus?.gateway ?? 'manual';
   const trialUsed = !!dbStatus?.trialUsed;
   const tierExpiresAt = dbStatus?.tierExpiresAt ? new Date(dbStatus.tierExpiresAt) : null;
   const daysLeft = tierExpiresAt
@@ -69,10 +74,14 @@ export default function SubscribePage() {
     setCheckoutPlan(plan);
   }, [navigate]);
 
-  const handleCheckoutSuccess = useCallback((plan) => {
+  const handleCheckoutSuccess = useCallback((plan, meta = {}) => {
     setCheckoutPlan(null);
     setSubmittedPlan(plan);
+    setInstant(Boolean(meta.instant));
     setSubmitted(true);
+    if (meta.instant) {
+      getSubscriptionStatus().then((res) => setDbStatus(res.data)).catch(() => {});
+    }
   }, []);
 
   if (submitted) {
@@ -82,12 +91,21 @@ export default function SubscribePage() {
           <CheckCircle2 className="h-8 w-8 text-success-500" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Payment Reference Submitted
+          {instant ? 'You\u2019re all set' : 'Payment Reference Submitted'}
         </h1>
         <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-          We&rsquo;ll verify your payment and activate{' '}
-          <span className="font-semibold text-gray-700 dark:text-gray-300">{submittedPlan?.label}</span> within
-          24 hours. You&rsquo;ll be notified once it&rsquo;s done.
+          {instant ? (
+            <>
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{submittedPlan?.label}</span> is
+              active on your account right now. A receipt is on its way to your email.
+            </>
+          ) : (
+            <>
+              We&rsquo;ll verify your payment and activate{' '}
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{submittedPlan?.label}</span> within
+              24 hours. You&rsquo;ll be notified once it&rsquo;s done.
+            </>
+          )}
         </p>
         <Link
           to="/"
@@ -270,12 +288,14 @@ export default function SubscribePage() {
               Secure & transparent
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Payments processed securely via UPI. Prices shown are the full amount payable. Your data is encrypted
-              and never shared. Cancel anytime, no questions asked.
+              {gateway === 'razorpay'
+                ? 'Payments processed securely by Razorpay. DATAD never sees your card or UPI credentials. Prices shown are the full amount payable. Cancel anytime, no questions asked.'
+                : 'Payments processed securely via UPI. Prices shown are the full amount payable. Your data is encrypted and never shared. Cancel anytime, no questions asked.'}
             </p>
             <div className="flex items-center gap-6 text-xs text-gray-400">
               <span className="flex items-center gap-1.5">
-                <CreditCard className="h-3.5 w-3.5" /> UPI / GPay / Paytm
+                <CreditCard className="h-3.5 w-3.5" />
+                {gateway === 'razorpay' ? 'UPI / Cards / Netbanking' : 'UPI / GPay / Paytm'}
               </span>
               <span className="flex items-center gap-1.5">
                 <Shield className="h-3.5 w-3.5" /> 256-bit encryption
@@ -287,7 +307,9 @@ export default function SubscribePage() {
         <p className="mt-8 text-center text-xs text-gray-400">
           Prices shown are exclusive of applicable GST. +18% GST where applicable.
           <br />
-          Plans are manually verified and activated within 24 hours.
+          {gateway === 'razorpay'
+            ? 'Paid plans activate immediately. Direct UPI transfers are verified within 24 hours.'
+            : 'Plans are manually verified and activated within 24 hours.'}
         </p>
       </div>
 

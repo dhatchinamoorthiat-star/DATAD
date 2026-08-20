@@ -65,6 +65,7 @@ const oneMonthFromNow = () => {
 };
 const sevenDaysFromNow = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 const { expiryFor, monthlyEquivalent } = require('../subscription/pricing');
+const { activateSubscription, rejectSubscription } = require('../subscription/activation');
 
 // List all subscription requests
 router.get('/subscriptions', async (req, res, next) => {
@@ -160,36 +161,13 @@ router.patch('/subscriptions/:id/review', async (req, res, next) => {
       return res.status(400).json({ message: 'Request already reviewed' });
     }
 
-    sr.status = action === 'approve' ? 'approved' : 'rejected';
-    sr.reviewedBy = req.user.userId;
-    sr.reviewedAt = new Date();
-    sr.reviewNote = reviewNote || '';
-    await sr.save();
-
-    // If approved, upgrade the user's tier automatically
+    // Granting the tier, computing the expiry and notifying the student all
+    // live in subscription/activation.js, because the Razorpay webhook has to
+    // do exactly the same thing and the two must not drift.
     if (action === 'approve') {
-      // Duration follows what was actually bought — a yearly Pro purchase used
-      // to be granted one month, and the Placement Pass runs three.
-      const expiresAt = expiryFor(sr.tier, sr.billing);
-      await User.findByIdAndUpdate(sr.user._id, {
-        $set: { tier: sr.tier, subscriptionRef: sr.paymentRef, tierExpiresAt: expiresAt },
-      });
-      await notificationService.send(sr.user._id, {
-        type: 'billing',
-        title: 'Subscription activated! 🎉',
-        body: `Your ${sr.tier} plan is now active — valid until ${expiresAt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
-        link: '/subscribe',
-      });
+      await activateSubscription(sr, { reviewedBy: req.user.userId, reviewNote });
     } else {
-      // Payment rejected — notify user
-      await notificationService.send(sr.user._id, {
-        type: 'billing',
-        title: 'Payment review update',
-        body: reviewNote
-          ? `Your payment was not approved: ${reviewNote}`
-          : 'Your payment request was not approved. Please submit a new payment reference.',
-        link: '/subscribe',
-      });
+      await rejectSubscription(sr, { reviewedBy: req.user.userId, reviewNote });
     }
 
     res.json({ message: `Request ${sr.status}`, request: sr });
@@ -210,14 +188,14 @@ router.get('/subscriptions/analytics', async (req, res, next) => {
       free: 0,
       trial: 0,
       pro: 0,
-      max: 0,
+      placement: 0,
     };
 
     // Active subscriptions (not expired)
     const activeCount = {
       trial: 0,
       pro: 0,
-      max: 0,
+      placement: 0,
     };
 
     // Trial conversion metrics
@@ -284,7 +262,7 @@ router.get('/subscriptions/analytics', async (req, res, next) => {
         free: tierCount.free,
         trial: tierCount.trial,
         pro: tierCount.pro,
-        max: tierCount.max,
+        placement: tierCount.placement,
       },
       activeSubscriptions: activeCount,
       signupsByDay: Object.entries(signupsByDay)

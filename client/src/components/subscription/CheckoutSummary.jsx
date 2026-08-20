@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle2, Loader2, ArrowLeft, Copy } from 'lucide-react';
+import { X, CheckCircle2, Loader2, ArrowLeft, Copy, ShieldCheck } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
 import { QRCodeSVG } from 'qrcode.react';
-import { submitPaymentRef } from '../../api/subscription';
+import { submitPaymentRef, getPaymentConfig, createOrder, verifyPayment } from '../../api/subscription';
+import { useAuth } from '../../context/AuthContext';
+import { loadRazorpayCheckout } from '../../utils/razorpay';
 import { formatPrice, formatPriceDecimal, yearlySavings, monthlyEquivalent } from '../../utils/pricing';
 
 const UPI_VPA  = import.meta.env.VITE_UPI_VPA  || 'datad@upi';
@@ -170,11 +172,78 @@ function PriceSummary({ plan, price, total, savings, monthsFree, isYearly, isOne
 
 function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack, onSuccess }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { user } = useAuth();
+  const [config, setConfig] = useState(null);
+  const [paying, setPaying] = useState(false);
+  // The manual UPI flow stays reachable even when the gateway is live: a
+  // student whose bank drops out of Razorpay's UPI list still has to be able
+  // to pay, and during KYC this is the only route that works at all.
+  const [showManual, setShowManual] = useState(false);
+
+  const billing = isOneTime ? 'onetime' : isYearly ? 'yearly' : 'monthly';
   const upiUrl = `upi://pay?pa=${UPI_VPA}&pn=${encodeURIComponent(UPI_NAME)}&am=${total}&tn=${encodeURIComponent(`DATAD ${plan.label}${isOneTime ? '' : isYearly ? ' Yearly' : ' Monthly'}`)}&cu=INR`;
+
+  useEffect(() => {
+    getPaymentConfig()
+      .then((res) => setConfig(res.data))
+      // A config that cannot be read is treated as no gateway, which lands the
+      // student on the manual flow rather than on a dead end.
+      .catch(() => setConfig({ gateway: 'manual' }));
+  }, []);
+
+  const gatewayReady = config?.gateway === 'razorpay';
+  const manualOnly = config && !gatewayReady;
+
+  const payWithRazorpay = async () => {
+    setPaying(true);
+    try {
+      const Razorpay = await loadRazorpayCheckout();
+      const { data: order } = await createOrder({ tier: plan.id, billing });
+
+      const rzp = new Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'DATAD',
+        description: `${plan.label} — ${isOneTime ? 'One-time' : isYearly ? 'Yearly' : 'Monthly'}`,
+        prefill: { name: user?.name || '', email: user?.email || '' },
+        theme: { color: '#4f46e5' },
+        handler: async (response) => {
+          try {
+            // Confirming server-side is what actually grants the tier. The
+            // webhook would get there on its own, but a student who just paid
+            // should not have to wait on it.
+            await verifyPayment(response);
+            toast.success('Payment successful — your plan is active!');
+            onSuccess(plan, { instant: true });
+          } catch (err) {
+            toast.error(
+              err.response?.data?.message ||
+                'Payment went through but confirmation failed. It will activate shortly.'
+            );
+          } finally {
+            setPaying(false);
+          }
+        },
+        modal: { ondismiss: () => setPaying(false) },
+      });
+
+      rzp.on('payment.failed', (e) => {
+        toast.error(e?.error?.description || 'Payment failed. Nothing was charged.');
+        setPaying(false);
+      });
+
+      rzp.open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Could not start payment.');
+      setPaying(false);
+    }
+  };
 
   const onSubmit = async ({ paymentRef, upiId, note }) => {
     try {
-      await submitPaymentRef({ tier: plan.id, paymentRef, upiId, note, billing: isOneTime ? 'onetime' : isYearly ? 'yearly' : 'monthly', amount: total });
+      await submitPaymentRef({ tier: plan.id, paymentRef, upiId, note, billing, amount: total });
       toast.success('Payment reference submitted! We will activate your plan within 24 hours.');
       onSuccess(plan);
     } catch (err) {
@@ -212,77 +281,116 @@ function PaymentPanel({ plan, price, total, isYearly, isOneTime, onClose, onBack
         </div>
 
         <div className="space-y-5 p-5">
-          <div className="flex flex-col items-center gap-3">
-            <p className="text-sm text-gray-500 dark:text-gray-400">Scan with any UPI app</p>
-            <div className="rounded-xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700">
-              <QRCodeSVG value={upiUrl} size={180} />
+          {!config && (
+            <div className="flex items-center justify-center py-10 text-gray-400">
+              <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-800">
-              <span className="font-mono text-gray-700 dark:text-gray-300">{UPI_VPA}</span>
-              <button onClick={copyUPI} className="text-gray-400 hover:text-gray-600">
-                <Copy className="h-3.5 w-3.5" />
+          )}
+
+          {gatewayReady && (
+            <div className="space-y-3">
+              {config.testMode && (
+                <p className="rounded-lg bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-amber-700 dark:bg-amber-950/20 dark:text-amber-400">
+                  Test mode — no real money will move
+                </p>
+              )}
+              <button
+                onClick={payWithRazorpay}
+                disabled={paying}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {paying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                Pay {formatPriceDecimal(total)} securely
               </button>
-            </div>
-            <p className="text-xs text-gray-400">PhonePe · GPay · Paytm · BHIM</p>
-          </div>
-
-          <div className="rounded-xl bg-gray-50 p-3 text-xs dark:bg-gray-800/50">
-            <div className="flex justify-between py-1">
-              <span className="text-gray-500">Subtotal</span>
-              <span className="font-medium text-gray-900 dark:text-white">{formatPrice(price)}</span>
-            </div>
-            <div className="flex justify-between border-t border-gray-200 py-1 font-semibold dark:border-gray-700">
-              <span className="text-gray-900 dark:text-white">Total</span>
-              <span className="text-gray-900 dark:text-white">{formatPriceDecimal(total)}</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-            <div>
-              <label htmlFor="checkout-summary-payment-reference" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Payment Reference <span className="text-danger-500">*</span>
-              </label>
-              <input id="checkout-summary-payment-reference"
-                {...register('paymentRef', {
-                  required: 'Reference number is required',
-                  minLength: { value: 6, message: 'Enter the full reference number' },
-                })}
-                placeholder="e.g. 421234567890"
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-sm placeholder:text-gray-400 focus:border-primary-400 focus:outline-none dark:border-gray-700"
-              />
-              {errors.paymentRef && (
-                <p className="mt-1 text-xs text-danger-500">{errors.paymentRef.message}</p>
+              <p className="text-center text-xs text-gray-400">
+                UPI · Cards · Netbanking · Wallets — activated instantly
+              </p>
+              {!showManual && (
+                <button
+                  onClick={() => setShowManual(true)}
+                  className="w-full text-center text-xs text-gray-400 underline underline-offset-2 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  Pay by direct UPI transfer instead
+                </button>
               )}
             </div>
+          )}
 
-            <div>
-              <label htmlFor="checkout-summary-your-upi-id" className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-400">
-                Your UPI ID <span className="font-normal text-gray-400">(optional)</span>
-              </label>
-              <input id="checkout-summary-your-upi-id"
-                {...register('upiId')}
-                placeholder="yourname@upi"
-                className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-sm placeholder:text-gray-400 focus:border-primary-400 focus:outline-none dark:border-gray-700"
-              />
+          {(manualOnly || showManual) && (
+            <>
+            <div className="flex flex-col items-center gap-3">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Scan with any UPI app</p>
+              <div className="rounded-xl border-2 border-gray-200 bg-white p-3 dark:border-gray-700">
+                <QRCodeSVG value={upiUrl} size={180} />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm dark:bg-gray-800">
+                <span className="font-mono text-gray-700 dark:text-gray-300">{UPI_VPA}</span>
+                <button onClick={copyUPI} className="text-gray-400 hover:text-gray-600">
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <p className="text-xs text-gray-400">PhonePe · GPay · Paytm · BHIM</p>
             </div>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60 dark:bg-primary-600 dark:hover:bg-primary-700"
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="h-4 w-4" />
-              )}
-              Submit Payment Reference
-            </button>
-          </form>
+            <div className="rounded-xl bg-gray-50 p-3 text-xs dark:bg-gray-800/50">
+              <div className="flex justify-between py-1">
+                <span className="text-gray-500">Subtotal</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatPrice(price)}</span>
+              </div>
+              <div className="flex justify-between border-t border-gray-200 py-1 font-semibold dark:border-gray-700">
+                <span className="text-gray-900 dark:text-white">Total</span>
+                <span className="text-gray-900 dark:text-white">{formatPriceDecimal(total)}</span>
+              </div>
+            </div>
 
-          <p className="text-center text-xs text-gray-400">
-            Your plan will be activated within 24 hours after verification.
-          </p>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+              <div>
+                <label htmlFor="checkout-summary-payment-reference" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Payment Reference <span className="text-danger-500">*</span>
+                </label>
+                <input id="checkout-summary-payment-reference"
+                  {...register('paymentRef', {
+                    required: 'Reference number is required',
+                    minLength: { value: 6, message: 'Enter the full reference number' },
+                  })}
+                  placeholder="e.g. 421234567890"
+                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-sm placeholder:text-gray-400 focus:border-primary-400 focus:outline-none dark:border-gray-700"
+                />
+                {errors.paymentRef && (
+                  <p className="mt-1 text-xs text-danger-500">{errors.paymentRef.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="checkout-summary-your-upi-id" className="mb-1 block text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Your UPI ID <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <input id="checkout-summary-your-upi-id"
+                  {...register('upiId')}
+                  placeholder="yourname@upi"
+                  className="w-full rounded-xl border border-gray-200 bg-transparent px-3.5 py-2 text-sm placeholder:text-gray-400 focus:border-primary-400 focus:outline-none dark:border-gray-700"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60 dark:bg-primary-600 dark:hover:bg-primary-700"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Submit Payment Reference
+              </button>
+            </form>
+
+            <p className="text-center text-xs text-gray-400">
+              Your plan will be activated within 24 hours after verification.
+            </p>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
