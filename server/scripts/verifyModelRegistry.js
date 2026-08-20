@@ -9,9 +9,15 @@
  * select a model the account cannot call, surfacing as a provider error at
  * request time rather than a startup warning.
  *
- * This compares every nvidia-provider entry against the live
- * /v1/models catalogue and reports three buckets: OK, DRIFTED (a close live
- * slug exists — likely a rename), and GONE (no plausible successor).
+ * This compares registry entries against each provider's live /v1/models
+ * catalogue and reports three buckets: OK, DRIFTED (a close live slug exists —
+ * likely a rename), and GONE (no plausible successor).
+ *
+ * Originally NVIDIA-only, which is precisely how the 2026-08-18 breakage went
+ * unnoticed: Groq had removed EVERY Llama model from the account, so the
+ * free-tier chat model and Groq's configured default both 404'd, and this
+ * script — the one tool meant to catch exactly that — never looked at Groq.
+ * It now walks every keyed provider that exposes an OpenAI-compatible catalogue.
  *
  * Read-only. Never edits the registry — a human decides what to repoint,
  * because assigning capability scores to a replacement model is a judgement
@@ -24,17 +30,46 @@
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
-const BASE_URL = 'https://integrate.api.nvidia.com/v1';
+const cfg = require('../config/automation');
 
-async function fetchLiveCatalogue(apiKey) {
-  const res = await fetch(`${BASE_URL}/models`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
+/**
+ * Providers whose catalogue we can enumerate.
+ *
+ * Ollama is excluded: it is a local daemon whose "catalogue" is whatever the
+ * machine happens to have pulled, so a miss there says nothing about the
+ * registry. Anything without a key configured is skipped rather than failed.
+ */
+function catalogueProviders() {
+  return Object.keys(cfg.providers)
+    .filter((n) => n !== 'primary' && n !== 'fallback' && n !== 'ollama')
+    .filter((n) => cfg.providers[n]?.apiKey && cfg.providers[n]?.baseURL !== null);
+}
+
+async function fetchLiveCatalogue(providerName) {
+  const c = cfg.providers[providerName];
+  const baseURL = c.baseURL || 'https://api.openai.com/v1';
+  const res = await fetch(`${baseURL.replace(/\/$/, '')}/models`, {
+    headers: { Authorization: `Bearer ${c.apiKey}` },
   });
   if (!res.ok) {
-    throw new Error(`NVIDIA /models returned ${res.status} ${res.statusText}`);
+    throw new Error(`${providerName} /models returned ${res.status} ${res.statusText}`);
   }
   const body = await res.json();
-  return new Set((body.data || []).map((m) => m.id));
+  // OpenAI-compatible shape is { data: [{ id }] }; Gemini's OpenAI bridge and
+  // Cloudflare both follow it, but tolerate a bare array just in case.
+  const list = Array.isArray(body) ? body : body.data || [];
+
+  // Gemini's OpenAI bridge namespaces every id ("models/gemini-flash-lite-latest")
+  // while the API accepts the bare slug — so a naive comparison reported a
+  // model that had just been probed live as GONE, which would have argued for
+  // deleting a working entry. Index both forms.
+  const ids = new Set();
+  for (const m of list) {
+    if (!m.id) continue;
+    ids.add(m.id);
+    if (m.id.startsWith('models/')) ids.add(m.id.slice('models/'.length));
+  }
+  return ids;
 }
 
 /**
@@ -65,40 +100,52 @@ function findSuccessors(registryKey, live) {
 }
 
 async function main() {
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) {
-    console.error('NVIDIA_API_KEY is not set — cannot verify the registry.');
-    process.exit(2);
-  }
-
   const registry = require('../ai/runtime-v2/modelRegistry');
-  const entries = registry.findModelsByProvider('nvidia');
+  const providers = catalogueProviders();
 
-  let live;
-  try {
-    live = await fetchLiveCatalogue(apiKey);
-  } catch (err) {
-    console.error(`Failed to fetch the live catalogue: ${err.message}`);
+  if (!providers.length) {
+    console.error('No providers with a configured key — cannot verify the registry.');
     process.exit(2);
   }
 
   const ok = [];
   const drifted = [];
   const gone = [];
+  const unchecked = [];
+  let liveTotal = 0;
+  let entryTotal = 0;
 
-  for (const entry of entries) {
-    const id = entry.model;
-    if (live.has(id)) {
-      ok.push(id);
+  for (const providerName of providers) {
+    const entries = registry.findModelsByProvider(providerName);
+    if (!entries.length) continue;
+    entryTotal += entries.length;
+
+    let live;
+    try {
+      live = await fetchLiveCatalogue(providerName);
+    } catch (err) {
+      // A provider we cannot enumerate is reported, not silently treated as
+      // healthy — an unreachable catalogue is exactly when drift hides.
+      unchecked.push({ provider: providerName, reason: err.message, entries: entries.length });
       continue;
     }
-    const successors = findSuccessors(id, live);
-    if (successors.length) drifted.push({ id, successors });
-    else gone.push(id);
+    liveTotal += live.size;
+    console.log(`  ${providerName.padEnd(12)} ${String(entries.length).padStart(2)} registry / ${String(live.size).padStart(3)} live`);
+
+    for (const entry of entries) {
+      const id = entry.model;
+      if (live.has(id)) {
+        ok.push(id);
+        continue;
+      }
+      const successors = findSuccessors(id, live);
+      if (successors.length) drifted.push({ id, provider: providerName, successors });
+      else gone.push({ id, provider: providerName });
+    }
   }
 
-  console.log(`\nRegistry entries (provider=nvidia): ${entries.length}`);
-  console.log(`Live catalogue entries:              ${live.size}\n`);
+  console.log(`\nRegistry entries checked: ${entryTotal}`);
+  console.log(`Live catalogue entries:   ${liveTotal}\n`);
   console.log(`  reachable : ${ok.length}`);
   console.log(`  drifted   : ${drifted.length}`);
   console.log(`  gone      : ${gone.length}\n`);
@@ -106,22 +153,28 @@ async function main() {
   if (drifted.length) {
     console.log('DRIFTED — a live model of the same family exists; likely a rename:');
     for (const d of drifted) {
-      console.log(`  ${d.id}`);
+      console.log(`  [${d.provider}] ${d.id}`);
       for (const s of d.successors) console.log(`      -> ${s}`);
     }
     console.log('');
   }
 
+  if (unchecked.length) {
+    console.log('UNCHECKED — catalogue could not be read, so drift here is invisible:');
+    for (const u of unchecked) console.log(`  [${u.provider}] ${u.entries} entr(ies): ${u.reason}`);
+    console.log('');
+  }
+
   if (gone.length) {
     console.log('GONE — no plausible successor in the live catalogue:');
-    for (const g of gone) console.log(`  ${g}`);
+    for (const g of gone) console.log(`  [${g.provider}] ${g.id}`);
     console.log('');
   }
 
   const unreachable = drifted.length + gone.length;
   if (unreachable > 0) {
     console.log(
-      `${unreachable} of ${entries.length} registry entries cannot be called with the ` +
+      `${unreachable} of ${entryTotal} registry entries cannot be called with the ` +
       `configured key. routeRequest() can still select them.\n`
     );
     process.exit(1);

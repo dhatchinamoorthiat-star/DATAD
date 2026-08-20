@@ -9,6 +9,7 @@
  * so it can decide V1 vs V2 based on the active mode.
  */
 const { getProviderChain } = require('./providers');
+const providerGuard = require('./providerGuard');
 const { parseJSON } = require('./parser');
 const cfg = require('../config/automation');
 const { estimateCost } = require('./router');
@@ -47,14 +48,27 @@ const { estimateCost } = require('./router');
  * a reason to leave today's behavior misdescribed.
  */
 async function _nativeRun({ system, user, provider: preferredProvider, json = true, maxTokens }) {
-  const chain = getProviderChain(preferredProvider);
-  if (!chain.length) throw new Error('No AI provider available.');
+  const fullChain = getProviderChain(preferredProvider);
+  if (!fullChain.length) throw new Error('No AI provider available.');
+
+  // Providers the breaker has benched are skipped — see ai/providerGuard.js.
+  // This is also where the "real transient-vs-hard classification" noted above
+  // now lives: providerGuard.classifyError() separates a rate limit from a
+  // malformed request, and only the former counts against a provider.
+  const { chain } = providerGuard.filterChain(fullChain);
 
   let lastError;
   let attempts = 0;
 
   for (const p of chain) {
     attempts++;
+    const startedAt = Date.now();
+    // The provider call and the JSON parse fail for different reasons. A parse
+    // failure still falls through to the next provider (a different model may
+    // return well-formed JSON), but it must not count against this provider's
+    // health — the call itself succeeded. This flag keeps one attempt from
+    // being recorded as both a success and a failure.
+    let callSucceeded = false;
     try {
       const messages = [
         ...(system ? [{ role: 'system', content: system }] : []),
@@ -62,6 +76,17 @@ async function _nativeRun({ system, user, provider: preferredProvider, json = tr
       ];
 
       const raw = await p.complete({ messages, system, maxTokens });
+      // An empty completion is a failed turn. With json: true the parse below
+      // already rejects it, so only the plain-text tasks were exposed — they
+      // returned the empty string as a finished answer and stopped the chain
+      // on the first provider. Checked before recordSuccess so the catch books
+      // it against provider health, matching processStream's empty-stream
+      // branch in aiGateway.js.
+      if (!String(raw?.text ?? '').trim()) {
+        throw new Error(`Provider "${p.name}" returned an empty completion.`);
+      }
+      callSucceeded = true;
+      providerGuard.recordSuccess(p.name, Date.now() - startedAt);
       const result = json ? parseJSON(raw.text, `attempt ${attempts}`) : raw.text;
 
       const costUsd = estimateCost(raw.provider, raw.promptTokens, raw.completionTokens);
@@ -80,7 +105,13 @@ async function _nativeRun({ system, user, provider: preferredProvider, json = tr
       };
     } catch (err) {
       lastError = err;
-      console.warn(`[AI Runner] ${p.name} failed (candidate ${attempts}/${chain.length}): ${err.message}`);
+      const kind = callSucceeded
+        ? 'bad_response'
+        : providerGuard.recordFailure(p.name, err, Date.now() - startedAt);
+      // bad_request is not short-circuited: providers run different models, so
+      // an unknown-model 404 on one can still succeed on the next. It stays off
+      // the breaker (providerGuard) since it is not a health signal.
+      console.warn(`[AI Runner] ${p.name} failed (${kind}, candidate ${attempts}/${chain.length}): ${err.message}`);
     }
   }
 

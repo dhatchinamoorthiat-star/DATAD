@@ -156,29 +156,19 @@ const MODELS = {
     supportsToolCalling: true,
     tier: 'free',
   },
-  'openai/gpt-oss-20b': {
-    provider: 'nvidia',
-    model: 'openai/gpt-oss-20b',
-    parameters: '20b',
-    contextWindow: 128000,
-    maxTokens: 4096,
-    capabilities: ['chat', 'summarisation', 'classification', 'extraction'],
-    reasoningScore: 72,
-    codingScore: 68,
-    writingScore: 74,
-    visionScore: 0,
-    embeddingScore: 0,
-    latencyScore: 86,
-    costScore: 88,
-    healthScore: 95,
-    availability: 0.95,
-    supportsVision: false,
-    supportsEmbedding: false,
-    supportsJson: true,
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    tier: 'free',
-  },
+  // NOTE: 'openai/gpt-oss-20b' was declared TWICE in this object — once for
+  // nvidia (reasoningScore 72) and once for groq (78). Duplicate keys in an
+  // object literal silently collapse to the last one, so the nvidia copy was
+  // dead: getModel() always returned the groq entry. Removed 2026-08-18.
+  //
+  // It was a live hazard, not just clutter: the gate in ai/tools/index.js needs
+  // reasoningScore >= 78, so had the declaration order been reversed, every
+  // paid tier would have silently lost write tools with nothing to explain why.
+  //
+  // The underlying limitation stands — this registry is keyed by model id, so
+  // it CANNOT represent one model served by two providers. gpt-oss-20b really
+  // does run on both nvidia and groq (both verified 6/6 on 2026-08-18), and
+  // only the groq route is expressible here.
 
 
   // ═══════════════════════════════════════════════════════════════
@@ -236,11 +226,57 @@ const MODELS = {
   // Legacy Providers — Preserved for backward compatibility
   // ═══════════════════════════════════════════════════════════════
 
-  // Cloudflare Workers AI — first failover behind NVIDIA. Tool calling is
-  // model-dependent on Workers AI and unverified for this slug, so it is
-  // declared false: capability gating may route a tool-using request past
-  // this entry, which is the correct degradation. Flip it once confirmed
-  // against a live account.
+  // Cloudflare Workers AI. Tool calling was declared false here pending live
+  // confirmation ("flip it once confirmed against a live account") — confirmed
+  // 2026-08-18: three live completeStreamRich probes selected the right tool
+  // 3/3 with sensible arguments and no pseudo-syntax leak. It does send
+  // booleans as strings ({"onlyOverdue":"true"}), which the widened schema and
+  // asBool() in ai/tools/index.js already normalise.
+  //
+  // This flag is load-bearing beyond capability scoring: _modelSupportsToolCalling
+  // in aiGateway skips the ENTIRE tool path when it is false, so leaving it
+  // stale would have silently stripped read tools (notes, tasks, resume) from
+  // every student on this model.
+  // Gemini's OpenAI-compatible bridge. Replaces the removed 'gemini-2.0-flash',
+  // which 404'd on this account (verified 2026-08-18) — this is the slug the
+  // provider config has always actually used.
+  //
+  // SCORES ARE MEASURED, NOT ASSUMED — but from a small sample. On a 4-question
+  // objective probe (WACC arithmetic, ROIC-vs-WACC judgement, unit conversion,
+  // decimal ordering) it scored 4/4, matching openai/gpt-oss-20b (78) and
+  // beating meta/llama-3.1-8b-instruct (65, 2/4). reasoningScore is set to 78
+  // to sit alongside gpt-oss-20b rather than above it: four questions justify
+  // "at least as good as the 78-class", not a finer ranking. Revisit with a
+  // real eval set.
+  //
+  // supportsToolCalling is verified, not assumed: a live completeStreamRich
+  // probe returned a well-formed tool_calls entry with no pseudo-syntax leak
+  // into the visible reply — the failure mode that disqualified Groq's
+  // llama-3.3-70b. Measured latency ~1.0s.
+  'gemini-flash-lite-latest': {
+    provider: 'gemini',
+    model: 'gemini-flash-lite-latest',
+    parameters: 'unknown',
+    contextWindow: 1048576,
+    maxTokens: 8192,
+    capabilities: ['chat', 'reasoning', 'summarisation', 'extraction'],
+    reasoningScore: 78,
+    codingScore: 74,
+    writingScore: 76,
+    visionScore: 0,
+    embeddingScore: 0,
+    latencyScore: 85,
+    costScore: 95,
+    healthScore: 97,
+    availability: 0.97,
+    supportsVision: false,
+    supportsEmbedding: false,
+    supportsJson: true,
+    supportsStreaming: true,
+    supportsToolCalling: true,
+    tier: 'free',
+  },
+
   '@cf/meta/llama-3.3-70b-instruct-fp8-fast': {
     provider: 'cloudflare',
     model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
@@ -261,26 +297,43 @@ const MODELS = {
     supportsEmbedding: false,
     supportsJson: true,
     supportsStreaming: true,
-    supportsToolCalling: false,
+    supportsToolCalling: true,
     tier: 'free',
   },
 
-  'llama-3.3-70b-versatile': {
+  // Both verified live 2026-07-28: real streaming, real native tool calls
+  // confirmed via completeStreamRich(), and no reasoning_content emitted
+  // (plain instruct models — see selectTierModel() in daxService.js for why
+  // that matters).
+  // Groq's larger gpt-oss. Added 2026-08-18 to give the placement tier a
+  // distinct, stronger model — selectTierModel had both paid tiers sharing
+  // gpt-oss-20b, and its own comment said so "until a second verified-clean
+  // model is found".
+  //
+  // Verified live by scripts/benchmarkModels.js: 6/6 on the objective question
+  // set, valid JSON contract, well-formed tool_calls, no CoT leak, ~1341ms.
+  //
+  // reasoningScore 80 — one above gpt-oss-20b's 78 — is a JUDGEMENT, not a
+  // measurement: the 6-question set scored the two identically, so it
+  // separates neither. The ordering reflects parameter count alone, and both
+  // land in the same 'balanced' capability class regardless. Revisit with a
+  // real eval set (audit H5) before treating that gap as meaningful.
+  'openai/gpt-oss-120b': {
     provider: 'groq',
-    model: 'llama-3.3-70b-versatile',
-    parameters: '70b',
-    contextWindow: 128000,
-    maxTokens: 2048,
-    capabilities: ['chat', 'reasoning', 'summarisation', 'extraction'],
+    model: 'openai/gpt-oss-120b',
+    parameters: '120b',
+    contextWindow: 131072,
+    maxTokens: 8192,
+    capabilities: ['chat', 'reasoning', 'summarisation', 'classification', 'extraction'],
     reasoningScore: 80,
-    codingScore: 72,
-    writingScore: 78,
+    codingScore: 76,
+    writingScore: 79,
     visionScore: 0,
     embeddingScore: 0,
-    latencyScore: 90,
-    costScore: 85,
-    healthScore: 98,
-    availability: 0.98,
+    latencyScore: 78,
+    costScore: 88,
+    healthScore: 96,
+    availability: 0.96,
     supportsVision: false,
     supportsEmbedding: false,
     supportsJson: true,
@@ -288,10 +341,6 @@ const MODELS = {
     supportsToolCalling: true,
     tier: 'free',
   },
-  // Both verified live 2026-07-28: real streaming, real native tool calls
-  // confirmed via completeStreamRich(), and no reasoning_content emitted
-  // (plain instruct models — see selectTierModel() in daxService.js for why
-  // that matters).
   'openai/gpt-oss-20b': {
     provider: 'groq',
     model: 'openai/gpt-oss-20b',
@@ -308,29 +357,6 @@ const MODELS = {
     costScore: 92,
     healthScore: 96,
     availability: 0.96,
-    supportsVision: false,
-    supportsEmbedding: false,
-    supportsJson: true,
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    tier: 'free',
-  },
-  'llama-3.1-8b-instant': {
-    provider: 'groq',
-    model: 'llama-3.1-8b-instant',
-    parameters: '8b',
-    contextWindow: 128000,
-    maxTokens: 2048,
-    capabilities: ['chat', 'summarisation', 'classification'],
-    reasoningScore: 64,
-    codingScore: 60,
-    writingScore: 66,
-    visionScore: 0,
-    embeddingScore: 0,
-    latencyScore: 97,
-    costScore: 98,
-    healthScore: 98,
-    availability: 0.98,
     supportsVision: false,
     supportsEmbedding: false,
     supportsJson: true,
@@ -406,29 +432,6 @@ const MODELS = {
     supportsStreaming: true,
     supportsToolCalling: true,
     tier: 'paid',
-  },
-  'gemini-2.0-flash': {
-    provider: 'gemini',
-    model: 'gemini-2.0-flash',
-    parameters: 'unknown',
-    contextWindow: 1048576,
-    maxTokens: 8192,
-    capabilities: ['chat', 'reasoning', 'coding', 'vision', 'summarisation', 'extraction'],
-    reasoningScore: 78,
-    codingScore: 80,
-    writingScore: 75,
-    visionScore: 82,
-    embeddingScore: 0,
-    latencyScore: 92,
-    costScore: 95,
-    healthScore: 97,
-    availability: 0.97,
-    supportsVision: true,
-    supportsEmbedding: false,
-    supportsJson: true,
-    supportsStreaming: true,
-    supportsToolCalling: true,
-    tier: 'free',
   },
 };
 

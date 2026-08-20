@@ -48,11 +48,13 @@ const MODEL_COST_PROFILES = {
   'llama3.2': { tier: 'free', costPerRequest: 0, costScore: 100 },
   'mistral': { tier: 'free', costPerRequest: 0, costScore: 100 },
   // Legacy
-  'llama-3.3-70b-versatile': { tier: 'budget', costPerRequest: 0.00005, costScore: 95 },
   'gpt-4o-mini': { tier: 'moderate', costPerRequest: 0.0005, costScore: 60 },
   'gpt-4o': { tier: 'premium', costPerRequest: 0.002, costScore: 20 },
   'claude-sonnet-4-20250514': { tier: 'premium', costPerRequest: 0.003, costScore: 15 },
-  'gemini-2.0-flash': { tier: 'budget', costPerRequest: 0.00005, costScore: 95 },
+  // Removed 2026-08-18: llama-3.3-70b-versatile, llama-3.1-8b-instant and
+  // gemini-2.0-flash are no longer served on this account.
+  'gemini-flash-lite-latest': { tier: 'budget', costPerRequest: 0.00005, costScore: 95 },
+  'openai/gpt-oss-120b': { tier: 'budget', costPerRequest: 0.0001, costScore: 88 },
 };
 
 function selectCheapestModels(capabilities, availableModels, intent) {

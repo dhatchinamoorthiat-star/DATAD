@@ -6,6 +6,7 @@ const checkRole = require('../middleware/checkRole');
 const telemetry = require('../ai/telemetry');
 const providerHealthEngine = require('../ai/runtime-v2/providerHealthEngine');
 const modelRegistry = require('../ai/runtime-v2/modelRegistry');
+const circuitBreaker = require('../ai/runtime-v2/circuitBreaker');
 
 const guard = [verifyToken, checkRole('admin')];
 
@@ -66,8 +67,22 @@ router.get('/providers', ...guard, (req, res) => {
   const providers = {};
   for (const [name, health] of Object.entries(providerHealth)) {
     const models = allModels.filter((m) => m.provider === name);
+    // Breaker state is what actually decides whether the failover chain will
+    // call this provider on the next request, so it belongs next to the health
+    // score rather than being inferred from it.
+    const breaker = circuitBreaker.getState(name);
+
     providers[name] = {
       ...health,
+      circuit: {
+        state: breaker.currentState,
+        consecutiveFailures: breaker.consecutiveFailureCount,
+        lastFailureAt: breaker.lastFailureTime ? new Date(breaker.lastFailureTime).toISOString() : null,
+        // Only meaningful while open; null once the provider is back in rotation.
+        retryAt: breaker.currentState === 'open'
+          ? new Date(breaker.lastStateChange + breaker.recoveryTimeout).toISOString()
+          : null,
+      },
       models: models.map((m) => ({
         model: m.model,
         key: m.key,
@@ -75,7 +90,10 @@ router.get('/providers', ...guard, (req, res) => {
         visionSupport: m.visionSupport,
         embeddingSupport: m.embeddingSupport,
       })),
-      status: health.healthScore >= 70 ? 'healthy'
+      // An open breaker means the chain is actively skipping this provider —
+      // that outranks whatever the rolling health score says.
+      status: breaker.currentState === 'open' ? 'benched'
+        : health.healthScore >= 70 ? 'healthy'
         : health.healthScore >= 40 ? 'degraded'
         : 'unhealthy',
     };
