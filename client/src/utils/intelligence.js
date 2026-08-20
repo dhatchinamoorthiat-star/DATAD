@@ -10,6 +10,12 @@ export const CATEGORIES = [
   { value: 'marketing', label: 'Marketing & Consumer', emoji: '📢' },
   { value: 'corporate', label: 'Corporate News', emoji: '🏢' },
   { value: 'placements', label: 'Placements & Hiring', emoji: '💼' },
+  { value: 'psychology', label: 'Psychology & Mind', emoji: '🧠' },
+  { value: 'law', label: 'Law', emoji: '⚖️' },
+  { value: 'fashion-design', label: 'Fashion & Design', emoji: '👗' },
+  { value: 'veterinary', label: 'Veterinary Science', emoji: '🐾' },
+  { value: 'mechanical-engineering', label: 'Mechanical & Manufacturing', emoji: '⚙️' },
+  { value: 'data-science', label: 'Data Science', emoji: '📊' },
 ];
 
 export const categoryMeta = (value) =>
@@ -24,6 +30,12 @@ export const TOPICS = [
   { value: 'Operations', categories: ['operations'] },
   { value: 'Entrepreneurship', categories: ['startups'] },
   { value: 'Technology', categories: ['ai-tech'] },
+  { value: 'Data Science', categories: ['data-science'] },
+  { value: 'Psychology', categories: ['psychology'] },
+  { value: 'Law', categories: ['law'] },
+  { value: 'Fashion & Design', categories: ['fashion-design'] },
+  { value: 'Veterinary', categories: ['veterinary'] },
+  { value: 'Mechanical & Manufacturing', categories: ['mechanical-engineering'] },
 ];
 
 // Categories surfaced by a set of followed topics.

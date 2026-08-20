@@ -6,6 +6,15 @@ export const SUBJECTS = [
   'HR',
   'Economics',
   'Business Analytics',
+  'Management Concepts & Organizational Behaviour',
+  'Economics for Decision Making',
+  'Accounting for Decision Making',
+  'Business Statistics',
+  'Managerial Communication',
+  'Spreadsheet Applications',
+  'Social Sensitization for Managers',
+  'Legal Aspects of Business',
+  'Sports',
   'Other',
 ];
 

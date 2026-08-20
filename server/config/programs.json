@@ -45,7 +45,7 @@
       "icon": "🧠",
       "description": "Bachelor of Science in Psychology",
       "specializations": ["Clinical", "Organizational", "Child Development", "Cognitive", "Social"],
-      "newsCategories": ["corporate", "marketing", "placements"],
+      "newsCategories": ["psychology", "corporate", "marketing", "placements"],
       "companySectors": ["fmcg", "other"],
       "careerPaths": ["Clinical Psychologist", "HR Specialist", "Researcher", "Counselor", "UX Designer"]
     },
@@ -56,7 +56,7 @@
       "icon": "📈",
       "description": "Master of Science in Data Science",
       "specializations": ["ML Engineering", "Analytics", "Big Data", "Business Intelligence"],
-      "newsCategories": ["ai-tech", "banking-finance", "corporate", "placements"],
+      "newsCategories": ["data-science", "ai-tech", "banking-finance", "corporate", "placements"],
       "companySectors": ["it_services", "startup", "banking"],
       "careerPaths": ["Data Scientist", "ML Engineer", "Analytics Engineer", "AI Researcher"]
     },
@@ -67,7 +67,7 @@
       "icon": "🐾",
       "description": "Bachelor of Veterinary Science",
       "specializations": ["Small Animal", "Large Animal", "Wildlife", "Pathology"],
-      "newsCategories": ["placements"],
+      "newsCategories": ["veterinary", "placements"],
       "companySectors": ["other"],
       "careerPaths": ["Veterinarian", "Veterinary Surgeon", "Research Scientist", "Pharmaceutical Specialist"]
     },
@@ -78,7 +78,7 @@
       "icon": "⚖️",
       "description": "Bachelor of Laws",
       "specializations": ["Corporate", "Criminal", "Constitutional", "Intellectual Property", "International"],
-      "newsCategories": ["corporate", "economy", "placements"],
+      "newsCategories": ["law", "corporate", "economy", "placements"],
       "companySectors": ["banking", "consulting", "other"],
       "careerPaths": ["Lawyer", "Legal Consultant", "Corporate Counsel", "Policy Advisor"]
     },
@@ -89,7 +89,7 @@
       "icon": "👗",
       "description": "Bachelor of Design in Fashion",
       "specializations": ["Fashion Design", "Textile", "Fashion Management", "Sustainable Fashion"],
-      "newsCategories": ["marketing", "corporate", "placements"],
+      "newsCategories": ["fashion-design", "marketing", "corporate", "placements"],
       "companySectors": ["fmcg", "startup", "other"],
       "careerPaths": ["Fashion Designer", "Brand Designer", "Fashion Consultant", "Creative Director"]
     },
@@ -100,7 +100,7 @@
       "icon": "🖥️",
       "description": "Master of Science in Computer Science",
       "specializations": ["Algorithms", "Systems", "AI/ML", "Distributed Systems"],
-      "newsCategories": ["ai-tech", "corporate", "placements"],
+      "newsCategories": ["ai-tech", "data-science", "corporate", "placements"],
       "companySectors": ["it_services", "startup"],
       "careerPaths": ["Research Scientist", "Systems Engineer", "ML Researcher", "Software Architect"]
     },
@@ -122,7 +122,7 @@
       "icon": "⚙️",
       "description": "Bachelor of Engineering in Mechanical Engineering",
       "specializations": ["Automotive", "Thermal", "Manufacturing", "Robotics"],
-      "newsCategories": ["corporate", "economy", "placements"],
+      "newsCategories": ["mechanical-engineering", "corporate", "economy", "placements"],
       "companySectors": ["auto", "manufacturing", "it_services"],
       "careerPaths": ["Mechanical Engineer", "Design Engineer", "Manufacturing Engineer", "Roboticist"]
     }

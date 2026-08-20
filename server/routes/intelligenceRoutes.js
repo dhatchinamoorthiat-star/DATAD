@@ -10,6 +10,7 @@ const {
   refresh,
   setInterests,
   getMarket,
+  getForYou,
 } = require('../controllers/intelligenceController');
 
 router.use(verifyToken);
@@ -17,6 +18,10 @@ router.use(verifyToken);
 // Read / personalization (all users). The article feed stays open on purpose —
 // it is content, and content only compounds if everyone reads it.
 router.get('/', listArticles);
+
+// Course-scoped feed for the Study hub, personalized off the program picked
+// at registration.
+router.get('/for-you', getForYou);
 
 // The market snapshot is the "Market Intelligence" the pricing page has been
 // advertising as a Placement Pass feature while every free account could read

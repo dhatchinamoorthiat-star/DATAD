@@ -4,6 +4,7 @@ const Bookmark = require('../models/Bookmark');
 const User = require('../models/User');
 const { refreshNews } = require('../services/newsFetcher');
 const { refreshMarket } = require('../services/marketFetcher');
+const PROGRAMS_CONFIG = require('../config/programs.json');
 
 // ---- Live news (read) ----
 
@@ -19,6 +20,37 @@ exports.listArticles = async (req, res, next) => {
     const bookmarks = await Bookmark.find({ user: req.user.userId }).select('article').lean();
     const saved = new Set(bookmarks.map((b) => b.article.toString()));
     res.json(articles.map((a) => ({ ...a, bookmarked: saved.has(a._id.toString()) })));
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/intelligence/for-you — live news scoped to the course/program the
+// student picked at registration. programs.json maps program.id -> the news
+// categories that program cares about (same enum NewsItem.category uses), so
+// this is just that lookup plus the query — no separate ingestion needed,
+// the shared RSS cache (refreshed every 30 min, see newsFetcher.js) already
+// covers every category. Changes day by day for free as the feeds update.
+exports.getForYou = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('program').lean();
+    const programId = user?.program?.id || 'general';
+    const preset = PROGRAMS_CONFIG.programs.find((p) => p.id === programId);
+    const categories = preset?.newsCategories?.length
+      ? preset.newsCategories
+      : PROGRAMS_CONFIG.defaults.newsCategories;
+
+    const articles = await NewsItem.find({ category: { $in: categories } })
+      .sort({ publishedAt: -1 })
+      .limit(6)
+      .lean();
+
+    const bookmarks = await Bookmark.find({ user: req.user.userId }).select('article').lean();
+    const saved = new Set(bookmarks.map((b) => b.article.toString()));
+    res.json({
+      program: { id: programId, label: user?.program?.label || preset?.label || 'General' },
+      articles: articles.map((a) => ({ ...a, bookmarked: saved.has(a._id.toString()) })),
+    });
   } catch (err) {
     next(err);
   }
