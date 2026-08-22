@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PWAProvider } from './context/PWAContext';
 import { ProgramProvider } from './context/ProgramContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import InstallPrompt from './components/pwa/InstallPrompt';
 import OfflineBanner from './components/pwa/OfflineBanner';
@@ -148,6 +149,7 @@ export default function App() {
     <PWAProvider>
       <ThemeProvider>
         <AuthProvider>
+          <NotificationProvider>
             <ToastProvider>
           <BrowserRouter>
             <OfflineBanner />
@@ -345,6 +347,7 @@ export default function App() {
           <InstallPrompt />
           </BrowserRouter>
             </ToastProvider>
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </PWAProvider>

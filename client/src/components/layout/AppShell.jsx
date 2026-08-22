@@ -23,6 +23,7 @@ import { useLocation } from 'react-router-dom';
 import { WORKSPACES, isWorkspaceActive } from '../../utils/workspaces';
 import CommandPalette from '../common/CommandPalette';
 import DaxPanel from '../chat/DaxPanel';
+import NotificationBell from '../notifications/NotificationBell';
 import RailSidebar from './RailSidebar';
 import Footer from './Footer';
 
@@ -175,6 +176,7 @@ export default function AppShell({ children }) {
 
             {/* Right side actions - visible on lg and up */}
             <div className="hidden items-center gap-2 lg:flex">
+              <NotificationBell />
               <NavLink to="/me/settings" aria-label="Settings" className={({ isActive }) => `rounded-full p-2 transition-colors ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                 <Settings className="h-5 w-5" />
               </NavLink>
@@ -182,7 +184,8 @@ export default function AppShell({ children }) {
             </div>
 
             {/* Mobile view - keep original search button that opens command palette */}
-            <div className="lg:hidden">
+            <div className="flex items-center gap-1 lg:hidden">
+              <NotificationBell />
               <button
                 onClick={() => setPaletteOpen(true)}
                 aria-label="Search"

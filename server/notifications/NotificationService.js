@@ -89,6 +89,9 @@ async function send(userId, opts = {}) {
               createdAt: updated.createdAt,
               read: false,
               groupCount: updated.groupCount || 1,
+              priority: registry.getPriority(updated.type),
+              icon: registry.getIcon(updated.type),
+              color: registry.getColor(updated.type),
             });
           } catch { /* SSE broadcast is best-effort */ }
         });
@@ -122,6 +125,9 @@ async function send(userId, opts = {}) {
           createdAt: doc.createdAt,
           read: false,
           groupCount: doc.groupCount || 1,
+          priority: registry.getPriority(doc.type),
+          icon: registry.getIcon(doc.type),
+          color: registry.getColor(doc.type),
         });
       } catch { /* SSE broadcast is best-effort */ }
     });
@@ -179,6 +185,9 @@ async function sendBulk(userIds, opts = {}) {
             createdAt: n.createdAt,
             read: false,
             groupCount: n.groupCount || 1,
+            priority: registry.getPriority(n.type),
+            icon: registry.getIcon(n.type),
+            color: registry.getColor(n.type),
           });
         }
       } catch { /* SSE broadcast is best-effort */ }

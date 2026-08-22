@@ -1,6 +1,7 @@
 const Notification = require('../models/Notification');
 const logger = require('../utils/logger');
 const notificationService = require('../notifications/NotificationService');
+const registry = require('../notifications/NotificationRegistry');
 
 const OFFLINE_MODE = process.env.LOCAL_OFFLINE_MODE === 'true';
 
@@ -17,11 +18,19 @@ exports.list = async (req, res, next) => {
     const notifications = await Notification.find({ user: req.user.userId })
       .populate('actor', 'name')
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
+
+    const withPriority = notifications.map((n) => ({
+      ...n,
+      priority: registry.getPriority(n.type),
+      icon: registry.getIcon(n.type),
+      color: registry.getColor(n.type),
+    }));
 
     const unread = notifications.filter((n) => !n.read).length;
 
-    res.json({ notifications, unread });
+    res.json({ notifications: withPriority, unread });
   } catch (err) {
     next(err);
   }
