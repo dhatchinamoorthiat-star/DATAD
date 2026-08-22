@@ -18,6 +18,22 @@
 
 const mongoose = require('mongoose');
 
+/**
+ * Honour DNS_SERVERS here for the same reason index.js does: some networks
+ * cannot resolve Atlas SRV records with the system resolver, and a
+ * `mongodb+srv://` URI needs one lookup before it can connect at all.
+ *
+ * Without this the integration suites fail on those networks with
+ * `querySrv ESERVFAIL`, which reads like a broken test rather than a resolver
+ * problem — and the documented fix (set DNS_SERVERS) appeared to do nothing,
+ * because only the server process was applying it.
+ */
+if (process.env.DNS_SERVERS) {
+  require('node:dns').setServers(
+    process.env.DNS_SERVERS.split(',').map((s) => s.trim()).filter(Boolean)
+  );
+}
+
 // A database is safe to wipe only if its name says so. Substring rather than
 // suffix so `datad-test-ci` and similar per-branch databases pass too.
 const TEST_DB_PATTERN = /(^|[-_])test([-_]|$)/i;

@@ -28,7 +28,28 @@ exports.getNote = async (req, res, next) => {
   try {
     const note = await Note.findById(req.params.id).populate('author', 'name');
     if (!note) return res.status(404).json({ message: 'Note not found' });
-    // ⭐ Scope check: notes are scoped to programs when the user has a program
+
+    // A note is private to its author — the same rule listNotes, updateNote and
+    // deleteNote already enforce. This path used to check only the program
+    // scope below, which is not an ownership check and fails open three ways:
+    // it skips when the note has no program, skips when the *caller* has no
+    // program, and passes outright when both sit in the same program — which
+    // in a single-cohort deployment is everyone. Any student could read any
+    // other student's note body and attachment URLs by id.
+    //
+    // 404 rather than 403 so the response cannot be used to confirm that a
+    // given id exists.
+    // `author` is populated above, so it is a User document here rather than an
+    // ObjectId — Document.equals(<string>) compares against `doc._id` and would
+    // read undefined, denying the real author. Normalise to the id either shape
+    // carries and compare as strings.
+    const authorId = note.author?._id ?? note.author;
+    if (String(authorId) !== String(req.user.userId)) {
+      return res.status(404).json({ message: 'Note not found' });
+    }
+
+    // Kept as defence in depth: ownership already implies scope, but a note
+    // carried into a program the reader has since left should not resurface.
     const programId = req.user?.program?.id;
     if (note.program && programId && note.program !== programId) {
       return res.status(403).json({ message: 'Access denied' });

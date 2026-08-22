@@ -9,7 +9,14 @@ module.exports = {
     const q = query.toLowerCase();
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const entries = await JournalEntry.find({ user: userId })
+    const entries = await JournalEntry.find({
+      user: userId,
+      $or: [
+        { title: { $regex: escaped, $options: 'i' } },
+        { content: { $regex: escaped, $options: 'i' } },
+        { mood: { $regex: escaped, $options: 'i' } },
+      ],
+    })
       .select('title content mood createdAt')
       .sort({ createdAt: -1 })
       .limit(50)

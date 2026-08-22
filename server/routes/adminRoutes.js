@@ -1,4 +1,9 @@
 const router = require('express').Router();
+// Used by the fire-and-forget catch on the program-sync route below. It was
+// referenced there without ever being imported, so the one path that reports a
+// failed sync threw ReferenceError inside a promise rejection handler — an
+// unhandled rejection, and the sync failure itself never reached the logs.
+const logger = require('../utils/logger');
 const verifyToken = require('../middleware/verifyToken');
 const checkRole = require('../middleware/checkRole');
 const { heavyLimiter } = require('../middleware/rateLimiters');

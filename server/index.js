@@ -11,6 +11,30 @@ if (process.env.DNS_SERVERS) {
 const logger = require('./utils/logger');
 const mongoose = require('mongoose');
 
+/**
+ * Last-resort handlers, installed before anything else can throw.
+ *
+ * Node terminates the process on an unhandled rejection, and an uncaught
+ * exception leaves it in an undefined state — so in both cases the right move
+ * is to let it die and have the platform restart it. What was missing is the
+ * record of *why*: without these the process vanishes, the platform reports
+ * only a non-zero exit, and the stack trace goes to stderr in a shape nothing
+ * parses. Everything else here logs structured JSON; a crash — the one event
+ * most worth reading at 3am — was the exception.
+ *
+ * Exit is deferred by a tick so the log line is actually flushed first.
+ */
+const fatal = (kind) => (err) => {
+  logger.error(`Fatal: ${kind}`, {
+    kind,
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
+  setTimeout(() => process.exit(1), 100).unref();
+};
+process.on('uncaughtException', fatal('uncaughtException'));
+process.on('unhandledRejection', fatal('unhandledRejection'));
+
 const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'CLIENT_URL'];
 const missing = REQUIRED_ENV.filter((key) => !process.env[key]);
 if (missing.length) {
@@ -55,6 +79,10 @@ app.set('trust proxy', 1);
 // a CORS origin is also a host we will not put in a password-reset email. Both
 // exceptions are development-only; in production only CLIENT_URL is trusted.
 const { isAllowedCorsOrigin } = require('./utils/clientUrl');
+
+// First in the chain: everything logged after this point, including the CORS
+// rejection below and anything the error handler reports, carries the id.
+app.use(require('./middleware/requestContext'));
 
 app.use(
   helmet({
@@ -211,7 +239,9 @@ const verifyToken = require('./middleware/verifyToken');
 const ApiKey = require('./models/ApiKey');
 app.get('/api/keys', verifyToken, async (req, res, next) => {
   try {
-    const keys = await ApiKey.find({ user: req.user.userId }).select('name scopes lastUsedAt createdAt active').lean();
+    const keys = await ApiKey.find({ user: req.user.userId })
+      .select('name keyPrefix scopes lastUsedAt createdAt active')
+      .lean();
     res.json({ keys });
   } catch (err) { next(err); }
 });
@@ -220,12 +250,19 @@ app.post('/api/keys', verifyToken, async (req, res, next) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ message: 'Key name is required' });
     const key = await ApiKey.generate(name, req.user.userId);
-    res.status(201).json({ key: key.key, name: key.name });
+    // The only time the raw key exists outside the developer's hands. Only the
+    // hash is stored, so this response cannot be reproduced later — the client
+    // has to tell the user to copy it now.
+    res.status(201).json({ key: key.raw, name: key.name, oneTime: true });
   } catch (err) { next(err); }
 });
 app.delete('/api/keys/:id', verifyToken, async (req, res, next) => {
   try {
-    await ApiKey.deleteOne({ _id: req.params.id, user: req.user.userId });
+    // Scoped to the caller, so a wrong id and someone else's id are the same
+    // case — both delete nothing, and both must read as "not found" rather
+    // than a success that silently revoked nothing.
+    const { deletedCount } = await ApiKey.deleteOne({ _id: req.params.id, user: req.user.userId });
+    if (!deletedCount) return res.status(404).json({ message: 'Key not found' });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

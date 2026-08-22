@@ -32,9 +32,26 @@ const isProduction = () => process.env.NODE_ENV === 'production';
  * only one ever used to build a link. Splitting matters: interpolating the raw
  * variable would emit "https://a.com,https://b.com/reset-password?token=…".
  */
+/**
+ * Split CLIENT_URL into normalised origins.
+ *
+ * Trailing slashes are stripped here rather than at one call site, because a
+ * browser's Origin header never carries a path — it is always exactly
+ * `scheme://host[:port]`. So `CLIENT_URL=https://datad.app/` matched nothing in
+ * the CORS check while still producing correct emailed links, which strip the
+ * slash separately. The result was a deployment where password-reset mail
+ * worked perfectly and every browser API call failed "Not allowed by CORS" —
+ * with a one-character cause, in production only.
+ */
+function clientOrigins() {
+  return (process.env.CLIENT_URL || '')
+    .split(',')
+    .map((o) => o.trim().replace(/\/+$/, ''))
+    .filter(Boolean);
+}
+
 function primaryClientUrl() {
-  const raw = process.env.CLIENT_URL || 'http://localhost:5174';
-  return raw.split(',')[0].trim().replace(/\/+$/, '');
+  return clientOrigins()[0] || 'http://localhost:5174';
 }
 
 /** Whether an origin is a development tunnel we may honour outside production. */
@@ -63,14 +80,16 @@ function emailLinkBase(req) {
  * tunnel exception applies to both, or to neither.
  */
 function isAllowedCorsOrigin(origin) {
-  const allowed = (process.env.CLIENT_URL || '').split(',').map((o) => o.trim()).filter(Boolean);
-  if (allowed.includes(origin)) return true;
+  // Same normalisation as the emailed links — that shared parsing is the whole
+  // point of keeping both rules in this file.
+  if (clientOrigins().includes(String(origin || '').replace(/\/+$/, ''))) return true;
   return !isProduction() && isDevTunnelOrigin(origin);
 }
 
 module.exports = {
   DEV_TUNNEL_RE,
   isProduction,
+  clientOrigins,
   primaryClientUrl,
   isDevTunnelOrigin,
   emailLinkBase,

@@ -11,7 +11,10 @@ module.exports = {
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     const [messages, memory] = await Promise.all([
-      ChatMessage.find({ user: userId })
+      ChatMessage.find({
+        user: userId,
+        content: { $regex: escaped, $options: 'i' },
+      })
         .select('role content createdAt')
         .sort({ createdAt: -1 })
         .limit(100)

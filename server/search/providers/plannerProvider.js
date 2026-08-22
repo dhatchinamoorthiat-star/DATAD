@@ -11,7 +11,17 @@ module.exports = {
 
     const [tasks, goals] = await Promise.all([
       Task.find({
-        $or: [{ createdBy: userId }, { assignee: userId }],
+        $and: [
+          { $or: [{ createdBy: userId }, { assignee: userId }] },
+          {
+            $or: [
+              { title: { $regex: escaped, $options: 'i' } },
+              { type: { $regex: escaped, $options: 'i' } },
+              { subject: { $regex: escaped, $options: 'i' } },
+              { status: { $regex: escaped, $options: 'i' } },
+            ],
+          },
+        ],
       })
         .select('title type subject dueDate status priority')
         .sort({ dueDate: 1 })

@@ -4,7 +4,13 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 80 },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 120 },
-    password: { type: String, required: true },
+    // select:false so the bcrypt hash is never returned by an ordinary query.
+    // Every handler that sends a user document currently remembers to exclude
+    // it by hand; that is one forgotten `-password` away from serving password
+    // hashes to a client, and the safe default costs nothing. The four places
+    // that genuinely need it — sign-in, password change, password reset and
+    // account deletion — ask for it with .select('+password').
+    password: { type: String, required: true, select: false },
     role: { type: String, enum: ['admin', 'member'], default: 'member' },
     interests: { type: [{ type: String, maxlength: 40 }], default: [] },
 

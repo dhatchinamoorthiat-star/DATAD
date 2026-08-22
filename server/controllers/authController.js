@@ -553,7 +553,10 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
-    const user = await User.findOne({ email: email.toLowerCase() });
+    // +password: the field is select:false on the schema, so the hash has to
+    // be asked for explicitly. Without it bcrypt.compare gets undefined and
+    // every sign-in fails.
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -647,7 +650,7 @@ exports.changePassword = async (req, res, next) => {
     const pwdProblem = passwordProblem(newPassword);
     if (pwdProblem) return res.status(400).json({ message: pwdProblem });
 
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId).select('+password');
     if (!user || !(await bcrypt.compare(currentPassword, user.password))) {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
@@ -718,7 +721,7 @@ exports.resetPassword = async (req, res, next) => {
     const user = await User.findOne({
       resetTokenHash: tokenHash,
       resetTokenExpires: { $gt: new Date() },
-    });
+    }).select('+password');
     if (!user) {
       return res.status(400).json({ message: 'Reset link is invalid or has expired' });
     }
@@ -746,7 +749,7 @@ exports.deleteAccount = async (req, res, next) => {
   try {
     const { password } = req.body;
     const userId = req.user.userId;
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('+password');
     if (!user) return res.status(404).json({ message: 'User not found' });
     if (!password || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: 'Password is incorrect' });

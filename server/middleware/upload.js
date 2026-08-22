@@ -9,6 +9,14 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: LIMITS.image },
   fileFilter: (req, file, cb) => {
+    // SVG is markup, not a raster image: it can carry <script> and event
+    // handlers, and a CDN serving it as image/svg+xml will execute them when the
+    // file is opened directly. `image/*` let it straight through, and the
+    // signature check downstream has no magic number to catch it by. Nothing in
+    // the app — avatars, album photos, resume headshots — needs vector input.
+    if (file.mimetype === 'image/svg+xml' || file.mimetype === 'image/svg') {
+      return cb(new Error('SVG images are not accepted'));
+    }
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {

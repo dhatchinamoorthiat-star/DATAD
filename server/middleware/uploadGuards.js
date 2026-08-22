@@ -111,6 +111,52 @@ const ACTIVE_CONTENT_PREFIXES = [
   '<script',
 ];
 
+/**
+ * Markers that must not appear anywhere in the opening bytes of a binary file.
+ *
+ * Narrower than the prefix list on purpose: <?xml and <html legitimately appear
+ * inside some container formats, but a script or an svg element in the first
+ * kilobyte of something claiming to be a PDF or an image does not happen by
+ * accident.
+ */
+const ACTIVE_CONTENT_ANYWHERE = ['<script', '<svg'];
+
+/**
+ * How much of the file to consider "the head" for the markup checks. 64 bytes
+ * was too small to survive a padding comment — see normalizeHead.
+ */
+const HEAD_BYTES = 1024;
+
+/**
+ * Lowercased opening bytes with leading whitespace and XML/HTML comments
+ * removed.
+ *
+ * The prefix check used to run on the raw first 64 bytes, so prepending
+ * `<!-- anything -->` moved the real first element past the window and defeated
+ * it entirely. An SVG dressed that way passed both checks — SVG has no magic
+ * number, so the signature table has nothing to say about it — and reached the
+ * CDN as an image. SVG is an active-content format: it executes script when
+ * served as image/svg+xml and opened directly.
+ *
+ * Stripping comments before matching means the padding no longer helps. The
+ * loop is bounded so a file made entirely of comments cannot spin here.
+ */
+function normalizeHead(buffer) {
+  let head = buffer.subarray(0, HEAD_BYTES).toString('latin1').toLowerCase().trimStart();
+  for (let i = 0; i < 16; i++) {
+    if (!head.startsWith('<!--')) break;
+    const end = head.indexOf('-->');
+    if (end === -1) {
+      // An unterminated comment swallows the rest of the head; nothing left to
+      // inspect, so treat what follows the marker as the content.
+      head = head.slice(4).trimStart();
+      break;
+    }
+    head = head.slice(end + 3).trimStart();
+  }
+  return head;
+}
+
 function matchesSignature(buffer, sig) {
   const offset = sig.offset || 0;
   if (buffer.length < offset + sig.bytes.length) return false;
@@ -127,8 +173,8 @@ function matchesSignature(buffer, sig) {
 function checkFile(file) {
   if (!file?.buffer || file.buffer.length === 0) return 'file is empty';
 
-  const head = file.buffer.subarray(0, 64).toString('latin1').trim().toLowerCase();
   const declared = (file.mimetype || '').toLowerCase();
+  const head = normalizeHead(file.buffer);
 
   // A file that opens with markup while claiming to be anything other than
   // text/html is mislabelled. We never accept text/html in the first place.
@@ -136,6 +182,14 @@ function checkFile(file) {
     for (const marker of ACTIVE_CONTENT_PREFIXES) {
       if (head.startsWith(marker)) {
         return `content looks like ${marker} but was declared ${declared}`;
+      }
+    }
+    // Backstop for formats we cannot fingerprint. A real PDF, ZIP or JPEG does
+    // not contain a script or SVG element in its opening bytes, so finding one
+    // anywhere in the head means the file is markup wearing another name.
+    for (const marker of ACTIVE_CONTENT_ANYWHERE) {
+      if (head.includes(marker)) {
+        return `content contains ${marker} but was declared ${declared}`;
       }
     }
   }

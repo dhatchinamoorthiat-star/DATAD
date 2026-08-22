@@ -9,7 +9,16 @@ module.exports = {
     const q = query.toLowerCase();
     const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    const notes = await Note.find({ author: userId })
+    const notes = await Note.find({
+      author: userId,
+      $or: [
+        { title: { $regex: escaped, $options: 'i' } },
+        { content: { $regex: escaped, $options: 'i' } },
+        { tags: { $regex: escaped, $options: 'i' } },
+        { folder: { $regex: escaped, $options: 'i' } },
+        { subject: { $regex: escaped, $options: 'i' } },
+      ],
+    })
       .select('title content tags subject folder createdAt updatedAt')
       .sort({ updatedAt: -1 })
       .limit(50)
