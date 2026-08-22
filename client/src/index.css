@@ -638,3 +638,244 @@ body {
   background-color: #acacac;
   animation: sparkle calc(100s / var(--duration)) linear calc(10s / var(--duration)) infinite;
 }
+
+/* ── Creator page ──────────────────────────────────────────────────────────
+   /creator is the register canvas entered rather than looked through, so it
+   shares that screen's rule: anything that decides whether words are on the
+   page is CSS, and Framer only gets the things a reader is actively watching
+   (the scroll-linked spine, the terrace light, the rail's fill).
+
+   The palette arrives as custom properties from creatorTokens.js, set on the
+   page root. Nothing below hard-codes a brand hex — a change in the token file
+   lands here too. */
+
+/* Scroll entrance. `Reveal` flips data-revealed once the element crosses the
+   fold, and falls back to `true` when there is no IntersectionObserver or the
+   reader asked for less motion, so the content is never gated on the effect. */
+.creator-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0s);
+}
+
+.creator-reveal[data-revealed='true'] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Line-drawing for the origin figure. Each path carries pathLength="1", which
+   normalises dash maths into a 0..1 space — so one rule draws every stroke
+   regardless of its real length, and nobody has to re-measure a path after
+   nudging a coordinate. */
+.creator-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--draw-delay, 0s);
+}
+
+[data-revealed='true'] .creator-draw {
+  stroke-dashoffset: 0;
+}
+
+/* The strike through each refusal. A transform rather than a width so it
+   composites, and origin-left so it reads as a pen stroke rather than a bar
+   growing out of the middle of the word. */
+.creator-strike::after {
+  content: '';
+  position: absolute;
+  left: -0.04em;
+  right: -0.04em;
+  top: 54%;
+  height: 2px;
+  background: var(--c-ember);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--strike-delay, 0.25s);
+}
+
+[data-revealed='true'] .creator-strike::after {
+  transform: scaleX(1);
+}
+
+/* The terrace stanzas. Each one steps a riser to the right of the last, and
+   the tread reaches back to meet the previous riser — the logo's three-step
+   cut, rebuilt at the scale of the layout. Below 1024px the step collapses:
+   an indent that deep on a phone is not a motif, it is lost measure. */
+@media (min-width: 1024px) {
+  .creator-step {
+    margin-left: calc(var(--step, 0) * 4.5rem);
+  }
+  .creator-tread {
+    width: 4.5rem;
+    transform: translateX(-100%);
+  }
+}
+
+/* ── Module strip ─────────────────────────────────────────────────────────
+   Phone: hairline rows that open downward. `grid-template-rows: 0fr → 1fr` is
+   the one way to transition to a content's natural height without measuring it
+   in JS or committing to a max-height guess that clips on a narrow screen.
+
+   Desktop: one row of slats sharing a fixed width, so opening one closes
+   another. flex-grow is the animated property; the collapsed slats keep a
+   minimum width so their vertical titles always fit. */
+.creator-slats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.creator-slat-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.creator-slat-body > * {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.creator-slat[data-active='true'] .creator-slat-body {
+  grid-template-rows: 1fr;
+}
+
+.creator-slat-rail {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .creator-slats {
+    flex-direction: row;
+    height: 22rem;
+    gap: 0.625rem;
+  }
+
+  .creator-slat {
+    flex: 1 1 0;
+    flex-grow: var(--grow, 1);
+    min-width: 4.25rem;
+    transition:
+      flex-grow 0.62s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.3s ease-out;
+  }
+
+  /* Collapsed title, running bottom-to-top. This is what makes the strip read
+     as a spine of tabs at a glance instead of six grey columns. */
+  .creator-slat-rail {
+    display: block;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    white-space: nowrap;
+    opacity: 1;
+    transition: opacity 0.24s ease-out;
+  }
+
+  .creator-slat[data-active='true'] .creator-slat-rail {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* The open panel is always laid out; only its opacity changes, so the text
+     inside never reflows mid-transition and stays in the accessibility tree
+     for a screen reader walking the strip with Tab. */
+  .creator-slat-open {
+    opacity: 0;
+    transition: opacity 0.22s ease-out;
+  }
+
+  .creator-slat[data-active='true'] .creator-slat-open {
+    opacity: 1;
+    transition-delay: 0.16s;
+  }
+
+  .creator-slat-body {
+    grid-template-rows: 1fr;
+  }
+}
+
+/* Focus on the dark canvas. The global :focus-visible ring is primary-500,
+   tuned for a white-dominant surface; brand blue at a wider offset is what
+   actually reads against near-black. */
+.creator-focus:focus-visible {
+  outline: 2px solid var(--c-blue);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+/* ── Creator page: the portrait ───────────────────────────────────────────
+   Duotone that resolves to real colour on hover or keyboard focus.
+
+   `mix-blend-mode: color` maps the tint's hue and saturation onto the
+   greyscaled photograph while keeping the photograph's own luminance, which is
+   what makes this a duotone rather than a coloured sheet laid over a picture.
+   The frame carries `isolation: isolate` so that blend stops at the frame —
+   without it the layer would blend with whatever the page happens to have
+   behind it, and the portrait would shift colour as the canvas scrolled.
+
+   Tint alphas are deliberately under 0.5. Because the layer beneath is already
+   greyscale, alpha here is the whole strength control: at 0.85 the photograph
+   came out a flat blue sheet with no tonal range left in it, which is a filter
+   rather than a duotone. Under half, the face keeps its own light and only
+   picks up the canvas's hue. */
+.creator-portrait {
+  isolation: isolate;
+  transition: border-color 0.4s ease-out;
+}
+
+/* The resting state is deliberately pulled down, not just desaturated. A
+   portrait shot against a bright wall is the most luminous object on a
+   near-black page and will out-shout the headline next to it; dropping the
+   luminance seats it in the canvas, and it is the hover that gives the
+   photograph its full brightness back. That is the whole trade — the image is
+   quiet until you look at it. */
+.creator-portrait-img {
+  filter: grayscale(1) contrast(1.1) brightness(0.84);
+  transform: scale(1.015);
+  transition:
+    filter 0.6s ease-out,
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.creator-portrait-tint {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: color;
+  background: linear-gradient(
+    160deg,
+    rgba(77, 124, 255, 0.46) 0%,
+    rgba(124, 108, 255, 0.3) 55%,
+    rgba(232, 184, 122, 0.2) 100%
+  );
+  transition: opacity 0.6s ease-out;
+}
+
+/* `:focus-within` as well as `:hover`, because the plate sits inside a figure
+   with no control of its own — a keyboard reader arriving on a neighbouring
+   link should get the same reveal a mouse does. */
+.creator-portrait:hover .creator-portrait-img,
+.creator-portrait:focus-within .creator-portrait-img {
+  filter: grayscale(0) contrast(1) brightness(1);
+  transform: scale(1);
+}
+
+.creator-portrait:hover .creator-portrait-tint,
+.creator-portrait:focus-within .creator-portrait-tint {
+  opacity: 0;
+}
+
+.creator-portrait:hover {
+  border-color: rgba(77, 124, 255, 0.45);
+}
+
+/* No blend-mode support (older Firefox with it disabled, some embedded
+   webviews) would leave a near-opaque blue sheet over the photograph. Fall
+   back to the plain desaturation, which is a treatment rather than a defect. */
+@supports not (mix-blend-mode: color) {
+  .creator-portrait-tint { display: none; }
+}
