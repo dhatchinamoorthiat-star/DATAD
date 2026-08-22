@@ -23,8 +23,16 @@ const errorHandler = (err, req, res, next) => {
   if (err.statusCode) {
     return res.status(err.statusCode).json({ message: err.message });
   }
-  logger.error(err.message, { stack: err.stack });
-  res.status(500).json({ message: 'Something went wrong' });
+  // An unexpected failure. The message and stack go to the logs only — the
+  // client gets the correlation id instead, which is the part that makes a
+  // bug report actionable without leaking internals.
+  logger.error(err.message, {
+    stack: err.stack,
+    method: req.method,
+    path: req.originalUrl,
+    userId: req.user?.userId ? String(req.user.userId) : undefined,
+  });
+  res.status(500).json({ message: 'Something went wrong', requestId: req.id });
 };
 
 module.exports = errorHandler;
