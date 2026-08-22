@@ -55,6 +55,16 @@ const baseResume = { personal: { fullName: 'Priya Sharma' }, summary: 'Analyst' 
 d('resume submission delivery', () => {
   beforeAll(async () => {
     await connectTestDb();
+    // Clear first rather than assuming the database is clean. The fixture uses
+    // a fixed _id and a unique email, so a run that died before afterAll —
+    // a timeout, a Ctrl-C — leaves the row behind and every later run fails on
+    // a duplicate key, permanently, until someone clears it by hand. The
+    // failure also points at this line rather than at the interrupted run,
+    // which makes it read like a broken test.
+    await Promise.all([
+      User.deleteMany({ $or: [{ _id: userId }, { email: 'priya@datad.test' }] }),
+      Resume.deleteMany({ user: userId }),
+    ]);
     await User.create({
       _id: userId,
       name: 'Priya Sharma',

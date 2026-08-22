@@ -13,11 +13,82 @@
 
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const logger = require('./logger');
 
 const PAGE_MARGIN = 54; // ~19mm, close to the on-screen A4 print margin
 const INK = '#111827';
 const MUTED = '#4b5563';
 const RULE = '#9ca3af';
+
+// ~27mm square — the passport-photo slot an Indian placement resume expects,
+// small enough that the name and contact line still lead the page.
+const PHOTO_SIZE = 76;
+const PHOTO_GAP = 18;
+
+// The renderer runs in the request path, so a CDN having a slow morning must
+// cost the photo and not the resume. The cap is belt-and-braces: the upload
+// route stores a 512px JPEG, which is an order of magnitude under this.
+const PHOTO_TIMEOUT_MS = 4000;
+const PHOTO_MAX_BYTES = 2 * 1024 * 1024;
+
+// pdfkit embeds JPEG and PNG and throws "Unknown image format" on anything else.
+// Checked here rather than trusted, so a bad byte stream is a resume without a
+// photo instead of an exception on the path that mails a recruiter.
+const JPEG = [0xff, 0xd8, 0xff];
+const PNG = [0x89, 0x50, 0x4e, 0x47];
+const isEmbeddable = (buf) =>
+  [JPEG, PNG].some((sig) => sig.every((b, i) => buf[i] === b));
+
+/**
+ * Pull the stored headshot back as bytes so pdfkit can draw it.
+ *
+ * Returns null — never throws — for every reason a photo might not render: no
+ * photo, switched off, an unreachable CDN, a slow one, or bytes pdfkit cannot
+ * read. Each of those is a resume that renders without the picture, which is
+ * the correct outcome for an optional decoration.
+ *
+ * The host check is not there because the URL is untrusted in the ordinary
+ * sense — it is written only by the upload route, straight from Cloudinary's
+ * own response — but because it is a stored string that ends up in a
+ * server-side fetch. Pinning it to https on our asset host keeps that from
+ * being a way to aim this request somewhere internal if the field is ever
+ * reachable by another path.
+ */
+async function fetchPhoto(photo) {
+  if (!photo?.visible || !photo?.url) return null;
+
+  let parsed;
+  try {
+    parsed = new URL(photo.url);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== 'https:' || !/(^|\.)cloudinary\.com$/.test(parsed.hostname)) {
+    logger.warn('Resume photo skipped — not https on the asset host', {
+      protocol: parsed.protocol,
+      host: parsed.hostname,
+    });
+    return null;
+  }
+
+  try {
+    const res = await fetch(parsed.href, { signal: AbortSignal.timeout(PHOTO_TIMEOUT_MS) });
+    if (!res.ok) {
+      logger.warn('Resume photo fetch failed', { status: res.status });
+      return null;
+    }
+
+    const declared = Number(res.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > PHOTO_MAX_BYTES) return null;
+
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length > PHOTO_MAX_BYTES || !isEmbeddable(buf)) return null;
+    return buf;
+  } catch (err) {
+    logger.warn('Resume photo could not be loaded for the PDF', { error: err.message });
+    return null;
+  }
+}
 
 /**
  * Script handling.
@@ -123,6 +194,44 @@ function bulletList(doc, items) {
   resetX(doc);
 }
 
+const CONTACT_SEP = '   |   ';
+
+/**
+ * Break the contact details into lines that fit, splitting only *between*
+ * items.
+ *
+ * Left to pdfkit's own wrapping this is one long string, and it breaks wherever
+ * a space happens to fall — which put the separator at the head of the next
+ * line: a second line reading "|   priya.dev". The photo is what surfaced it,
+ * since the picture takes ~90pt off the text column, but a student with a long
+ * enough email and a portfolio URL could always hit it.
+ *
+ * Greedy rather than balanced: the first line should be as full as it can be,
+ * so the common case stays a single line and the overflow is visibly a
+ * remainder.
+ *
+ * @param {object} doc  a PDFDocument with the intended font and size applied
+ * @returns {string[]}  one or more lines, none starting or ending with a separator
+ */
+function packContact(doc, items, maxWidth) {
+  const lines = [];
+  let current = '';
+
+  for (const item of items) {
+    const candidate = current ? current + CONTACT_SEP + item : item;
+    // A single item wider than the column has nowhere better to go — it goes on
+    // its own line and pdfkit wraps inside it as a last resort.
+    if (current && doc.widthOfString(candidate) > maxWidth) {
+      lines.push(current);
+      current = item;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 /** A section that is nothing but bullets — certifications, achievements, leadership. */
 function bulletSection(doc, label, lines) {
   sectionHeading(doc, label);
@@ -136,7 +245,11 @@ function bulletSection(doc, label, lines) {
  *   back out of the content stream; production always compresses.
  * @returns {Promise<Buffer>}
  */
-function renderResumePdf(resume = {}, { compress = true } = {}) {
+async function renderResumePdf(resume = {}, { compress = true } = {}) {
+  // Awaited before the document exists: pdfkit draws synchronously, so the
+  // image bytes have to be in hand before the header is laid out.
+  const photo = await fetchPhoto(resume.photo);
+
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN, bufferPages: true, compress });
     const chunks = [];
@@ -151,7 +264,16 @@ function renderResumePdf(resume = {}, { compress = true } = {}) {
     const p = resume.personal || {};
     const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    // Header
+    // Header. Two layouts, chosen by whether there is a photo to place:
+    // centred name over a centred contact line when there is not — the original
+    // and still the default — and name/contact flushed left beside a square
+    // photo on the right when there is. Centring the text under an off-centre
+    // picture is the one arrangement that reads as a mistake, so the block
+    // moves rather than the photo squeezing into the middle of it.
+    const headerTop = doc.y;
+    const textWidth = photo ? width - PHOTO_SIZE - PHOTO_GAP : width;
+    const headerAlign = photo ? 'left' : 'center';
+
     const fullName = p.fullName || 'Your Name';
     doc
       .font(fontFor(fullName, 'bold'))
@@ -159,12 +281,35 @@ function renderResumePdf(resume = {}, { compress = true } = {}) {
       .fillColor(INK)
       // Tamil has no case, and uppercasing is a Latin-only convention; applying
       // it to Tamil is a no-op, so this stays safe for mixed names.
-      .text(fullName.toUpperCase(), { align: 'center', characterSpacing: 1.5 });
+      .text(fullName.toUpperCase(), doc.page.margins.left, headerTop, {
+        width: textWidth,
+        align: headerAlign,
+        characterSpacing: 1.5,
+      });
 
-    const contactLine = [p.email, p.phone, p.location, p.linkedin, p.website].filter(Boolean).join('   |   ');
-    if (contactLine) {
+    const contactItems = [p.email, p.phone, p.location, p.linkedin, p.website].filter(Boolean);
+    if (contactItems.length) {
       doc.moveDown(0.3);
-      doc.font(fontFor(contactLine)).fontSize(9.5).fillColor(MUTED).text(contactLine, { align: 'center' });
+      doc.font(fontFor(contactItems.join(' '))).fontSize(9.5).fillColor(MUTED);
+      for (const line of packContact(doc, contactItems, textWidth)) {
+        doc.text(line, doc.page.margins.left, doc.y, { width: textWidth, align: headerAlign });
+      }
+    }
+
+    if (photo) {
+      try {
+        doc.image(photo, doc.page.width - doc.page.margins.right - PHOTO_SIZE, headerTop, {
+          fit: [PHOTO_SIZE, PHOTO_SIZE],
+        });
+      } catch (err) {
+        // fetchPhoto screens the format, so reaching here means pdfkit rejected
+        // bytes that looked valid — still not a reason to lose the resume.
+        logger.warn('Resume photo could not be drawn', { error: err.message });
+      }
+      // A short name and no contact line leave the text block above the bottom
+      // of the photo; without this the rule and Summary would run across it.
+      doc.y = Math.max(doc.y, headerTop + PHOTO_SIZE);
+      resetX(doc);
     }
 
     doc.moveDown(0.5);
@@ -234,4 +379,7 @@ function renderResumePdf(resume = {}, { compress = true } = {}) {
   });
 }
 
-module.exports = { renderResumePdf };
+// packContact is exported for tests: the bug it fixes — a wrapped contact line
+// beginning with a separator — is invisible in the decoded page text, because
+// reading that back strips the whitespace the line break lives in.
+module.exports = { renderResumePdf, packContact };

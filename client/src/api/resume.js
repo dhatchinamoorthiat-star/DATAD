@@ -10,3 +10,11 @@ export const submitResume = (data, delivery = {}) => api.post('/resume/submit', 
 // The server renders the same PDF the confirmation email attaches, so the
 // downloaded file and the mailed file can never disagree.
 export const downloadResumePdf = () => api.get('/resume/pdf', { responseType: 'blob' });
+
+// The optional headshot. Uploaded on its own rather than as part of a save so
+// the student sees it land immediately, and so the stored file is never at the
+// mercy of whatever the form happens to be holding — saveResume deliberately
+// cannot write these fields.
+export const uploadResumePhoto = (formData) =>
+  api.post('/resume/photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const deleteResumePhoto = () => api.delete('/resume/photo');

@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useForm, useFieldArray, useWatch } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import toast from '../utils/toast';
-import { Eye, Plus, Save, Trash2, Sparkles, Loader2, CheckCircle2, Send, Mail } from 'lucide-react';
-import { getMyResume, saveResume, submitResume } from '../api/resume';
+import { Eye, Plus, Save, Trash2, Sparkles, Loader2, CheckCircle2, Send, Mail, Camera, UserRound, X } from 'lucide-react';
+import { getMyResume, saveResume, submitResume, uploadResumePhoto, deleteResumePhoto } from '../api/resume';
 import resumeCompleteness from '../utils/resumeCompleteness';
 import { reviewResume } from '../api/dax';
 import { FeedSkeleton } from '../components/common/Skeleton';
@@ -203,7 +203,171 @@ function AIReviewPanel() {
   return null;
 }
 
+// Checked before a byte leaves the browser. The server enforces all of it again
+// — this only exists so an obviously wrong file fails instantly instead of after
+// a slow upload.
+const PHOTO_MAX_MB = 5;
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+/**
+ * The optional headshot.
+ *
+ * Optional in both directions on purpose: a photo is expected on an Indian
+ * placement resume and is a liability in front of a Western ATS, and the same
+ * student often applies to both. So there is an upload, a switch that keeps the
+ * file but leaves it off the document, and a delete that actually removes it.
+ *
+ * Uploading is immediate rather than deferred to Save — the file goes to the CDN
+ * on pick and only the URL is ever part of the form — because a picture that
+ * appears only after the student remembers to press Save reads as a broken
+ * upload. Which is also why the locally-picked file is shown straight away, from
+ * a blob URL, instead of an empty slot for the length of the round trip.
+ */
+function PhotoField({ photo, onChange }) {
+  const [busy, setBusy] = useState(false);
+  const [localPreview, setLocalPreview] = useState(null);
+
+  // A blob URL pins the file in memory until it is revoked, so each one is
+  // released when it is replaced and when this unmounts — including the case
+  // where the student navigates away mid-upload.
+  useEffect(() => () => localPreview && URL.revokeObjectURL(localPreview), [localPreview]);
+
+  const src = localPreview || photo?.url || null;
+  const visible = photo ? photo.visible !== false : false;
+
+  const pick = async (e) => {
+    const file = e.target.files?.[0];
+    // Cleared before the awaits: without it, picking the same file twice in a
+    // row is not a change event and the second attempt does nothing.
+    e.target.value = '';
+    if (!file) return;
+
+    if (!PHOTO_TYPES.includes(file.type)) return toast.error('Use a JPG, PNG or WebP image');
+    if (file.size > PHOTO_MAX_MB * 1024 * 1024) {
+      return toast.error(`That photo is over ${PHOTO_MAX_MB}MB — try a smaller one`);
+    }
+
+    setLocalPreview(URL.createObjectURL(file));
+    setBusy(true);
+    const body = new FormData();
+    body.append('photo', file);
+    try {
+      const res = await uploadResumePhoto(body);
+      onChange(res.data.photo);
+      toast.success('Photo added');
+    } catch (err) {
+      // Drop the optimistic preview: leaving it up would show a photo that is
+      // not saved anywhere and will be gone on the next load.
+      setLocalPreview(null);
+      toast.error(err.response?.data?.message || 'Could not upload that photo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await deleteResumePhoto();
+      setLocalPreview(null);
+      onChange(null);
+      toast.success('Photo removed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not remove the photo');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="w-full shrink-0 sm:w-36">
+      {/* A caption for the whole control group rather than a <label>: the file
+          input carries its own accessible name, and the checkbox below has one
+          of its own. */}
+      <p className="mb-1 text-xs font-medium text-gray-600 dark:text-gray-400">
+        Photo <span className="text-gray-400">(optional)</span>
+      </p>
+
+      <div className="relative">
+        <label
+          className={`group flex aspect-[4/5] w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed transition-colors ${
+            src
+              ? 'border-transparent'
+              : 'border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50/50 dark:border-gray-700 dark:bg-gray-900/50 dark:hover:border-indigo-500 dark:hover:bg-indigo-950/20'
+          }`}
+        >
+          {src ? (
+            <img
+              src={src}
+              alt="Your resume headshot"
+              // Dimmed rather than hidden when switched off, so the state is
+              // legible at a glance instead of looking like a lost upload.
+              className={`h-full w-full object-cover transition-opacity ${visible ? '' : 'opacity-30'}`}
+            />
+          ) : (
+            <span className="flex flex-col items-center gap-1.5 px-2 text-center text-gray-400">
+              <UserRound className="h-7 w-7" />
+              <span className="text-[11px] leading-tight">Add a photo</span>
+            </span>
+          )}
+
+          <span
+            className={`absolute inset-0 flex items-center justify-center rounded-xl bg-black/45 transition-opacity ${
+              busy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            } ${src ? '' : 'hidden'}`}
+          >
+            {busy ? (
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            ) : (
+              <Camera className="h-5 w-5 text-white" />
+            )}
+          </span>
+
+          <input
+            type="file"
+            accept="image/*"
+            aria-label={src ? 'Replace your resume photo' : 'Add a resume photo'}
+            className="sr-only"
+            onChange={pick}
+            disabled={busy}
+          />
+        </label>
+
+        {src && !busy && (
+          <button
+            type="button"
+            onClick={remove}
+            aria-label="Remove photo"
+            className="absolute -right-2 -top-2 rounded-full bg-white p-1 text-gray-500 shadow ring-1 ring-gray-200 hover:text-rose-500 dark:bg-gray-800 dark:ring-gray-700"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
+
+      {photo ? (
+        <label className="mt-2 flex cursor-pointer items-start gap-2 text-[11px] leading-snug text-gray-600 dark:text-gray-400">
+          <input
+            type="checkbox"
+            checked={visible}
+            onChange={(e) => onChange({ ...photo, visible: e.target.checked })}
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-indigo-600"
+          />
+          <span>Show it on the resume — saved with the rest of the form</span>
+        </label>
+      ) : (
+        <p className="mt-2 text-[11px] leading-snug text-gray-400">
+          Common on Indian placement resumes. Leave it out for roles screened by an ATS.
+        </p>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_RESUME = {
+  // Managed by PhotoField rather than a registered input: the file lives on the
+  // CDN and only the reference travels with the form.
+  photo: null,
   personal: { fullName: '', email: '', phone: '', location: '', linkedin: '', website: '' },
   summary: '',
   skills: [],
@@ -306,7 +470,11 @@ export default function ResumePage() {
           });
         }
       })
-      .catch(() => {})
+      // getMyResume returns 200 with a null body when there's simply no resume
+      // yet — it never 404s for that — so any rejection here is a genuine
+      // fetch failure, not an empty state, and needs to be surfaced: silently
+      // treating it as "no resume" risks the student overwriting one that exists.
+      .catch(() => toast.error('Could not load your saved resume — your changes may not include earlier edits'))
       .finally(() => setLoading(false));
   }, [reset]);
 
@@ -381,13 +549,24 @@ export default function ResumePage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <Section title="Personal Information">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Full Name" {...register('personal.fullName', { required: true })} error={errors.personal?.fullName} />
-            <Input label="Email" {...register('personal.email')} />
-            <Input label="Phone" {...register('personal.phone')} />
-            <Input label="Location" {...register('personal.location')} />
-            <Input label="LinkedIn URL" {...register('personal.linkedin')} />
-            <Input label="Portfolio / Website" {...register('personal.website')} />
+          {/* Photo beside the details rather than above them, mirroring where it
+              lands on the finished resume. It stacks on narrow screens so the
+              field grid keeps its full width. */}
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            <PhotoField
+              photo={live.photo}
+              // shouldDirty so the visibility toggle survives to the next save;
+              // the file itself is already stored by the time this runs.
+              onChange={(next) => setValue('photo', next, { shouldDirty: true })}
+            />
+            <div className="grid flex-1 grid-cols-2 gap-4">
+              <Input label="Full Name" {...register('personal.fullName', { required: true })} error={errors.personal?.fullName} />
+              <Input label="Email" {...register('personal.email')} />
+              <Input label="Phone" {...register('personal.phone')} />
+              <Input label="Location" {...register('personal.location')} />
+              <Input label="LinkedIn URL" {...register('personal.linkedin')} />
+              <Input label="Portfolio / Website" {...register('personal.website')} />
+            </div>
           </div>
         </Section>
 

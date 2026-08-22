@@ -10,6 +10,28 @@ const cap = (limit) => ({
   message: `A maximum of ${limit} items is allowed`,
 });
 
+/**
+ * Optional headshot. Absent unless the student uploads one — `default: undefined`
+ * rather than an inline object so a resume without a photo carries no `photo`
+ * key at all, and `resume.photo?.url` is the only check any renderer needs.
+ *
+ * `visible` is separate from deleting: a photo helps on an Indian placement
+ * resume and hurts on one going through a Western ATS, so a student applying to
+ * both needs to switch it off for a render without losing the file.
+ *
+ * `url`/`publicId` are written only by the photo upload route, never by an
+ * ordinary save — see controllers/resumeController.js.
+ */
+const photoSchema = new mongoose.Schema(
+  {
+    url: { type: String, maxlength: 500 },
+    publicId: { type: String, maxlength: 300 },
+    visible: { type: Boolean, default: true },
+    updatedAt: Date,
+  },
+  { _id: false }
+);
+
 // One resume per user, private. Sub-schemas are loose on purpose — the editor
 // saves drafts, so nothing beyond the owning user is required.
 const resumeSchema = new mongoose.Schema(
@@ -23,6 +45,7 @@ const resumeSchema = new mongoose.Schema(
       linkedin: short(200),
       website: short(200),
     },
+    photo: { type: photoSchema, default: undefined },
     summary: long(2000),
     education: {
       type: [{ degree: short(), institution: short(), year: short(40), score: short(40) }],

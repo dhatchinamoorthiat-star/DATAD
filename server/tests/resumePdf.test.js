@@ -27,7 +27,10 @@ const sample = require('./fixtures/resume.sample');
  */
 const textOf = async (resume) => {
   const buf = await renderResumePdf(resume, { compress: false });
-  const raw = buf.toString('latin1');
+  // Cut the trailer first. `/ID [<…> <…>]` is hex too, and it is derived from
+  // the creation time — so left in, it decodes to a tail of random bytes and
+  // two renders of the same resume never compare equal.
+  const raw = buf.toString('latin1').split('/ID')[0];
   const tokens = raw.match(/<([0-9a-fA-F]+)>/g) || [];
   return tokens
     .map((h) => Buffer.from(h.slice(1, -1), 'hex').toString('latin1'))
@@ -141,6 +144,142 @@ describe('renderResumePdf', () => {
     it('falls back when a name has no usable characters', () => {
       expect(pdfFilename({ personal: { fullName: '///' } })).toBe('resume-Resume.pdf');
       expect(pdfFilename({})).toBe('resume-Resume.pdf');
+    });
+  });
+
+  /**
+   * The headshot is the one part of the document whose bytes come from off the
+   * box, in the request path, on the render that mails a recruiter. So the
+   * contract under test is mostly about what does *not* happen: no reachable
+   * CDN, no photo, no odd host and no unreadable file may cost the student the
+   * resume itself.
+   */
+  describe('optional photo', () => {
+    const realFetch = global.fetch;
+    // A 1x1 JPEG. Only the leading bytes matter to the format screen, and pdfkit
+    // reads the SOF0 block for the dimensions.
+    const JPEG_1PX = Buffer.from(
+      '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==',
+      'base64'
+    );
+    const photoOf = (url) => ({ personal: { fullName: 'With Photo' }, photo: { url, visible: true } });
+    const CDN = 'https://res.cloudinary.com/demo/image/upload/x.jpg';
+
+    const stubFetch = (impl) => {
+      global.fetch = jest.fn(impl);
+    };
+
+    afterEach(() => {
+      global.fetch = realFetch;
+    });
+
+    it('embeds the photo when the CDN serves it', async () => {
+      stubFetch(async () => new Response(JPEG_1PX, { status: 200 }));
+      const buf = await renderResumePdf(photoOf(CDN));
+      expect(buf.slice(0, 5).toString()).toBe('%PDF-');
+      // pdfkit writes an embedded JPEG as an XObject with a DCTDecode filter.
+      expect(buf.toString('latin1')).toContain('DCTDecode');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('renders the resume anyway when the fetch fails or is slow', async () => {
+      for (const impl of [
+        async () => {
+          throw new Error('ECONNRESET');
+        },
+        async () => new Response('nope', { status: 404 }),
+      ]) {
+        stubFetch(impl);
+        const text = await textOf(photoOf(CDN));
+        expect(text).toContain('WITHPHOTO');
+      }
+    });
+
+    it('does not fetch a photo the student switched off', async () => {
+      stubFetch(async () => new Response(JPEG_1PX, { status: 200 }));
+      await renderResumePdf({ personal: { fullName: 'Hidden' }, photo: { url: CDN, visible: false } });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('refuses a url that is not https on the asset host', async () => {
+      stubFetch(async () => new Response(JPEG_1PX, { status: 200 }));
+      for (const url of [
+        'http://res.cloudinary.com/demo/x.jpg', // plain http
+        'https://cloudinary.com.evil.test/x.jpg', // suffix that only looks like ours
+        'https://169.254.169.254/latest/meta-data/',
+        'file:///etc/passwd',
+        'not a url at all',
+      ]) {
+        await expect(renderResumePdf(photoOf(url))).resolves.toBeInstanceOf(Buffer);
+      }
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('rejects bytes pdfkit could not embed rather than throwing on them', async () => {
+      // A WebP: a real image, and one pdfkit has no decoder for. Left to reach
+      // doc.image() it raises "Unknown image format" and takes the resume down.
+      stubFetch(async () => new Response(Buffer.from('RIFF....WEBPVP8 '), { status: 200 }));
+      const text = await textOf(photoOf(CDN));
+      expect(text).toContain('WITHPHOTO');
+    });
+
+    /**
+     * The photo takes ~90pt off the text column, which is what first pushed the
+     * contact details onto a second line — and pdfkit, wrapping one long string,
+     * broke it wherever a space fell. That produced a line reading "|  priya.dev".
+     * The photo only surfaced it: a long enough email plus a portfolio URL could
+     * always overflow the full-width column too.
+     */
+    describe('contact line wrapping', () => {
+      const PDFDocument = require('pdfkit');
+      const { packContact } = require('../utils/resumePdf');
+      const SEP = '   |   ';
+
+      // A document with the same face and size the header uses, so
+      // widthOfString measures what actually gets drawn.
+      const doc = () => {
+        const d = new PDFDocument({ size: 'A4', margin: 54 });
+        d.font('Helvetica').fontSize(9.5);
+        return d;
+      };
+
+      const items = ['priya@example.edu', '+91 98765 43210', 'Chennai, IN', 'linkedin.com/in/priyasharma', 'priya.dev'];
+
+      it('keeps everything on one line when it fits', () => {
+        expect(packContact(doc(), items, 600)).toEqual([items.join(SEP)]);
+      });
+
+      it('never starts or ends a line with the separator', () => {
+        // 400pt is roughly the column left beside a photo.
+        for (const width of [200, 300, 400, 500]) {
+          const lines = packContact(doc(), items, width);
+          expect(lines.length).toBeGreaterThan(0);
+          for (const line of lines) {
+            expect(line).toBe(line.trim());
+            expect(line.startsWith('|')).toBe(false);
+            expect(line.endsWith('|')).toBe(false);
+          }
+        }
+      });
+
+      it('keeps every detail, in order, however it splits', () => {
+        const lines = packContact(doc(), items, 260);
+        expect(lines.length).toBeGreaterThan(1);
+        expect(lines.join(SEP).split(SEP)).toEqual(items);
+      });
+
+      it('gives an item wider than the column a line to itself', () => {
+        const long = 'a'.repeat(300);
+        expect(packContact(doc(), ['short', long], 100)).toEqual(['short', long]);
+      });
+    });
+
+    it('leaves the centred header alone when there is no photo', async () => {
+      // The layout swap is conditional; a resume without a photo must be
+      // byte-for-byte what it was before the feature existed.
+      const plain = { ...sample, photo: undefined };
+      await expect(renderResumePdf(plain)).resolves.toBeInstanceOf(Buffer);
+      expect(await textOf(plain)).toBe(await textOf(sample));
     });
   });
 

@@ -96,6 +96,9 @@ export default function ResumePreviewPage() {
     .filter(Boolean)
     .join('  |  ');
   const bullets = (text) => (text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  // Only when one was uploaded *and* left switched on — the builder's toggle
+  // keeps the file while taking it off the document, and this is the document.
+  const photo = resume.photo?.visible !== false && resume.photo?.url ? resume.photo.url : null;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6 print:max-w-none print:p-0">
@@ -124,11 +127,33 @@ export default function ResumePreviewPage() {
 
       {/* The sheet: always paper-white with black text, even in dark mode */}
       <div className="rounded-lg bg-white p-10 text-[12px] leading-[1.5] text-gray-900 shadow print:rounded-none print:p-0 print:shadow-none">
-        <header className="mb-1 border-b-2 border-gray-800 pb-3 text-center">
-          <h1 className="text-[26px] font-bold uppercase tracking-[0.18em]">
-            {p.fullName || 'Your Name'}
-          </h1>
-          {contactLine && <p className="mt-1.5 text-[11px] text-gray-700">{contactLine}</p>}
+        {/* Two headers, one per case. Without a photo the name and contact line
+            stay centred, exactly as before. With one, the whole text block moves
+            left and the photo takes the right — centred text under an off-centre
+            picture is the one arrangement that looks like a mistake. Kept
+            identical to the server renderer in utils/resumePdf.js so the sheet
+            on screen and the PDF in the recruiter's inbox agree. */}
+        <header
+          className={`mb-1 flex items-start gap-6 border-b-2 border-gray-800 pb-3 ${
+            photo ? 'text-left' : 'flex-col text-center'
+          }`}
+        >
+          <div className={photo ? 'min-w-0 flex-1' : 'w-full'}>
+            <h1 className="text-[26px] font-bold uppercase tracking-[0.18em]">
+              {p.fullName || 'Your Name'}
+            </h1>
+            {contactLine && <p className="mt-1.5 break-words text-[11px] text-gray-700">{contactLine}</p>}
+          </div>
+          {photo && (
+            <img
+              src={photo}
+              alt=""
+              // Fixed box with object-cover: the stored file is already cropped
+              // square on the face, and letting a stray aspect ratio through
+              // would push the name off its own line.
+              className="h-[92px] w-[74px] shrink-0 rounded-sm object-cover"
+            />
+          )}
         </header>
 
         {resume.summary && (

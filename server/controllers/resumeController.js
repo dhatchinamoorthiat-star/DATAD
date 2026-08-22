@@ -1,5 +1,6 @@
 const Resume = require('../models/Resume');
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
 const logger = require('../utils/logger');
 const { sendResumeSubmittedEmail, sendResumeCopyEmail } = require('../config/mailer');
 const { normalizeResume, scoreResume } = require('../utils/resumeQuality');
@@ -95,6 +96,111 @@ exports.downloadResume = async (req, res, next) => {
       `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(name)}`
     );
     res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Headshot upload options.
+ *
+ * `format: 'jpg'` is not cosmetic. pdfkit can embed JPEG and PNG and nothing
+ * else, so a phone's HEIC or a designer's WebP would sail through the upload and
+ * then fail at render time — with the failure landing on the one path that
+ * matters, the PDF mailed to a recruiter. Normalising on arrival means the
+ * stored asset is always something the renderer can read.
+ *
+ * `thumb`+`face` crops to the face rather than the centre of the frame, which is
+ * what makes an arbitrary phone photo usable in a square slot at all. 512px is
+ * generous for a ~27mm print square and keeps the round trip the PDF renderer
+ * makes to fetch it back small.
+ */
+const PHOTO_UPLOAD = {
+  folder: 'datad/resume-photos',
+  format: 'jpg',
+  transformation: [{ width: 512, height: 512, crop: 'thumb', gravity: 'face', quality: 'auto' }],
+};
+
+/**
+ * Attach or replace the resume headshot.
+ *
+ * Upserts, because a student can reasonably add their photo before they have
+ * saved a single field, and a 404 there would be a dead end.
+ */
+exports.uploadResumePhoto = async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No image file provided' });
+
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const result = await cloudinary.uploader.upload(dataUri, PHOTO_UPLOAD);
+
+    const photo = {
+      url: result.secure_url,
+      publicId: result.public_id,
+      // A student who re-uploads after switching the photo off means to see the
+      // new one, so a fresh upload always turns it back on.
+      visible: true,
+      updatedAt: new Date(),
+    };
+
+    // The pre-update document, for the public id being replaced. One round trip
+    // rather than a read followed by a write: `photo` is fully known here, so
+    // there is nothing in the post-image worth going back for.
+    const before = await Resume.findOneAndUpdate(
+      { user: req.user.userId },
+      { $set: { photo } },
+      { upsert: true, setDefaultsOnInsert: true, runValidators: true }
+    );
+
+    // Deliberately after the update and deliberately not awaited: the student's
+    // new photo is already saved, and an orphaned asset on the CDN is a cheaper
+    // outcome than failing a successful upload over the cleanup of an old one.
+    const replaced = before?.photo?.publicId;
+    if (replaced && replaced !== result.public_id) {
+      cloudinary.uploader.destroy(replaced).catch((err) =>
+        logger.warn('Replaced resume photo left on the CDN', {
+          userId: String(req.user.userId),
+          publicId: replaced,
+          error: err.message,
+        })
+      );
+    }
+
+    res.json({ photo });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Remove the headshot entirely — the opt-out that actually deletes, as opposed
+ * to `photo.visible: false`, which only keeps it off the rendered document.
+ */
+exports.deleteResumePhoto = async (req, res, next) => {
+  try {
+    const before = await Resume.findOneAndUpdate(
+      { user: req.user.userId },
+      { $unset: { photo: '' } }
+    );
+
+    // Awaited, unlike the replace above: someone who asked for their photo to be
+    // deleted is owed the CDN copy going too. A failure there is logged rather
+    // than returned — the reference is already gone, so the request did succeed
+    // from the student's side and a retry would have nothing left to unset.
+    const publicId = before?.photo?.publicId;
+    if (publicId) {
+      try {
+        await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        logger.warn('Resume photo unlinked but CDN copy not deleted', {
+          userId: String(req.user.userId),
+          publicId,
+          error: err.message,
+        });
+      }
+    }
+
+    res.json({ photo: null });
   } catch (err) {
     next(err);
   }

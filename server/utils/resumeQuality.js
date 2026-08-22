@@ -30,11 +30,20 @@ const toTitled = (entry) => {
   return { title: str(entry?.title), description: str(entry?.description) };
 };
 
-/** Coerce an arbitrary request body into the canonical stored shape. */
+/**
+ * Coerce an arbitrary request body into the canonical stored shape.
+ *
+ * The returned object is spread straight into a `$set`, so every key here is a
+ * path the save is allowed to overwrite — and, just as importantly, anything
+ * absent from it survives untouched. The photo's `url`/`publicId` are
+ * deliberately absent: they belong to the upload route, and a form body echoing
+ * a stale copy of them back would otherwise let a draft save undo an upload the
+ * student made seconds earlier.
+ */
 function normalizeResume(body = {}) {
   const p = body.personal || {};
 
-  return {
+  const fields = {
     personal: {
       fullName: str(p.fullName),
       email: str(p.email),
@@ -81,6 +90,14 @@ function normalizeResume(body = {}) {
     achievements: nonEmpty(arr(body.achievements).map(toTitled)),
     leadership: nonEmpty(arr(body.leadership).map(toTitled)),
   };
+
+  // Whether to *show* the photo is the student's to change from the builder, so
+  // it does travel with a save — as a dot path, which touches the one flag and
+  // leaves the sibling url/publicId in place. Setting `photo` as an object here
+  // would replace the whole sub-document and take the file with it.
+  if (typeof body.photo?.visible === 'boolean') fields['photo.visible'] = body.photo.visible;
+
+  return fields;
 }
 
 /**
