@@ -5,15 +5,17 @@ const docUpload = require('../middleware/docUpload');
 const { mergeWithProgramsFilter } = require('../utils/programFilter');
 const studioUpload = require('../middleware/studioUpload');
 const publishService = require('../services/publishing/publishService');
+const { searchRegex } = require('../utils/safeRegex');
 
 exports.list = async (req, res, next) => {
   try {
     const base = {};
     if (req.query.type) base.type = req.query.type;
-    if (req.query.subject) base.subject = new RegExp(req.query.subject, 'i');
+    const subjectRe = searchRegex(req.query.subject);
+    if (subjectRe) base.subject = subjectRe;
     if (req.query.semester) base.semester = req.query.semester;
-    if (req.query.search) {
-      const re = new RegExp(req.query.search, 'i');
+    const re = searchRegex(req.query.search);
+    if (re) {
       base.$or = [{ title: re }, { professor: re }, { tags: re }];
     }
     // Search already owns `$or`, so this combines under `$and` rather than

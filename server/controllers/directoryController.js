@@ -1,21 +1,54 @@
 const UserProfile = require('../models/UserProfile');
 const User = require('../models/User');
 const { updateIdentity } = require('../services/studentIdentityService');
+const { searchRegex } = require('../utils/safeRegex');
+
+/**
+ * Largest directory page we will assemble for one request.
+ *
+ * The query used to be unbounded: every profile in the database, hydrated and
+ * serialised, on an endpoint any authenticated member can call as often as the
+ * rate limiter allows. That is both the cheapest way to knock the server over
+ * and the cheapest way to scrape the whole member list. A cap is the fix;
+ * `?limit=` can ask for less but never for more.
+ */
+const DIRECTORY_MAX_LIMIT = 200;
 
 exports.getDirectory = async (req, res, next) => {
   try {
     const filter = {};
-    if (req.query.specialization) filter.specialization = new RegExp(req.query.specialization, 'i');
-    if (req.query.skill) filter.skills = new RegExp(req.query.skill, 'i');
+    const specializationRe = searchRegex(req.query.specialization);
+    if (specializationRe) filter.specialization = specializationRe;
+    const skillRe = searchRegex(req.query.skill);
+    if (skillRe) filter.skills = skillRe;
 
-    let profiles = await UserProfile.find(filter)
-      .populate('user', 'name avatar')
-      .sort({ createdAt: -1 });
-
-    if (req.query.search) {
-      const q = req.query.search.toLowerCase();
-      profiles = profiles.filter((p) => p.user?.name?.toLowerCase().includes(q));
+    // Name search resolves to user ids first so it becomes part of the database
+    // query. It used to run in JavaScript on the full result set, which meant
+    // every profile had to be fetched before any could be discarded — so the
+    // narrower the search, the more work it wasted.
+    const nameRe = searchRegex(req.query.search);
+    if (nameRe) {
+      const matches = await User.find({ name: nameRe })
+        .select('_id')
+        .limit(DIRECTORY_MAX_LIMIT)
+        .lean();
+      if (!matches.length) return res.json([]);
+      filter.user = { $in: matches.map((u) => u._id) };
     }
+
+    const requested = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(requested) && requested > 0
+      ? Math.min(requested, DIRECTORY_MAX_LIMIT)
+      : DIRECTORY_MAX_LIMIT;
+    const page = Math.max(Number.parseInt(req.query.page, 10) || 1, 1);
+
+    // Still an array, not a paginated envelope: the client reads r.data as a
+    // list, and changing that shape here would break it silently.
+    const profiles = await UserProfile.find(filter)
+      .populate('user', 'name avatar')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     res.json(profiles);
   } catch (err) { next(err); }

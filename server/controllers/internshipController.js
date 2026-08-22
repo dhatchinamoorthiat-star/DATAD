@@ -1,6 +1,7 @@
 const Internship = require('../models/Internship');
 const { classifyDomain } = require('../utils/domainClassifier');
 const { getIdentity } = require('../services/studentIdentityService');
+const { searchRegex } = require('../utils/safeRegex');
 
 function domainTagsFor(title, tags) {
   // Reuses the same classifier as student profiles: title + tags stand in
@@ -14,8 +15,8 @@ exports.list = async (req, res, next) => {
     const filter = { active: true };
     if (req.query.remote === 'true') filter.remote = true;
     if (req.query.tag) filter.tags = req.query.tag;
-    if (req.query.search) {
-      const re = new RegExp(req.query.search, 'i');
+    const re = searchRegex(req.query.search);
+    if (re) {
       filter.$or = [{ title: re }, { company: re }, { tags: re }];
     }
     const internships = await Internship.find(filter)

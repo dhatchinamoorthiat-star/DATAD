@@ -2,12 +2,13 @@ const SkillListing = require('../models/SkillListing');
 const SkillRating = require('../models/SkillRating');
 const { notify } = require('./notificationController');
 const events = require('../events/domainEvents');
+const { searchRegex } = require('../utils/safeRegex');
 
 exports.listListings = async (req, res, next) => {
   try {
     const filter = {};
-    if (req.query.search) {
-      const re = new RegExp(req.query.search, 'i');
+    const re = searchRegex(req.query.search);
+    if (re) {
       filter.$or = [{ skill: re }, { tags: re }, { description: re }];
     }
     const listings = await SkillListing.find(filter)

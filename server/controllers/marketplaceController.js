@@ -1,4 +1,5 @@
 const MarketListing = require('../models/MarketListing');
+const { searchRegex } = require('../utils/safeRegex');
 
 exports.list = async (req, res, next) => {
   try {
@@ -12,8 +13,8 @@ exports.list = async (req, res, next) => {
       filter.program = programId;
     }
 
-    if (req.query.search) {
-      const re = new RegExp(req.query.search, 'i');
+    const re = searchRegex(req.query.search);
+    if (re) {
       filter.$or = [{ title: re }, { description: re }, { tags: re }];
     }
     const listings = await MarketListing.find(filter)
