@@ -57,7 +57,7 @@ function DaxInsightBody({ state, insight, onRetry }) {
   if (state === 'error') {
     return (
       <p className="py-6 text-center text-sm text-gray-400">
-        {DAX} couldn't explain this one right now.{' '}
+        {DAX} couldn&rsquo;t explain this one right now.{' '}
         <button type="button" onClick={onRetry} className="underline">Try again</button>
       </p>
     );
@@ -91,7 +91,7 @@ function DaxInsightBody({ state, insight, onRetry }) {
         </p>
       )}
       <p className="border-t border-gray-100 pt-2.5 text-[11px] text-gray-400 dark:border-gray-800">
-        {DAX} explains what the numbers show. It doesn't tell you what to buy or sell — that isn't
+        {DAX} explains what the numbers show. It doesn&rsquo;t tell you what to buy or sell — that isn&rsquo;t
         something this page does.
       </p>
     </div>

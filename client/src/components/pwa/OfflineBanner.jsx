@@ -3,10 +3,11 @@ import { WifiOff, Wifi, RefreshCw } from 'lucide-react';
 import { usePWA } from '../../context/PWAContext';
 import { useToast } from '../../context/ToastContext';
 
-// Stable ids so each connectivity signal owns exactly one toast that we can
-// replace or dismiss, rather than stacking a new one per transition.
-const OFFLINE_TOAST_ID = 'connectivity:offline';
-const ONLINE_TOAST_ID = 'connectivity:online';
+// Stable id so background sync owns exactly one toast that we can replace or
+// dismiss, rather than stacking a new one per tick. Connectivity itself
+// (offline/back online) is signalled by the sticky banner below only — it's
+// always on-screen while relevant, so a toast for the same transition would
+// just be a duplicate, not a second useful signal.
 const SYNC_TOAST_ID = 'connectivity:syncing';
 
 export default function OfflineBanner() {
@@ -29,16 +30,8 @@ export default function OfflineBanner() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setVisible(true);
       setJustOnline(false);
-      // Persists until connectivity returns, at which point we dismiss it by
-      // id so it doesn't linger behind the "back online" toast.
-      toast.warning("You're offline — showing last synced information", {
-        id: OFFLINE_TOAST_ID,
-        duration: 0,
-      });
       return undefined;
     }
-
-    toast.dismiss(OFFLINE_TOAST_ID);
 
     if (!wentOffline.current) return undefined;
 
@@ -49,9 +42,8 @@ export default function OfflineBanner() {
       setVisible(false);
       setJustOnline(false);
     }, 2500);
-    toast.success('Back online', { id: ONLINE_TOAST_ID, duration: 3000 });
     return () => clearTimeout(t);
-  }, [isOnline, toast]);
+  }, [isOnline]);
 
   // Sync progress is its own signal, reported separately from connectivity.
   useEffect(() => {

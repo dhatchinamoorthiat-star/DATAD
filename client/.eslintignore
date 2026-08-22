@@ -1,0 +1,8 @@
+# Build output. `npm run lint` is `eslint .`, which without this walks dist/ —
+# hundreds of generated chunks including a ~700KB single-line bundle. Linting
+# minified output is both meaningless (it is generated, not authored) and
+# pathologically slow: the run went from minutes-with-no-end to seconds.
+dist/
+
+# Service worker shipped as-is from public/, not authored against these rules.
+public/sw.js

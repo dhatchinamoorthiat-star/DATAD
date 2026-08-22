@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronDown, ChevronUp, BookOpen, Edit2 } from 'lucide-re
 import toast from '../../utils/toast';
 import PageHeader from '../../components/common/PageHeader';
 import Modal from '../../components/common/Modal';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { Page } from '../../components/common/motion';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { listStories, createStory, updateStory, deleteStory } from '../../api/starStories';
@@ -130,6 +131,7 @@ export default function StarStoriesPage() {
   useDocumentTitle('STAR Story Bank');
   const [stories, setStories] = useState(null);
   const [modal, setModal] = useState(null); // null | 'new' | story-object
+  const [deleteTarget, setDeleteTarget] = useState(null); // null | story id
 
   const load = () => listStories().then((r) => setStories(r.data)).catch(() => setStories([]));
   useEffect(() => { load(); }, []);
@@ -145,11 +147,14 @@ export default function StarStoriesPage() {
     load();
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this story?')) return;
-    await deleteStory(id);
-    toast.success('Deleted');
-    load();
+  const confirmDelete = async () => {
+    try {
+      await deleteStory(deleteTarget);
+      toast.success('Deleted');
+      load();
+    } catch {
+      toast.error('Could not delete this story');
+    }
   };
 
   return (
@@ -192,7 +197,7 @@ export default function StarStoriesPage() {
         ) : (
           <div className="space-y-3">
             {stories.map((s) => (
-              <StoryCard key={s._id} story={s} onEdit={(s) => setModal(s)} onDelete={handleDelete} />
+              <StoryCard key={s._id} story={s} onEdit={(s) => setModal(s)} onDelete={setDeleteTarget} />
             ))}
           </div>
         )}
@@ -211,6 +216,16 @@ export default function StarStoriesPage() {
             />
           </Modal>
         )}
+
+        <ConfirmModal
+          open={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+          danger
+          title="Delete story?"
+          message="This removes the story from your bank. This cannot be undone."
+          confirmLabel="Delete"
+        />
       </div>
     </Page>
   );

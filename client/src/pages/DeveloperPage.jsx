@@ -38,7 +38,11 @@ export default function DeveloperPage() {
   };
 
   const remove = async (id) => {
-    await fetch(`/api/keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    const res = await fetch(`/api/keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    // Revoking a key is the one action here with a security consequence, so a
+    // failure must not be reported as success — the user would walk away
+    // believing a leaked key was dead.
+    if (!res.ok) { toast.error('Could not delete that key — it may already be gone'); fetchKeys(); return; }
     fetchKeys();
     toast.success('Key deleted');
   };
@@ -95,6 +99,12 @@ export default function DeveloperPage() {
                 <div className="flex items-center gap-2">
                   <Key className="h-3.5 w-3.5 text-gray-400" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{k.name}</span>
+                  {/* The key itself is stored only as a hash, so this prefix is
+                      the only way to tell two similarly-named keys apart when
+                      deciding which one to revoke. */}
+                  {k.keyPrefix && (
+                    <code className="font-mono text-[11px] text-gray-400">{k.keyPrefix}…</code>
+                  )}
                   <span className="text-[11px] text-gray-400">{k.scopes?.join(', ') || 'read'}</span>
                 </div>
                 <div className="flex items-center gap-3">

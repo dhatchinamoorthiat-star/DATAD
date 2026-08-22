@@ -56,8 +56,8 @@ export default function EntertainmentDetailPage() {
     try {
       const { data: saved } = await addMemory(data._id, draft);
       setMemories((prev) => [saved, ...prev]);
-    } catch (err) {
-      console.error('Failed to post memory:', err);
+    } catch {
+      toast.error('Could not post your memory');
     }
   };
 

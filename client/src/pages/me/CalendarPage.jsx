@@ -10,6 +10,11 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import DateInput from '../../components/common/DateInput';
 
+// A single frozen empty array, not a fresh `[]` per render: it feeds useMemo
+// dependency lists below, and a new identity each time would rebuild them on
+// every render.
+const NO_EVENTS = [];
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'];
@@ -57,6 +62,15 @@ export default function CalendarPage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', date: '', time: '', type: 'event', description: '' });
   const [error, setError] = useState('');
+  // Which month the rows in `events` were actually fetched for.
+  //
+  // The stale-data problem this solves used to be handled by calling
+  // setEvents([]) at the top of the fetch effect, which is a synchronous state
+  // write during an effect — it forces a second render pass on every month
+  // change, and React flags it as a cascading render. Recording what the data
+  // describes, and hiding it when that no longer matches the month on screen,
+  // gets the same result without the extra pass.
+  const [loadedFor, setLoadedFor] = useState(null);
 
   const days = useMemo(() => buildCalendarDays(year, month), [year, month]);
 
@@ -68,9 +82,17 @@ export default function CalendarPage() {
     [holidays, selKey]
   );
 
+  // Everything below renders from these, never from `events`/`error` directly:
+  // until the fetch for the month on screen lands, last month's rows are still
+  // in state and must not be shown under the new heading.
+  const monthKey = `${year}-${month}`;
+  const stale = loadedFor !== monthKey;
+  const visibleEvents = stale ? NO_EVENTS : events;
+  const visibleError = stale ? '' : error;
+
   const eventsForDate = useMemo(
-    () => events.filter((e) => e.date === selKey),
-    [events, selKey]
+    () => visibleEvents.filter((e) => e.date === selKey),
+    [visibleEvents, selKey]
   );
 
   const eventsMap = useMemo(() => {
@@ -79,12 +101,12 @@ export default function CalendarPage() {
       if (!map[h.date]) map[h.date] = [];
       map[h.date].push({ ...h, _isHoliday: true });
     }
-    for (const e of events) {
+    for (const e of visibleEvents) {
       if (!map[e.date]) map[e.date] = [];
       map[e.date].push(e);
     }
     return map;
-  }, [holidays, events]);
+  }, [holidays, visibleEvents]);
 
   // Holidays are fetched a year at a time, so this must not depend on `month`
   // — it was refiring the same request on every arrow click.
@@ -98,13 +120,23 @@ export default function CalendarPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // Drop the old month's events up front: without this, a slow or failed
-    // fetch left the previous month's list rendered under the new heading.
-    setEvents([]);
-    setError('');
+    const key = `${year}-${month}`;
+    // No clearing here — `stale` already hides the previous month's rows until
+    // this resolves. Both paths stamp `loadedFor`, so a failed fetch stops
+    // being stale too and the error is allowed to show.
     getEvents(year, month + 1)
-      .then((res) => { if (!cancelled) setEvents(res.data.events || []); })
-      .catch(() => { if (!cancelled) setError('Could not load events for this month.'); });
+      .then((res) => {
+        if (cancelled) return;
+        setEvents(res.data.events || []);
+        setError('');
+        setLoadedFor(key);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setEvents([]);
+        setError('Could not load events for this month.');
+        setLoadedFor(key);
+      });
     return () => { cancelled = true; };
   }, [year, month]);
 
@@ -179,9 +211,9 @@ export default function CalendarPage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Calendar</h1>
         </div>
 
-        {error && (
+        {visibleError && (
           <p className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 dark:bg-danger-950/30 dark:text-danger-300">
-            {error}
+            {visibleError}
           </p>
         )}
 

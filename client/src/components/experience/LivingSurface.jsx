@@ -14,8 +14,9 @@ import { getTodayCase } from '../../api/dailyCase';
 import { getMyResume } from '../../api/resume';
 import { listInternships } from '../../api/internships';
 import { daxChat, dashboardInsights } from '../../api/dax';
+import ChatMarkdown from '../chat/ChatMarkdown';
 import {
-  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReplyPlain,
+  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReply,
 } from '../../dax/maintenance';
 import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
@@ -222,7 +223,7 @@ function AskDax() {
     // browser. See ../../dax/maintenance.js.
     if (DAX_MAINTENANCE) {
       setTimeout(() => {
-        setReply(maintenanceReplyPlain(q));
+        setReply(maintenanceReply(q));
         setLoading(false);
         setMessage('');
       }, 450);
@@ -271,7 +272,12 @@ function AskDax() {
 
         {(loading || reply) && (
           <div className="mt-3 rounded-xl bg-primary-50 p-4 text-sm leading-relaxed text-gray-700 dark:bg-primary-950/20 dark:text-gray-200">
-            {loading ? <span className="text-gray-400">Dax is thinking…</span> : reply}
+            {/* Rendered, not printed. This box used to show the raw string with
+                no whitespace handling at all, so a reply with bullets and blank
+                lines collapsed into one run-on paragraph — and once Dax started
+                quoting routes, its markdown showed through as literal ** and
+                backticks. */}
+            {loading ? <span className="text-gray-400">Dax is thinking…</span> : <ChatMarkdown content={reply} />}
           </div>
         )}
 

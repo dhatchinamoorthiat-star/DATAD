@@ -3,18 +3,18 @@ import { Link } from 'react-router-dom';
 import { CalendarClock, ArrowRight } from 'lucide-react';
 import { getMeta } from '../../api/meta';
 
-// Hue carries the meaning (rose = imminent, amber = approaching, indigo = distant);
+// Hue carries the meaning (danger = imminent, warn = approaching, primary = distant);
 // the surface stays flat so urgency reads from colour, not decoration.
 const urgencyClass = (days) => {
-  if (days <= 30) return 'bg-rose-500/10 border-rose-200 dark:border-rose-800/60';
-  if (days <= 90) return 'bg-amber-500/10 border-amber-200 dark:border-amber-800/60';
-  return 'bg-indigo-500/10 border-indigo-200/80 dark:border-indigo-800/60';
+  if (days <= 30) return 'bg-danger-500/10 border-danger-200 dark:border-danger-800/60';
+  if (days <= 90) return 'bg-warn-500/10 border-warn-200 dark:border-warn-800/60';
+  return 'bg-primary-500/10 border-primary-200/80 dark:border-primary-800/60';
 };
 
 const urgencyText = (days) => {
-  if (days <= 30) return 'text-rose-600 dark:text-rose-400';
-  if (days <= 90) return 'text-amber-600 dark:text-amber-400';
-  return 'text-indigo-600 dark:text-indigo-400';
+  if (days <= 30) return 'text-danger-600 dark:text-danger-400';
+  if (days <= 90) return 'text-warn-700 dark:text-warn-400';
+  return 'text-primary-600 dark:text-primary-400';
 };
 
 export default function PlacementCountdown({ compact = false }) {

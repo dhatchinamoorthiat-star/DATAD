@@ -18,6 +18,7 @@ import { Contact, Sparkles, RefreshCw, Trash2, ArrowRight, ClipboardPaste, FileT
 import PageHeader from '../../components/common/PageHeader';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
 import { Skeleton } from '../../components/common/Skeleton';
 import { Page } from '../../components/common/motion';
@@ -56,6 +57,7 @@ export default function LinkedInPage() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [step, setStep] = useState('import');
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   useEffect(() => {
     track('linkedin_enhancer_viewed');
@@ -91,7 +93,6 @@ export default function LinkedInPage() {
   };
 
   const removeAll = async () => {
-    if (!window.confirm('Delete your imported LinkedIn profile and every analysis of it? This cannot be undone.')) return;
     try {
       await deleteLinkedInData();
       setState({ hasProfile: false, analysis: null, target: null });
@@ -127,7 +128,7 @@ export default function LinkedInPage() {
         subtitle="How strong is your profile for the role you actually want — and exactly what to change."
         action={state?.hasProfile && (
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" icon={Trash2} onClick={removeAll}>Delete</Button>
+            <Button variant="ghost" size="sm" icon={Trash2} onClick={() => setConfirmingRemove(true)}>Delete</Button>
             <Button size="sm" icon={RefreshCw} loading={analyzing} onClick={() => runAnalysis()}>
               {analysis ? 'Re-analyse' : 'Analyse'}
             </Button>
@@ -187,6 +188,16 @@ export default function LinkedInPage() {
           )
         )}
       </TierGate>
+
+      <ConfirmModal
+        open={confirmingRemove}
+        onClose={() => setConfirmingRemove(false)}
+        onConfirm={removeAll}
+        danger
+        title="Delete LinkedIn data?"
+        message="This deletes your imported LinkedIn profile and every analysis of it. This cannot be undone."
+        confirmLabel="Delete"
+      />
     </Page>
   );
 }

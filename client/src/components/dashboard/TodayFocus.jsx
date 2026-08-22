@@ -10,28 +10,28 @@ const RULES = [
     message: 'One thing for today, whenever you’re ready.',
     sub: d.today[0]?.title,
     to: '/me/planner',
-    severity: 'indigo',
+    severity: 'primary',
   },
   (d) => d.earlier?.length > 0 && {
     icon: Leaf,
     message: 'A task from earlier is still open — pick it up when it suits you.',
     sub: d.earlier[0]?.title,
     to: '/me/planner',
-    severity: 'indigo',
+    severity: 'primary',
   },
   (d) => d.streak > 0 && !d.caseSolved && d.caseTitle && {
     icon: Flame,
     message: `Today's case will keep your ${d.streak}-day streak going.`,
     sub: d.caseTitle,
     to: '/study#daily-case',
-    severity: 'amber',
+    severity: 'warn',
   },
   (d) => !d.caseSolved && d.caseTitle && {
     icon: Target,
     message: 'Today’s case study is ready when you are.',
     sub: d.caseTitle,
     to: '/study#daily-case',
-    severity: 'indigo',
+    severity: 'primary',
   },
   // Roadmap pending items — the beachhead product focus
   (d) => d.roadmapPending > 0 && {
@@ -39,7 +39,7 @@ const RULES = [
     message: `You have ${d.roadmapPending} skill${d.roadmapPending === 1 ? '' : 's'} to work on in your roadmap.`,
     sub: d.roadmapNext || 'Pick up where you left off',
     to: '/roadmap',
-    severity: 'amber',
+    severity: 'warn',
   },
   // No roadmap yet — create one
   (d) => d.canCreateRoadmap && {
@@ -47,21 +47,21 @@ const RULES = [
     message: 'Build your skill roadmap — know exactly what to learn next.',
     sub: 'Set a target role and generate a 3-month plan',
     to: '/roadmap',
-    severity: 'indigo',
+    severity: 'primary',
   },
   () => ({
     icon: Sparkles,
     message: 'You’re all caught up. Enjoy the space — or wander into something new.',
     sub: 'Your notes and subjects are a click away',
     to: '/study',
-    severity: 'green',
+    severity: 'success',
   }),
 ];
 
 const S = {
-  amber:  { wrap: 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/60', icon: 'text-amber-500',   label: 'text-amber-500',   body: 'text-amber-800 dark:text-amber-200' },
-  indigo: { wrap: 'bg-indigo-50 border-indigo-200 dark:bg-indigo-900/20 dark:border-indigo-800/60', icon: 'text-indigo-500', label: 'text-indigo-500', body: 'text-indigo-800 dark:text-indigo-200' },
-  green:  { wrap: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/60', icon: 'text-emerald-500', label: 'text-emerald-500', body: 'text-emerald-800 dark:text-emerald-200' },
+  warn:    { wrap: 'bg-warn-50 border-warn-200 dark:bg-warn-900/20 dark:border-warn-800/60', icon: 'text-warn-600',   label: 'text-warn-600',   body: 'text-warn-800 dark:text-warn-200' },
+  primary: { wrap: 'bg-primary-50 border-primary-200 dark:bg-primary-900/20 dark:border-primary-800/60', icon: 'text-primary-500', label: 'text-primary-500', body: 'text-primary-800 dark:text-primary-200' },
+  success: { wrap: 'bg-success-50 border-success-200 dark:bg-success-900/20 dark:border-success-800/60', icon: 'text-success-500', label: 'text-success-500', body: 'text-success-800 dark:text-success-200' },
 };
 
 export default function TodayFocus({ data }) {

@@ -13,10 +13,10 @@ export default function UsageSummary() {
   const chatPercent = usage.chat.limit ? Math.min(100, Math.round((usage.chat.used / usage.chat.limit) * 100)) : 0;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-indigo-50 to-blue-50 p-4 dark:border-gray-800 dark:from-indigo-950/20 dark:to-blue-950/20">
+    <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-primary-50 to-primary-100 p-4 dark:border-gray-800 dark:from-primary-950/20 dark:to-primary-900/20">
       <div className="mb-3 flex items-center gap-2">
-        <Zap className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-        <span className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+        <Zap className="h-4 w-4 text-primary-600 dark:text-primary-400" />
+        <span className="text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300">
           Today&rsquo;s Usage
         </span>
       </div>
@@ -33,7 +33,7 @@ export default function UsageSummary() {
           <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
             <div
               className={`h-2 rounded-full transition-all ${
-                aiPercent > 80 ? 'bg-red-500' : aiPercent > 50 ? 'bg-amber-500' : 'bg-indigo-600'
+                aiPercent > 80 ? 'bg-danger-500' : aiPercent > 50 ? 'bg-warn-500' : 'bg-primary-600'
               }`}
               style={{ width: `${aiPercent}%` }}
             />
@@ -56,7 +56,7 @@ export default function UsageSummary() {
           <div className="h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700">
             <div
               className={`h-2 rounded-full transition-all ${
-                chatPercent > 80 ? 'bg-red-500' : chatPercent > 50 ? 'bg-amber-500' : 'bg-blue-600'
+                chatPercent > 80 ? 'bg-danger-500' : chatPercent > 50 ? 'bg-warn-500' : 'bg-primary-400'
               }`}
               style={{ width: `${chatPercent}%` }}
             />

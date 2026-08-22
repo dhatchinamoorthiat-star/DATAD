@@ -5,10 +5,28 @@ const formatINR = (n) => '₹' + n.toLocaleString('en-IN');
 // Status is never color-alone: icon + text label accompany the bar color.
 const statusFor = (pct) => {
   if (pct <= 75)
-    return { icon: CheckCircle2, label: 'On track', bar: 'bg-green-600', text: 'text-green-700 dark:text-green-400' };
+    return {
+      icon: CheckCircle2,
+      label: 'On track',
+      bar: 'bg-success-600',
+      text: 'text-success-700 dark:text-success-400',
+      track: 'bg-success-50 dark:bg-success-950',
+    };
   if (pct <= 100)
-    return { icon: AlertTriangle, label: 'Close to limit', bar: 'bg-amber-500', text: 'text-amber-600 dark:text-amber-400' };
-  return { icon: XCircle, label: 'Over budget', bar: 'bg-red-600', text: 'text-red-600 dark:text-red-400' };
+    return {
+      icon: AlertTriangle,
+      label: 'Close to limit',
+      bar: 'bg-warn-500',
+      text: 'text-warn-700 dark:text-warn-400',
+      track: 'bg-warn-50 dark:bg-warn-950',
+    };
+  return {
+    icon: XCircle,
+    label: 'Over budget',
+    bar: 'bg-danger-600',
+    text: 'text-danger-600 dark:text-danger-400',
+    track: 'bg-danger-50 dark:bg-danger-950',
+  };
 };
 
 export default function BudgetBar({ spent, budget }) {
@@ -26,7 +44,7 @@ export default function BudgetBar({ spent, budget }) {
           {formatINR(spent)} of {formatINR(budget)} ({Math.round(pct)}%)
         </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+      <div className={`h-2 overflow-hidden rounded-full ${s.track}`}>
         <div className={`h-2 rounded-full ${s.bar}`} style={{ width: `${Math.min(pct, 100)}%` }} />
       </div>
     </div>

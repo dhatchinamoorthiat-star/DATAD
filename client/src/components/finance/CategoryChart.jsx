@@ -18,7 +18,7 @@ export default function CategoryChart({ data = [] }) {
           </span>
           <div className="relative h-4 flex-1">
             <div
-              className="h-4 rounded-r bg-indigo-600 transition-all group-hover:bg-indigo-500 dark:bg-indigo-400 dark:group-hover:bg-indigo-300"
+              className="h-4 rounded-r bg-primary-600 transition-all group-hover:bg-primary-500 dark:bg-primary-400 dark:group-hover:bg-primary-300"
               style={{ width: `${Math.max((d.total / max) * 100, 2)}%` }}
               title={`${d.category}: ${formatINR(d.total)}`}
             />

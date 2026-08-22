@@ -19,8 +19,17 @@ export default function Modal({ open, onClose, title, children, blur = true }) {
   // 'hidden' body overflow as the value to "restore", leaving the page
   // scroll-locked after the dialog closed. Route it through a ref so the
   // effect depends only on `open`.
+  //
+  // The assignment lives in its own effect rather than in the render body:
+  // writing to a ref while rendering is what `react-hooks` flags, and under a
+  // concurrent render that is thrown away the write would still have happened.
+  // This effect has no dependency array on purpose — it runs after every commit,
+  // which is what keeps the ref current — and it is separate from the effect
+  // below so that one keeps depending on `open` alone.
   const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!open) return;
