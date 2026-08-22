@@ -9,6 +9,26 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const { connectTestDb, disconnectTestDb } = require('./helpers/testDb');
 
+/**
+ * Far above the project default, and specific to this suite.
+ *
+ * Yahoo is stubbed, but Mongo is not: the universe is ~194 symbols, so one
+ * refreshStocks() is ~194 upserts against a remote Atlas cluster (~4-5s warm,
+ * more once the suite has been hammering it), and several tests call it twice.
+ *
+ * Being merely slow would be tolerable. The failure mode is not: when a test
+ * exceeds its budget Jest fails it and moves on, but the in-flight refresh
+ * keeps writing — into the *next* test, which has already run its
+ * `deleteMany` and is now counting documents that arrive from a test that
+ * supposedly ended. That is why this suite failed at a different assertion on
+ * each run, with counts like 0 or a stale price, and read as a bug in
+ * refreshStocks when the service is correct in isolation.
+ *
+ * Raising it globally instead would blunt the signal everywhere else, where a
+ * test that takes 30s really is hung.
+ */
+jest.setTimeout(180000);
+
 const UNIVERSE = require('../config/stockUniverse');
 const StockQuote = require('../models/StockQuote');
 const { refreshStocks, refreshStocksIfStale } = require('../services/stockFetcher');
