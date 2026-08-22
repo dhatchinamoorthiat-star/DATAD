@@ -228,12 +228,28 @@ exports.register = async (req, res, next) => {
       }
     }
 
-    // Program determines approval status:
-    // - Preset programs: auto-approve (or pending if no referral and not admin)
-    // - Custom programs: always pending (needs admin approval + data sync)
+    // Two different questions, deliberately answered separately:
+    //
+    //   Is this person allowed in?      -> user.status, below
+    //   Is their program curated yet?   -> ProgramApproval.status, further down
+    //
+    // These used to be conflated: auto-approval required `referrer && isPreset`,
+    // so a valid one-time code admitted a B.Tech CSE student instantly and left
+    // an otherwise identical B.Com or Medical student in the approval queue.
+    // CURATED_COMBOS covers 17 of the 40 course/specialisation pairs the signup
+    // form offers, so that was most students — while the invite they were sent
+    // promised "instant access". Worse, the code above is claimed before this
+    // check ran, so the code was burned either way and nobody else could use it.
+    //
+    // A referral is a vouch for the person, and it is one-time and traceable to
+    // an approved member, which is exactly the signal admission should turn on.
+    // Whether anyone has curated a feed for "Medical (MBBS)" is a separate
+    // question, still tracked on the ProgramApproval record and still reviewed
+    // by an admin — it just no longer decides whether a vouched-for student can
+    // log in. The content sync runs on verification either way (it tags existing
+    // rows onto the new slug; there is no expensive provisioning to gate on).
     const isPresetProgram = program.type === 'preset';
-    const isCustomProgram = program.type === 'custom';
-    const autoApproved = isAdminEmail(email) || (Boolean(referrer) && isPresetProgram);
+    const autoApproved = isAdminEmail(email) || Boolean(referrer);
     const approvalStatus = autoApproved ? 'approved' : 'pending';
 
     let user;
@@ -266,7 +282,11 @@ exports.register = async (req, res, next) => {
         workExYears: null, // temporary
       });
 
-      // Create ProgramApproval record for tracking
+      // Curation state for the program itself, independent of whether the
+      // person registering was admitted. A preset program is curated by
+      // definition; a custom one waits for an admin to decide whether it
+      // deserves its own feed and community, or should be folded into an
+      // existing program.
       programApproval = await ProgramApproval.create({
         programId: program.id,
         programLabel: program.label,
@@ -275,7 +295,9 @@ exports.register = async (req, res, next) => {
         status: isPresetProgram ? 'approved' : 'pending',
         approvedBy: isPresetProgram ? newUserId : null,
         approvedAt: isPresetProgram ? new Date() : null,
-        syncStatus: isPresetProgram ? 'pending' : 'pending',
+        // Content is tagged onto the slug on first verification, for preset and
+        // custom alike — so neither starts out synced.
+        syncStatus: 'pending',
       });
 
       // Link approval ID to user

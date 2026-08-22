@@ -24,9 +24,9 @@
 
 ## Executive Summary
 
-**Readiness score: 78/100 → 88/100 after remediation — CONDITIONAL GO**
+**Readiness score: 78/100 → 90/100 after remediation — CONDITIONAL GO**
 
-> **Update, 2026-08-22 (later the same day).** All three HIGH findings have been fixed and each fix re-verified by re-running the exploit that found it. The suite is now **684 passing across 46 suites** (was 676/45; `tests/rateLimiters.test.js` added). Details in [Remediation](#remediation) at the end. The Medium and Low findings below are unchanged and still open.
+> **Update, 2026-08-22 (later the same day).** All three HIGH findings, plus M1, have been fixed and each fix re-verified by re-running the exploit that found it. The suite is now **693 passing across 47 suites** (was 676/45; `tests/rateLimiters.test.js` and `tests/registrationApproval.test.js` added). Details in [Remediation](#remediation) at the end. The remaining Medium and Low findings are unchanged and still open.
 
 The security core is genuinely strong, and I say that having tried to break it rather than having read about it. 91 of 92 GET routes reject anonymous callers; all 22 admin routes reject a student token; there is no mass assignment on either privileged write path; cross-user IDOR fails on every owned resource I could reach; the upload guard defeated six of seven crafted attack files including the comment-padded SVG bypass; and the client contains **zero** uses of `dangerouslySetInnerHTML`. The test suite passes clean.
 
@@ -42,7 +42,7 @@ None of these is a data breach. All three are the kind of defect that surfaces o
 |---|---|---|
 | Critical | 0 | 0 |
 | High | 3 | **0 — all fixed** |
-| Medium | 5 | 5 |
+| Medium | 5 | 4 |
 | Low | 10 | 10 |
 
 ---
@@ -158,9 +158,13 @@ Consider also accepting `text/plain` on the ingest route as a belt-and-braces me
 
 ### M1 — "Instant access" is false for most students, and the referral code is burned anyway
 
+> **STATUS: FIXED** — a valid referral now admits the student regardless of program type. See [R4](#r4--m1-referral-admission).
+>
+> **Correction to this section:** it originally read "17 of 40 selectable combinations". The denominator was wrong — the signup form offers **45** combinations, 17 preset and **28** custom. The 17 was right; the remainder was not. Corrected below.
+
 **Location:** `server/utils/programResolver.js:12-23` · `server/controllers/authController.js:199-221`
 
-Auto-approval requires `Boolean(referrer) && isPresetProgram`. `CURATED_COMBOS` maps only 10 course/specialisation patterns. Cross-referencing against the options the registration UI actually offers (`client/src/components/register/AcademicStep.jsx`), **17 of 40 selectable combinations are preset; the other 23 resolve to `custom`** and land in the approval queue regardless of referral code.
+Auto-approval requires `Boolean(referrer) && isPresetProgram`. `CURATED_COMBOS` maps only 10 course/specialisation patterns. Cross-referencing against the options the registration UI actually offers (`client/src/components/register/AcademicStep.jsx`), **17 of 45 selectable combinations are preset; the other 28 resolve to `custom`** and land in the approval queue regardless of referral code.
 
 Two entries in the map are unreachable from the UI at all: `b.sc|psychology` (the UI's B.Sc list has no Psychology) and `m.sc|computer science` (the UI sends `CS`).
 
@@ -362,7 +366,7 @@ Ship once H1, H2 and H3 are addressed. All three are small, well-understood chan
 | ✅ | IDOR and mass assignment — tested, clean |
 | ✅ | File uploads — 7 attack files, 6 rejected |
 | ✅ | Database safe — ownership scoping confirmed on every list endpoint |
-| ✅ | Tests green — 684/684 |
+| ✅ | Tests green — 693/693 |
 | ✅ | Rate limits — H1 fixed, per-account keying verified |
 | ✅ | Device binding — H2 fixed, bypass no longer reproducible |
 | ✅ | Monitoring — H3 fixed, events now reach the database |
@@ -385,7 +389,7 @@ re-reading the code.
 | R2 | H2 — device binding opt-out | `deviceFromRequest` + `verifyToken` | original bypass script |
 | R3 | H3 — analytics never recorded | JSON-typed `Blob` in `utils/analytics.js` | browser, A/B beacon |
 
-**Suite:** 684 passing / 46 suites (was 676 / 45). **Client:** builds clean, `eslint` 0 errors.
+**Suite:** 693 passing / 47 suites (was 676 / 45). **Client:** builds clean, `eslint` 0 errors.
 
 ---
 
@@ -458,3 +462,68 @@ db.betaevents → [ { event: 'new_blob_way' } ]     // old_string_way: dropped
 
 Both were queued by the browser; only one was recorded. That is exactly the failure mode
 that made this invisible — the client-side call reports success either way.
+
+---
+
+### R4 — M1, referral admission
+
+The bug was two questions answered by one variable:
+
+```js
+// before
+const autoApproved = isAdminEmail(email) || (Boolean(referrer) && isPresetProgram);
+// after
+const autoApproved = isAdminEmail(email) || Boolean(referrer);
+```
+
+*Is this person allowed in?* is now decided by the referral — a one-time code traceable to
+an approved member, which is exactly the signal admission should turn on. *Is their program
+curated?* stays on the `ProgramApproval` record, still pending for uncurated programs and
+still reviewed by an admin. It just no longer decides whether a vouched-for student can log
+in.
+
+Gating admission on curation was never justified by cost: `programSyncService` tags existing
+news, company, post and resource rows onto the new slug. There are no AI calls and no
+external fetches, and `runProgramSync` does not check `approval.status` — so a referred
+student's feed builds on verification exactly as a preset student's does.
+
+**Verified live** — a referred student across the courses the signup form offers:
+
+```
+B.Tech / CSE              account=approved  program=preset  programApproval=approved
+B.Tech / ECE              account=approved  program=custom  programApproval=pending
+B.Com / Accounting        account=approved  program=custom  programApproval=pending
+Medical / MBBS            account=approved  program=custom  programApproval=pending
+B.Sc / Computer Science   account=approved  program=custom  programApproval=pending
+BBA / Marketing           account=approved  program=custom  programApproval=pending
+
+B.Tech / CSE, no code     account=pending          <- gate still closed
+```
+
+The second half of the finding — the code being spent for nothing — resolves as a
+consequence: the code now always buys admission, so spending it is never wasted. One-time
+semantics are unchanged.
+
+```
+burn-a  Medical/MBBS -> 201  account=approved
+burn-b  B.Tech/CSE   -> 400  "This referral code has already been used"
+```
+
+**Coverage:** `tests/registrationApproval.test.js` (9 tests) — nothing previously tested the
+rule deciding whether a student can log in. It also measures how much of the signup form the
+curated map covers, so the gap stays visible: **17 of 45 combinations preset, 28 custom**.
+Curating more programs is still worth doing for feed quality; it is no longer a locked door.
+
+> **Note on test-suite mail.** This new suite is the only one that drives a real `register()`
+> call, and on first run it delivered **four real emails** through the live Brevo credentials
+> that `dotenv` loads from `.env`. The file now clears the mail environment before the mailer
+> is required. Verified afterwards: a full `npm test` produces zero real sends — the 21
+> "Mail delivered" lines all come from `mailTransport.test.js`, which mocks its transports.
+> Worth remembering for the next suite that touches a send path.
+
+### Two curated-map entries are still unreachable (unchanged)
+
+`b.sc|psychology` and `m.sc|computer science` cannot be produced by the signup form, which
+offers no Psychology under B.Sc and sends `CS` rather than `Computer Science`. Harmless dead
+config, and much less consequential now that `custom` no longer blocks admission — left
+alone rather than changing the form's course list as a side effect of a security fix.
