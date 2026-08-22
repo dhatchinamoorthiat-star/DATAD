@@ -5,6 +5,7 @@ import {
   BarChart2, Eye, Lightbulb, Globe,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { MAKER } from '../utils/maker';
 
 /* ── scroll-reveal hook ── */
 function useReveal(threshold = 0.15) {
@@ -264,7 +265,7 @@ export default function AboutPage() {
             <span className="text-[10px] font-bold tracking-widest text-purple-400 uppercase">The Name Behind the Platform</span>
             <h2 className="text-xl sm:text-2xl font-bold text-white mt-3 mb-5">T · A · D</h2>
             <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              The letters <strong className="text-white">T, A, D</strong> appear at the heart of <strong className="text-white">DA<span className="text-purple-300">T</span>AD</strong> — and they are the initials of the person who built it: <strong className="text-white">T. A. Dhatchina Moorthi</strong>.
+              The letters <strong className="text-white">T, A, D</strong> appear at the heart of <strong className="text-white">DA<span className="text-purple-300">T</span>AD</strong> — and they are the initials of the person who built it: <strong className="text-white">{MAKER.legalName}</strong>.
             </p>
             <p className="text-sm text-slate-300 leading-relaxed mb-4">
               DATAD was not named for a logo or a marketing brief. It was named for a student who believed the best tools are built by the people who most need them. The acronym — Discover, Aspire, Transform, Achieve, Develop — is the journey that student wanted every student to take.
@@ -334,10 +335,13 @@ export default function AboutPage() {
               &ldquo;DATAD was created out of a desire for a unified digital sanctuary — a place where raw analytical data meets human craftsmanship, and where productivity and deliberate rest coexist seamlessly.&rdquo;
             </blockquote>
             <div className="pt-2">
-              <h4 className="text-sm font-bold text-white">T. A. Dhatchina Moorthi</h4>
-              <p className="text-xs text-slate-500 mt-0.5">Founder & Systems Architect</p>
+              {/* Formal register: full name, real title, studio mark. The
+                  handle lives one click away on /creator, where it belongs.
+                  See MAKER_IDENTITY.md. */}
+              <h4 className="text-sm font-bold text-white">{MAKER.legalName}</h4>
+              <p className="text-xs text-slate-500 mt-0.5">{MAKER.role}</p>
               <p className="text-xs text-slate-600 mt-0.5">
-                <Link to="/creator" className="text-indigo-400 hover:underline">D² Labs</Link>{' '}· Technology × Psychology × Impact
+                <Link to="/creator" className="text-indigo-400 hover:underline">{MAKER.studio}</Link>{' '}· {MAKER.studioLine}
               </p>
             </div>
           </div>

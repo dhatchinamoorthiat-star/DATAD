@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { DatadMark } from '../common/Logo';
+import { makerCredit } from '../../utils/maker';
 
 // Shared shell for public legal pages (privacy, terms).
 export default function LegalLayout({ title, updated, children }) {
@@ -24,8 +25,10 @@ export default function LegalLayout({ title, updated, children }) {
         </div>
       </main>
 
+      {/* Formal register — a legal page is the one place the full name and a
+          real job title belong, with no handle. See MAKER_IDENTITY.md. */}
       <footer className="border-t border-gray-200 py-4 text-center text-xs text-gray-400 dark:border-gray-800">
-        DATAD · Built by Dhatchina Moorthi
+        DATAD · {makerCredit()}
       </footer>
     </div>
   );

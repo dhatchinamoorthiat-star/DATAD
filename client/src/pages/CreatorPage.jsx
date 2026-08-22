@@ -6,6 +6,7 @@ import {
   Trophy, TrendingUp, Lightbulb, Brain, Palette, Building2, Lock,
 } from 'lucide-react';
 import { Page } from '../components/common/motion';
+import { MAKER } from '../utils/maker';
 
 function IntersectionReveal({ children, delay = 0 }) {
   const ref = useRef(null);
@@ -143,10 +144,16 @@ export default function CreatorPage() {
               </div>
             </div>
 
-            {/* Title */}
+            {/* Title — community register. This is the one page where the
+                handle is the point, so it is stated outright rather than left
+                as an unexplained "DD" monogram, and it stays attached to the
+                real name. See MAKER_IDENTITY.md. */}
             <div className="mb-6 space-y-3">
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-400">
-                T. A. Dhatchina Moorthi
+                {MAKER.legalName}
+              </p>
+              <p className="-mt-1 text-xs font-medium tracking-wide text-slate-500">
+                builds as <span className="text-slate-300">{MAKER.handle}</span> · {MAKER.studio}
               </p>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight">
                 Builder.<br />
