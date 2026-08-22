@@ -207,6 +207,67 @@
 }
 .stagger > *:nth-child(6) { animation-delay: 0.17s; }
 
+/* ── Register ("identity") screen ──────────────────────────────────────────
+   Entrance animations on the register screen are CSS, for the same reason the
+   rest of the product's are (see components/common/motion.jsx): a JS animation
+   loop is throttled in a background tab, so a Framer entrance that starts at
+   opacity 0 writes its `initial` and then never ticks — open signup in a
+   background tab and the hero is still blank when you get to it. CSS animation
+   time advances on the document timeline, so it has already settled by the
+   time anyone looks.
+
+   Framer still owns everything on this screen that does NOT decide whether
+   content is visible: the neural field's continuous motion, step-to-step
+   transitions, the role selector's shared-layout highlight, validation
+   enter/exits. Those all run in response to something the user is watching.
+
+   Delay is a custom property so each element can be placed on the sequence
+   without a wall of nth-child rules. */
+@keyframes identity-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.identity-rise {
+  animation: identity-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+
+/* Horizontal variant for list rows, which read better sliding in from the
+   side they are aligned to than rising from below. */
+@keyframes identity-slide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.identity-slide {
+  animation: identity-slide 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--rise-delay, 0s);
+}
+
+/* Field validation messages and the inline validity tick. Deliberately CSS
+   and deliberately not wrapped in AnimatePresence: an exit animation that
+   never finishes (throttled rAF in a background tab) leaves the *previous*
+   error sitting in the DOM under a role="alert", so a corrected field keeps
+   announcing the mistake. A plain conditional render can't get stuck. */
+@keyframes field-msg-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.field-msg {
+  animation: field-msg-in 0.16s ease-out both;
+}
+
+@keyframes field-tick-in {
+  from { opacity: 0; transform: translateY(-50%) scale(0.6); }
+  to   { opacity: 1; transform: translateY(-50%) scale(1); }
+}
+
+.field-tick {
+  animation: field-tick-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 /* Respect reduced-motion preferences. */
 @media (prefers-reduced-motion: reduce) {
   *,

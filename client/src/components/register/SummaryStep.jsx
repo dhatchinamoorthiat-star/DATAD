@@ -49,9 +49,9 @@ export default function SummaryStep() {
       className="space-y-5"
     >
       <div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Your workspace preview</h2>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Your intelligence profile</h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Looks good? Hit Create and we&rsquo;ll set everything up.
+          This is what DATAD will build around. Everything here stays editable.
         </p>
       </div>
 
