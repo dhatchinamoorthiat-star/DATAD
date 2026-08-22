@@ -33,6 +33,23 @@ const TASK_FEATURES = {
   'index-doc':            FEATURE.SEMANTIC_SEARCH,
 };
 
+/**
+ * Tasks that are administrative rather than student-facing.
+ *
+ * `index-doc` writes straight into the shared vector store. Its arguments —
+ * collection, docId, text — are all caller-supplied, and the store is keyed
+ * uniquely on (sourceCollection, docId), so an ordinary member could overwrite
+ * the embedding of any document in any collection: quietly remove a company or
+ * a case from everyone's search results, or make a document of their choosing
+ * surface for every query. Each call also spends a real embedding API call, and
+ * this task is not in TASK_QUOTA, so nothing metered it.
+ *
+ * No client calls it — it is an ingest utility that was reachable by anyone
+ * holding the semantic-search feature. Gating on role keeps it working for the
+ * operators who need it and closes it to everyone else.
+ */
+const ADMIN_ONLY_TASKS = new Set(['index-doc']);
+
 const TASK_QUOTA = new Set([
   'summarise-note',
   'review-resume',
@@ -52,6 +69,12 @@ router.post('/', async (req, res, next) => {
   try {
     const { task } = req.body;
     if (!task) return res.status(400).json({ message: 'task is required' });
+
+    if (ADMIN_ONLY_TASKS.has(task) && req.user.role !== 'admin') {
+      // 404 rather than 403: there is no reason to confirm to a member that an
+      // administrative task exists under this endpoint.
+      return res.status(404).json({ message: 'Unknown task' });
+    }
 
     const feature = TASK_FEATURES[task];
 

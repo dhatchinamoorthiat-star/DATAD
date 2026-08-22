@@ -4,8 +4,10 @@ import { formatDistanceToNowStrict } from 'date-fns';
 import {
   ArrowUp, ArrowUpRight, MessageSquare, Plus, Pin,
   Lightbulb, CalendarDays, FileText, MessageCircle, User, Wrench, Hammer,
+  Compass, Briefcase, CreditCard, Sparkles,
 } from 'lucide-react';
 import DaxOrb from '../common/DaxOrb';
+import { DAX_MAINTENANCE_PROMPTS } from '../../maintenance';
 
 // Dax home — Claude-style landing: a centered greeting with the orb, one
 // big prompt box front and center (typing here starts the chat directly),
@@ -46,12 +48,27 @@ const QUICK_ACTIONS = [
 // While Dax is in maintenance only a fixed set of questions has a real answer
 // (see ../../maintenance.js) — offering the full quick-starts would just walk
 // students into the "I can't answer that yet" reply.
-const MAINTENANCE_ACTIONS = [
-  { label: 'Say hi', prompt: 'Hi', icon: MessageCircle },
-  { label: 'Who are you?', prompt: 'Who are you?', icon: User },
-  { label: 'Who made you?', prompt: 'Who made you?', icon: Hammer },
-  { label: 'What can you do?', prompt: 'What can you do?', icon: Wrench },
-];
+//
+// Derived from DAX_MAINTENANCE_PROMPTS rather than written out again: this list
+// was a hand-maintained copy and had already gone stale, still offering the
+// original four questions after the maintenance build learned to explain every
+// section, page and plan. Icons stay local — they are presentation, and the
+// shared list is plain strings shared with surfaces that have no icons.
+const MAINTENANCE_ICONS = {
+  Hi: MessageCircle,
+  'Who are you?': User,
+  'Who made you?': Hammer,
+  'What can you do?': Wrench,
+  'What sections does DATAD have?': Compass,
+  'Explain the Career section': Briefcase,
+  'Which plan should I choose?': CreditCard,
+};
+
+const MAINTENANCE_ACTIONS = DAX_MAINTENANCE_PROMPTS.map((prompt) => ({
+  label: prompt === 'Hi' ? 'Say hi' : prompt,
+  prompt,
+  icon: MAINTENANCE_ICONS[prompt] || Sparkles,
+}));
 
 export default function DaxHome({
   userName,

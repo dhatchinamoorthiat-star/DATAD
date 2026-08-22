@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Zap, Check } from 'lucide-react';
 import { getAvailableModels, getModelPreference, setModelPreference } from '../../../api/dax.js';
 import { useSubscription } from '../../../context/SubscriptionContext';
+import toast, { resolveErrorMessage } from '../../../utils/toast';
 
 export default function ModelSelector() {
   const { tier } = useSubscription();
@@ -16,7 +17,7 @@ export default function ModelSelector() {
         setModels(modelsRes.data?.models || []);
         setPreference(prefRes.data?.model);
       } catch (err) {
-        console.error('Failed to load models:', err.message);
+        toast.error(resolveErrorMessage(err, 'Could not load chat models'));
       } finally {
         setLoading(false);
       }
@@ -24,11 +25,15 @@ export default function ModelSelector() {
   }, []);
 
   const handleSelect = async (modelId) => {
+    const previous = preference;
+    // Optimistic: the row highlights immediately, but reverts if the save fails
+    // so the UI never claims a preference the server didn't actually store.
+    setPreference(modelId);
     try {
       await setModelPreference(modelId);
-      setPreference(modelId);
     } catch (err) {
-      console.error('Failed to set model preference:', err.message);
+      setPreference(previous);
+      toast.error(resolveErrorMessage(err, 'Could not save your model preference'));
     }
   };
 

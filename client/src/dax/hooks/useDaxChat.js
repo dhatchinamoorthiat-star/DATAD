@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generateId } from '../lib/id';
 import { toChunks } from '../lib/streaming';
+import { classifyDaxError } from '../lib/classifyDaxError';
 import { MESSAGE_STATUS, DAX_CONTINUE_INTENT } from '../constants';
 
 function makeMessage(overrides) {
@@ -109,24 +110,15 @@ export function useDaxChat({ conversation, adapter, appendMessage, updateMessage
         updateMessage(convId, assistantId, { content: revealed, status: MESSAGE_STATUS.done });
         setPhase('idle');
       } catch (err) {
-        // Axios v1 rejects an aborted request with a CanceledError
-        // (code ERR_CANCELED), not the native fetch AbortError — check both
-        // so a client-side Stop always resolves cleanly instead of
-        // surfacing as a generic failure.
-        const wasAborted =
-          err?.name === 'AbortError' || err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED';
-        if (wasAborted) {
+        const classified = classifyDaxError(err);
+        if (classified.wasAborted) {
           updateMessage(convId, assistantId, { status: MESSAGE_STATUS.done });
           setPhase('idle');
           return;
         }
-        const status = err?.response?.status;
-        const message =
-          status === 429
-            ? err.response.data?.message || 'Daily message limit reached.'
-            : err?.response?.data?.message || 'Dax ran into a problem answering that. Please try again.';
+        const { status, message, upgradeUrl } = classified;
         updateMessage(convId, assistantId, { status: MESSAGE_STATUS.error, error: message });
-        setError({ status, message, upgradeUrl: err?.response?.data?.upgradeUrl });
+        setError({ status, message, upgradeUrl });
         setPhase('error');
       } finally {
         abortRef.current = null;

@@ -12,8 +12,10 @@ import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, Send, Sparkles, PanelRightClose, Construction } from 'lucide-react';
 import { daxChat } from '../../api/dax';
 import { DAX_WELCOME } from '../../utils/dax';
+import { classifyDaxError } from '../../dax/lib/classifyDaxError';
+import ChatMarkdown from './ChatMarkdown';
 import {
-  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReplyPlain,
+  DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReply,
 } from '../../dax/maintenance';
 
 // Page context descriptors — sent as the first user message when a context
@@ -47,7 +49,10 @@ const MAINTENANCE_THINKING_MS = 450;
 export default function DaxPanel({ context, position = 'right' }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: DAX_MAINTENANCE ? maintenanceReplyPlain('hi') : DAX_WELCOME },
+    // maintenanceReply, not the ...Plain variant: this surface renders markdown
+    // now, so the bold and the code-spanned routes are shown properly rather
+    // than stripped out to avoid them appearing as literal ** and backticks.
+    { role: 'assistant', content: DAX_MAINTENANCE ? maintenanceReply('hi') : DAX_WELCOME },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,7 +78,7 @@ export default function DaxPanel({ context, position = 'right' }) {
     // request at all. See ../../dax/maintenance.js.
     if (DAX_MAINTENANCE) {
       setTimeout(() => {
-        setMessages((prev) => [...prev, { role: 'assistant', content: maintenanceReplyPlain(msg) }]);
+        setMessages((prev) => [...prev, { role: 'assistant', content: maintenanceReply(msg) }]);
         setLoading(false);
       }, MAINTENANCE_THINKING_MS);
       return;
@@ -82,8 +87,11 @@ export default function DaxPanel({ context, position = 'right' }) {
     try {
       const res = await daxChat(msg);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.data?.reply || 'Sorry, I couldn\'t process that.' }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: 'assistant', content: 'I\'m having trouble connecting. Please try again.' }]);
+    } catch (err) {
+      // Shared with useDaxChat.js (the full-page /dax experience) so a rate
+      // limit or an outage reads the same way no matter which surface hit it.
+      const { message } = classifyDaxError(err);
+      setMessages((prev) => [...prev, { role: 'assistant', content: message || 'Dax ran into a problem answering that. Please try again.' }]);
     } finally {
       setLoading(false);
     }
@@ -143,13 +151,16 @@ export default function DaxPanel({ context, position = 'right' }) {
         {messages.map((msg, i) => (
           <div key={i} className={`mb-3 ${msg.role === 'user' ? 'text-right' : ''}`}>
             <div
-              className={`inline-block max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2 text-left text-sm ${
+              className={`inline-block max-w-[85%] rounded-2xl px-3.5 py-2 text-left text-sm ${
                 msg.role === 'user'
-                  ? 'bg-indigo-600 text-white'
+                  ? 'whitespace-pre-line bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
               }`}
             >
-              {msg.content}
+              {/* The student's own text is shown verbatim — rendering their
+                  markdown would mangle a pasted job description. Only Dax's
+                  side is parsed, because only Dax writes markdown. */}
+              {msg.role === 'user' ? msg.content : <ChatMarkdown content={msg.content} />}
             </div>
           </div>
         ))}

@@ -471,7 +471,9 @@ async function* processStream(request) {
         model: model || p.model || p.name,
         provider: p.name,
         task: request.task || request.taskName || 'chat',
-      }).catch(() => {});
+      })
+        .then(() => usageMeter.checkAndNotifyCredits(request.userId, request.tier))
+        .catch(() => {});
       return;
     } catch (err) {
       lastError = err;
@@ -611,7 +613,9 @@ async function _execV1(request) {
     completionTokens: meta.completionTokens,
     task: task || request.taskName || '',
     latencyMs: meta.latencyMs,
-  }).catch(() => {});
+  })
+    .then(() => usageMeter.checkAndNotifyCredits(request.userId, request.tier))
+    .catch(() => {});
 
   return {
     result,

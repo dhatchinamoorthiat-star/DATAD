@@ -2,9 +2,11 @@ import { useState, useRef } from 'react';
 import { MessageSquare, Pin, MoreHorizontal, Pencil, Trash2, PinOff } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import PromptModal from '../common/PromptModal';
 
 export default function ConversationListItem({ conversation, active, onSelect, onPin, onDelete, onRename }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const menuRef = useRef(null);
   useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
 
@@ -64,11 +66,7 @@ export default function ConversationListItem({ conversation, active, onSelect, o
             <button
               type="button"
               className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-[var(--dax-surface-hover)]"
-              onClick={() => {
-                const next = window.prompt('Rename chat', conversation.title || 'New chat');
-                if (next != null && next.trim()) onRename?.(conversation.id, next.trim());
-                setMenuOpen(false);
-              }}
+              onClick={() => { setRenaming(true); setMenuOpen(false); }}
             >
               <Pencil size={12} /> Rename
             </button>
@@ -82,6 +80,16 @@ export default function ConversationListItem({ conversation, active, onSelect, o
           </div>
         )}
       </div>
+
+      <PromptModal
+        open={renaming}
+        title="Rename chat"
+        label="Chat title"
+        initialValue={conversation.title || 'New chat'}
+        confirmLabel="Save"
+        onCancel={() => setRenaming(false)}
+        onSubmit={(next) => { onRename?.(conversation.id, next); setRenaming(false); }}
+      />
     </div>
   );
 }

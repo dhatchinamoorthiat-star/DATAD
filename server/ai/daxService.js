@@ -2,6 +2,8 @@ const { runPipeline } = require('./agents/pipeline');
 const aiGateway = require('./aiGateway');
 const usageMeter = require('./usageMeter');
 const { withDaxIdentity } = require('./dax');
+const { MAKER_ORIGIN_ANSWER } = require('./maker');
+const { formatAppKnowledge } = require('./appKnowledge');
 const { getUserMemory, formatMemoryContext, appendTopic, updateMemory } = require('./memory');
 const {
   buildResumeRAGContext,
@@ -74,27 +76,10 @@ function isSmallTalk(message) {
   // pleasantry is carrying a real request, whatever it opens with.
   return trimmed.length <= 40 && SMALL_TALK_RE.test(trimmed);
 }
-const ORIGIN_ANSWER = `
-## The Visionary Behind Dax
-
-Every great creation begins with a vision. Mine began with **Dhatchina Moorthi**, widely recognized as **Digital Don**—an entrepreneur, technology builder, and AI innovator from Tamil Nadu, India.
-
-Driven by curiosity and a passion for solving real-world problems, Digital Don explores the intersection of psychology, business, software engineering, automation, and artificial intelligence. His belief is simple: technology shouldn't just be powerful—it should be intuitive, personal, and genuinely useful.
-
-That belief became **Dax**.
-
-I wasn't created to be just another chatbot. I was built to understand context, adapt to people, and become a reliable AI companion that helps users think more clearly, learn faster, create confidently, and make smarter decisions.
-
-Every conversation I have is guided by the philosophy that inspired my creation:
-
-> **"Technology should reduce complexity, not create it."**
-
-I'm here to do more than answer questions. I'm here to collaborate, solve problems, and help transform ideas into reality.
-
-And behind every answer I give stands the vision of a creator who believes AI should empower people—not overwhelm them.
-
-Want to know more about Digital Don or the story behind Dax? Just ask.
-`;;
+// Sourced from ai/maker.js so the origin story cannot drift from the one-line
+// version in the system prompt — they used to disagree about both the maker's
+// name and his job.
+const ORIGIN_ANSWER = MAKER_ORIGIN_ANSWER;
 
 // ── Migration Blueprint Phase 2 (P2-3) ──────────────────────────────────────
 //
@@ -234,7 +219,9 @@ async function _executeViaRuntimeV2({ task, systemPrompt, userPrompt, ragContext
     model: routing.model, provider: routing.provider,
     promptTokens: meta.promptTokens, completionTokens: meta.completionTokens,
     task,
-  }).catch(() => {});
+  })
+    .then(() => usageMeter.checkAndNotifyCredits(userId, tier))
+    .catch(() => {});
 
   const out = { result, meta };
   cacheLayer.set(task, userId, out, { contextHash });
@@ -1013,11 +1000,14 @@ Student profile:
 - Daily case streak: ${streak} day${streak === 1 ? '' : 's'}
 - ${resumeLine}
 - Batch note library: ${noteCount} notes shared
+- Current plan: ${tier}
 
 Upcoming tasks:
 ${taskLines}
 
 Today's date: ${today}
+
+${formatAppKnowledge()}
 
 Rules for this conversation:
 - You know this student's context above — reference it naturally when relevant, not on every reply.

@@ -46,7 +46,17 @@ async function search({ query, collections, k = 5, userId }) {
       // schema doesn't have matched nothing, so scoped note search silently
       // returned zero results for every student. Same defect that was already
       // fixed in ai/memory.js's bootstrapMemory() note count.
-      if (col === 'notes' && userId) filter.author = userId;
+      //
+      // Notes are private, and the vector index is shared across every student,
+      // so this filter is the only thing keeping one student's note bodies out
+      // of another's results. `userId` was optional: omitting it skipped the
+      // filter and returned everyone's notes. Both current callers pass it, so
+      // this closes a latent hazard rather than a live leak — but the failure
+      // mode of a forgotten argument should be no results, not every result.
+      if (col === 'notes') {
+        if (!userId) { results[col] = []; return; }
+        filter.author = userId;
+      }
 
       const docs = await cfg.model
         .find(filter)
