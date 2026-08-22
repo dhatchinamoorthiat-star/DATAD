@@ -30,8 +30,24 @@ const signToken = require('../utils/signToken');
 // The client generates this once and stores it locally; axios sends it on
 // every request. It is not a secret and not proof of anything — it only has to
 // be stable per browser so sessions can be counted and listed.
+/**
+ * The device a request is coming from.
+ *
+ * When the client sends no `x-device-id`, one is generated here rather than
+ * left null. A null device id used to produce a token with no `did` claim, and
+ * verifyToken skipped the device check entirely for those — so the whole
+ * account-sharing cap was opt-in for anyone willing to drop one header. Worse,
+ * such a session was never recorded, so it did not appear in "Your devices"
+ * and the student had no way to revoke it.
+ *
+ * A generated id is not stable across sign-ins, so a client that never sends
+ * the header consumes a fresh device slot each time. That is the documented
+ * trade-off for the storage-blocked case in client/src/utils/deviceId.js, and
+ * it is the right direction to fail: costing a slot is the behaviour the cap
+ * is for, whereas escaping the cap is not.
+ */
 const deviceFromRequest = (req) => ({
-  deviceId: String(req.get('x-device-id') || '').trim().slice(0, 64) || null,
+  deviceId: String(req.get('x-device-id') || '').trim().slice(0, 64) || crypto.randomUUID(),
   ip: req.ip,
   userAgent: req.get('user-agent') || '',
 });

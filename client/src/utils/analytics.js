@@ -44,8 +44,18 @@ export function track(event, properties = {}) {
     });
 
     // Use sendBeacon when available (page unload safe), fallback to fetch.
+    //
+    // The payload MUST be a Blob with an explicit JSON type. sendBeacon sends a
+    // bare string as `text/plain;charset=UTF-8`, which express.json() does not
+    // parse — so the server saw an empty body and answered 400 "Event name is
+    // required" for every event ever sent. sendBeacon is the primary path and
+    // exists in every supported browser, so the fetch fallback below never ran
+    // and the failure was total: zero events reached the database.
     if (navigator.sendBeacon) {
-      navigator.sendBeacon('/api/beta/events', body);
+      navigator.sendBeacon(
+        '/api/beta/events',
+        new Blob([body], { type: 'application/json' })
+      );
     } else {
       fetch('/api/beta/events', {
         method: 'POST',

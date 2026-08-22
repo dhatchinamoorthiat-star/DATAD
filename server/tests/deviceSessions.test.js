@@ -140,14 +140,26 @@ describe('verifyToken device check', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('lets tokens issued before this feature through, so a deploy signs nobody out', async () => {
+  // This used to assert the opposite — that a token with no `did` was let
+  // through so a deploy signed nobody out. That allowance was reachable on
+  // demand: `did` is populated from the client-supplied `x-device-id` header,
+  // so signing in without it produced a token that was never bound to a device,
+  // never evicted by the cap, and never listed in "Your devices" — leaving the
+  // student no way to revoke it. The cap became opt-in for whoever wanted to
+  // avoid it. Tokens are now always minted with a device (deviceFromRequest
+  // generates one when the header is absent), so the only cost of requiring it
+  // is that sessions predating the change sign in once more.
+  it('rejects a token that names no device, so the cap cannot be opted out of', async () => {
     stubSession({ tokenVersion: 0, role: 'member', status: 'approved', sessions: [] });
+    const res = makeRes();
     const next = jest.fn();
 
-    // No `did` claim at all.
-    await verifyToken({ headers: { authorization: `Bearer ${sign()}` } }, makeRes(), next);
+    // No `did` claim at all — what omitting `x-device-id` used to produce.
+    await verifyToken({ headers: { authorization: `Bearer ${sign()}` } }, res, next);
 
-    expect(next).toHaveBeenCalledWith();
+    expect(res.statusCode).toBe(401);
+    expect(res.body.code).toBe('SESSION_UPGRADE_REQUIRED');
+    expect(next).not.toHaveBeenCalled();
   });
 
   it('costs no extra query — the device list rides the session record', async () => {

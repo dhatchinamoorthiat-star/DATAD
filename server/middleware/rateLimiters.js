@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 
 /**
  * Every limit in one place, and exported, so the numbers are assertable in
@@ -22,11 +23,49 @@ const make = (windowMinutes, max, message, extra = {}) =>
     ...extra,
   });
 
+/**
+ * Key a general API request by the account making it, falling back to the
+ * network address only when the request carries no usable token.
+ *
+ * This is the same correction already applied to sign-in below, for the same
+ * reason. Keyed on IP, this limit had exactly the property that made the old
+ * 20-per-15-minutes login limit unusable: a campus reaches the internet through
+ * a handful of NAT addresses, so one ceiling was shared by every student behind
+ * it. The numbers make that concrete — a single dashboard load fires roughly 15
+ * requests, so 1000 per 15 minutes is about 66 page loads for an entire campus,
+ * after which everyone on that Wi-Fi gets 429s that are indistinguishable from
+ * an outage. Students on mobile data are unaffected, which makes it present as
+ * intermittent and user-specific rather than as the shared limit it is.
+ *
+ * Per account, 1000 per 15 minutes is ~66 page loads for one student, which no
+ * legitimate session approaches.
+ *
+ * The signature is verified rather than merely decoded. A decoded-only key
+ * would let anyone mint a token with an arbitrary `userId` and get a fresh
+ * quota per request, which is worse than keying on IP rather than better. An
+ * invalid or absent token falls through to the address, so unauthenticated
+ * traffic is still bounded.
+ */
+const generalKey = (req) => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    try {
+      const { userId } = jwt.verify(header.slice(7), process.env.JWT_SECRET);
+      if (userId) return `user:${userId}`;
+    } catch {
+      // Unverifiable token — fall through and key on the address.
+    }
+  }
+  // ipKeyGenerator normalises IPv6 down to a /64 subnet key.
+  return `ip:${rateLimit.ipKeyGenerator(req.ip)}`;
+};
+
 // Generous ceiling across the whole API — just anti-abuse, not felt in normal use.
 const generalLimiter = make(
   LIMITS.general.windowMinutes,
   LIMITS.general.max,
-  'Too many requests, please slow down and try again shortly'
+  'Too many requests, please slow down and try again shortly',
+  { keyGenerator: generalKey }
 );
 
 /**
@@ -99,5 +138,6 @@ module.exports = {
   heavyLimiter,
   // Exported for tests: the middleware itself hides its configuration.
   loginAccountKey,
+  generalKey,
   LIMITS,
 };

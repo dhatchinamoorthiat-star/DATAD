@@ -31,8 +31,10 @@ const sseAuth = require('../middleware/sseAuth');
 
 const USER_ID = '507f1f77bcf86cd799439011';
 
+// verifyToken, which sseAuth delegates to, requires a device claim on every
+// token — deviceSessions is mocked below, so naming any device is enough here.
 const token = (over = {}) =>
-  jwt.sign({ userId: USER_ID, role: 'member', tier: 'free', tv: 0, ...over }, SECRET, {
+  jwt.sign({ userId: USER_ID, role: 'member', tier: 'free', tv: 0, did: 'test-device', ...over }, SECRET, {
     expiresIn: '7d',
   });
 

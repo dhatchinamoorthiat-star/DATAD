@@ -139,9 +139,18 @@ async function register(userId, { deviceId, ip, userAgent }) {
   }
 }
 
-/** Whether a device still holds a live session. */
+/**
+ * Whether a device still holds a live session.
+ *
+ * A missing device id fails closed. It used to return true — the allowance for
+ * tokens predating this feature — but that made the answer to "is this unknown
+ * device allowed?" yes, in a function whose entire job is to say no. verifyToken
+ * now rejects a token with no `did` before it gets here, so nothing depends on
+ * the old behaviour, and a future caller that forgets the check inherits the
+ * safe answer instead of the dangerous one.
+ */
 function isActive(sessions, deviceId) {
-  if (!deviceId) return true; // tokens predating this feature — see verifyToken
+  if (!deviceId) return false;
   return (sessions || []).some((s) => s.deviceId === deviceId);
 }
 

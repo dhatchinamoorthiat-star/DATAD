@@ -39,15 +39,22 @@ const makeRes = () => ({
 
 const reqWith = (token) => ({ headers: { authorization: `Bearer ${token}` } });
 
+// verifyToken requires every token to name a device, so the fixtures here carry
+// one and the stubbed account holds a matching session. These tests are about
+// session *version* and role; the device cap has its own suite.
+const DEVICE_ID = 'test-device';
+
 const sign = (over = {}) =>
-  jwt.sign({ userId: USER_ID, role: 'member', tier: 'free', tv: 0, ...over }, SECRET, {
+  jwt.sign({ userId: USER_ID, role: 'member', tier: 'free', tv: 0, did: DEVICE_ID, ...over }, SECRET, {
     expiresIn: '7d',
   });
 
 /** Stub the single document read sessionVersion performs. */
 const stubUser = (doc) =>
   jest.spyOn(User, 'findById').mockReturnValue({
-    select: () => ({ lean: async () => doc }),
+    select: () => ({
+      lean: async () => (doc ? { sessions: [{ deviceId: DEVICE_ID }], ...doc } : doc),
+    }),
   });
 
 beforeEach(() => {
@@ -107,7 +114,11 @@ describe('P1-1 token revocation', () => {
 
   it('treats a token minted before this feature (no tv claim) as version 0', async () => {
     stubUser({ tokenVersion: 0, role: 'member', status: 'approved' });
-    const legacy = jwt.sign({ userId: USER_ID, role: 'member' }, SECRET, { expiresIn: '7d' });
+    const legacy = jwt.sign(
+      { userId: USER_ID, role: 'member', did: DEVICE_ID },
+      SECRET,
+      { expiresIn: '7d' }
+    );
     const next = jest.fn();
 
     await verifyToken(reqWith(legacy), makeRes(), next);

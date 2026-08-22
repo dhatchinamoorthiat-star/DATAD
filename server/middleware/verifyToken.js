@@ -40,14 +40,29 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Session is no longer valid' });
     }
 
+    // Every token must name the device it was issued to.
+    //
+    // This used to be `if (payload.did && …)`, allowing tokens that predated
+    // device sessions through unchecked. But `did` comes from a client-supplied
+    // header, so that branch was reachable on demand: sign in without
+    // `x-device-id` and the resulting token was never bound to a device, never
+    // evicted by the cap, and never listed in "Your devices" — so the student
+    // could not revoke it either. A control that an attacker can switch off is
+    // not a control. signToken now always sets `did` (see deviceFromRequest),
+    // so a token without one is either from before this change or was minted by
+    // omitting the header; both must sign in again.
+    if (!payload.did) {
+      return res.status(401).json({
+        message: 'Please sign in again to continue.',
+        code: 'SESSION_UPGRADE_REQUIRED',
+      });
+    }
+
     // The device that this token was issued to must still hold a session.
     // Signing in on a fourth device evicts the least recently used one, and
-    // that device lands here on its next request. `did` is absent on tokens
-    // issued before device sessions existed; those are allowed through so a
-    // deploy does not sign everyone out, and they gain a device on next login.
+    // that device lands here on its next request.
     // The owner account (ADMIN_EMAIL) is exempt — see deviceSessions.isExempt.
     if (
-      payload.did &&
       !deviceSessions.isExempt(session.email) &&
       !deviceSessions.isActive(session.sessions, payload.did)
     ) {
