@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { reportError } from '../../utils/reportError';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -13,6 +14,11 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(err, info) {
     console.error('[ErrorBoundary]', err, info);
+    // This boundary sits inside the Sentry boundary in main.jsx, and a React
+    // boundary stops propagation — so catching here previously meant the error
+    // reached a console and nothing else. Every section crash a student
+    // actually saw was invisible to us.
+    reportError(err, { componentStack: info?.componentStack, kind: 'ReactRenderError' });
   }
 
   render() {

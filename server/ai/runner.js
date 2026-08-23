@@ -11,6 +11,7 @@
 const { getProviderChain } = require('./providers');
 const providerGuard = require('./providerGuard');
 const { parseJSON } = require('./parser');
+const { OUTCOMES, RefusalError, detectRefusal, isPolicyRefusalError, isRefusal } = require('./refusal');
 const cfg = require('../config/automation');
 const { estimateCost } = require('./router');
 
@@ -85,6 +86,33 @@ async function _nativeRun({ system, user, provider: preferredProvider, json = tr
       if (!String(raw?.text ?? '').trim()) {
         throw new Error(`Provider "${p.name}" returned an empty completion.`);
       }
+
+      // A refusal is an ANSWER, and the chain only exists to keep looking when
+      // the request has not been answered. Before this check, groq's "I'm
+      // sorry, but I can't help with that" reached parseJSON, failed to yield
+      // an object, was booked as `bad_response`, and the loop moved on to a
+      // provider that complied — turning a working safety refusal into the H4
+      // newsletter phish. Detected here, before the parse, so the two cannot be
+      // confused again.
+      //
+      // The provider is credited with a success: it responded correctly and
+      // promptly. Benching it for declining would, over time, promote whichever
+      // provider declines least.
+      const refusal = detectRefusal(raw.text, { json });
+      if (refusal) {
+        callSucceeded = true;
+        providerGuard.recordSuccess(p.name, Date.now() - startedAt);
+        console.warn(
+          `[AI Runner] ${p.name} declined the request (${refusal.outcome}); ` +
+            'stopping the chain rather than failing over'
+        );
+        throw new RefusalError(`AI provider "${p.name}" declined this request.`, {
+          provider: p.name,
+          outcome: refusal.outcome,
+          excerpt: refusal.excerpt,
+        });
+      }
+
       callSucceeded = true;
       providerGuard.recordSuccess(p.name, Date.now() - startedAt);
       const result = json ? parseJSON(raw.text, `attempt ${attempts}`) : raw.text;
@@ -104,9 +132,26 @@ async function _nativeRun({ system, user, provider: preferredProvider, json = tr
         },
       };
     } catch (err) {
+      // Terminal outcomes leave the loop immediately. Everything below this
+      // line is the "try the next provider" path, and a refusal must never
+      // reach it — that is the whole of the H4 fix.
+      if (isRefusal(err)) throw err;
+
+      // Some providers express a safety block as an ordinary 400, which
+      // providerGuard reads as `bad_request`: "our fault, a different model may
+      // accept it". For a policy block that reasoning is exactly inverted.
+      if (isPolicyRefusalError(err)) {
+        console.warn(`[AI Runner] ${p.name} blocked the request on policy; stopping the chain`);
+        throw new RefusalError(`AI provider "${p.name}" blocked this request on content policy.`, {
+          provider: p.name,
+          outcome: OUTCOMES.SAFETY_REFUSAL,
+          excerpt: String(err?.message || '').slice(0, 200),
+        });
+      }
+
       lastError = err;
       const kind = callSucceeded
-        ? 'bad_response'
+        ? OUTCOMES.MALFORMED_RESPONSE
         : providerGuard.recordFailure(p.name, err, Date.now() - startedAt);
       // bad_request is not short-circuited: providers run different models, so
       // an unknown-model 404 on one can still succeed on the next. It stays off
@@ -157,7 +202,13 @@ async function run(opts) {
         runtime: gwResult.runtime,
       },
     };
-  } catch {
+  } catch (err) {
+    // Same rule one layer up. This blanket catch is a second failover — if the
+    // gateway throws for any reason we re-run the request natively — and it
+    // would have re-run a refused request against the whole chain again,
+    // undoing the fix inside _nativeRun. A refusal is a decision, and repeating
+    // the request does not change it.
+    if (isRefusal(err)) throw err;
     return _nativeRun(opts);
   }
 }

@@ -39,8 +39,12 @@ describe('classifyError', () => {
   it('classifies transport failures without an HTTP status', () => {
     expect(guard.classifyError(Object.assign(new Error('x'), { code: 'ETIMEDOUT' }))).toBe('timeout');
     expect(guard.classifyError(new Error('request timed out'))).toBe('timeout');
+    // A socket that never opened is a transport failure, distinct from "the
+    // provider answered and said no". The remediation sprint required these to
+    // be separable; both still count as provider faults for the breaker.
     expect(guard.classifyError(Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' })))
-      .toBe('provider_unavailable');
+      .toBe('transport_error');
+    expect(guard.isProviderFault('transport_error')).toBe(true);
   });
 
   it('never throws on a malformed error object', () => {

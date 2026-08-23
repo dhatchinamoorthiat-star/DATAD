@@ -22,6 +22,10 @@ const { sendCalendarEventReminders }= require('../automation/reminders/calendarE
 const { sendTrialExpiryReminders }  = require('../automation/reminders/trialExpiryReminder');
 const { sendJournalNudges }         = require('../automation/reminders/journalNudge');
 const { checkStreakMilestones }     = require('../automation/reminders/streakMilestone');
+const { snapshotProfiles }          = require('../automation/intelligence/snapshotProfiles');
+const { resolvePredictions }        = require('../automation/intelligence/resolvePredictions');
+const { computeCohortInsights }     = require('../automation/intelligence/computeCohortInsights');
+const { sendJudgmentNudges }        = require('../automation/intelligence/sendJudgmentNudges');
 
 // Existing services (kept running via cron instead of setInterval)
 const { refreshNews }   = require('../services/newsFetcher');
@@ -55,6 +59,23 @@ function register() {
 
   // ── Every 10 min: discussion moderation ─────────────────────────────────────
   cron.schedule(s.moderation, safe('moderation', moderatePosts));
+
+  // ── 02:30 UTC (08:00 IST): freeze each active student's profile ─────────────
+  // Runs before every content job: snapshot history cannot be backfilled, so a
+  // missed run is a permanently lost day of that student's history.
+  cron.schedule(s.profileSnapshot, safe('profile-snapshot', snapshotProfiles));
+
+  // ── 03:00 UTC (08:30 IST): settle predictions that came due ────────────────
+  // After the snapshot job, so the reading a due prediction is judged against
+  // is already written.
+  cron.schedule(s.predictionResolve, safe('prediction-resolve', resolvePredictions));
+
+  // ── 03:30 UTC (09:00 IST): rebuild k-anonymous cohort aggregates ───────────
+  cron.schedule(s.cohortInsights, safe('cohort-insights', computeCohortInsights));
+
+  // ── 04:00 UTC (09:30 IST): the one job that pushes judgement, not content ──
+  // Hard-capped at one nudge per student per day — see the job's header.
+  cron.schedule(s.judgmentNudge, safe('judgment-nudge', sendJudgmentNudges));
 
   // ── 5am daily: case study ───────────────────────────────────────────────────
   cron.schedule(s.dailyCase, safe('daily-case', generateDailyCase));

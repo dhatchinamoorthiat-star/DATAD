@@ -1,5 +1,6 @@
 const Recommendation = require('../../models/Recommendation');
 const UserMemory = require('../../models/UserMemory');
+const { recordPrediction } = require('../predictions/ledger');
 
 const GOAL_REC_TYPE_MAP = {
   'placement': ['placement-readiness', 'resume-suggestion', 'interview-suggestion', 'deadline-alert'],
@@ -70,6 +71,12 @@ async function compute(userId) {
 
   const allMilestones = goalProgressItems.flatMap((g) => g.milestones);
 
+  // `estimatedDaysRemaining` is a forecast: at the rate this student has been
+  // completing recommendations, their placement work clears in D days. Record
+  // it so it can be checked later rather than quietly forgotten. Fire-and-
+  // forget — a ledger write must never make a progress screen fail to load.
+  _recordPaceForecast(userId, goalProgressItems, memory).catch(() => {});
+
   return {
     goals: goalProgressItems,
     overall: {
@@ -79,6 +86,40 @@ async function compute(userId) {
     },
     milestones: allMilestones,
   };
+}
+
+/**
+ * Turn the pace estimate into a falsifiable claim about placement readiness.
+ *
+ * Only fires when there is something to forecast from: a known readiness
+ * score, an estimate, and outstanding work. The predicted gain is tied to the
+ * amount of outstanding work and capped, because a forecast of "+40 readiness"
+ * from a pace estimate would not be a prediction, it would be a wish.
+ */
+async function _recordPaceForecast(userId, items, memory) {
+  const readiness = memory?.readinessScore;
+  if (!userId || typeof readiness !== 'number') return;
+
+  const paced = items.find((g) => g.estimatedDaysRemaining != null && g.total > g.completed);
+  if (!paced) return;
+
+  const outstanding = paced.total - paced.completed;
+  const predictedValue = Math.min(100, readiness + Math.min(10, outstanding));
+  if (predictedValue <= readiness) return;
+
+  const horizonDays = paced.estimatedDaysRemaining;
+  await recordPrediction({
+    userId,
+    statement:
+      `At your current pace you should clear the remaining ${outstanding} item(s) on `
+      + `"${paced.goal}" in about ${horizonDays} days, putting your placement readiness `
+      + `at ${predictedValue} or better.`,
+    metric: 'careerReadiness',
+    predictedValue,
+    comparator: 'gte',
+    horizonDays,
+    sourceTask: 'goal-progress-pace',
+  });
 }
 
 function _computeMilestones(goal, completed) {

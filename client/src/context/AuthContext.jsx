@@ -31,11 +31,14 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('token'));
   const user = decodeUser(token);
 
+  // Returns the decoded account: the login response carries only a JWT, so
+  // this is the one place that already knows the name to greet.
   const login = (newToken) => {
     localStorage.setItem('token', newToken);
     const decoded = decodeUser(newToken);
     if (decoded) localStorage.setItem('activeProgram', decoded.activeProgram);
     setToken(newToken);
+    return decoded;
   };
 
   // `reason: 'expired'` marks a forced logout (401 from an expired/revoked

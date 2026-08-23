@@ -452,6 +452,96 @@
   :root.dark .datad-transition { background: rgb(11 13 16 / 0.97); }
 }
 
+/* ── Welcome curtain (post-login) ────────────────────────────────
+   Opaque, unlike the frosted section overlay: this one covers the hand-off
+   from the dark auth screen to a cold dashboard, and half-drawn skeletons
+   bleeding through would spoil the one branded beat of the session.
+
+   Timing is owned by WelcomeCurtain.jsx — .is-leaving must stay in sync with
+   EXIT_MS there. */
+
+.datad-welcome {
+  position: fixed;
+  inset: 0;
+  /* Above the section overlay (60) and every app chrome layer. */
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: theme('colors.gray.50');
+  animation: datadWelcomeIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+:root.dark .datad-welcome {
+  background: theme('colors.gray.950');
+}
+
+/* A single soft brand bloom behind the mark, so the flat fill has a centre. */
+.datad-welcome::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: min(38rem, 90vw);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(77 124 255 / 0.14), transparent 68%);
+  pointer-events: none;
+}
+
+.datad-welcome.is-leaving {
+  animation: datadWelcomeOut 420ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.datad-welcome-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  text-align: center;
+}
+
+/* Tight, so mark and wordmark read as one signature rather than two objects
+   stacked. Gap follows the lockup ratio in Logo.jsx (glyph height / 4). */
+.datad-welcome-lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  animation: datadWelcomeRise 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.datad-welcome .loader-datad {
+  --duration: 1.6s;
+}
+
+/* The copy arrives after the mark, so the eye lands on the brand first. */
+.datad-welcome-copy {
+  animation: datadWelcomeRise 520ms cubic-bezier(0.16, 1, 0.3, 1) 160ms both;
+}
+
+@keyframes datadWelcomeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Lifting with a slight scale-up reads as the curtain pulling toward the
+   viewer and off, rather than the page beneath sliding in late. */
+@keyframes datadWelcomeOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.04); }
+}
+
+@keyframes datadWelcomeRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The global reduced-motion rule already flattens the animations above; the
+   bloom is static decoration and stays. */
+
 /* ── PWA / Mobile native feel ─────────────────────────────────────────────── */
 
 /* Prevent double-tap zoom on interactive elements for a faster native feel. */
@@ -878,4 +968,111 @@ body {
    back to the plain desaturation, which is a treatment rather than a defect. */
 @supports not (mix-blend-mode: color) {
   .creator-portrait-tint { display: none; }
+}
+
+/* ── App-wide network texture ────────────────────────────────────────────
+   Drives components/common/NetworkTexture. The mesh is static; the only thing
+   that moves is the signals travelling across it — see `nt-pulse` at the bottom.
+
+   Colour is carried by custom properties so a theme toggle is a class swap on
+   <html> with no React re-render behind it. The two themes are not the same
+   alpha: the same stroke is a ~44/255 luminance step on light's #F7F8FA and a
+   ~13/255 step on dark's #0B0D10, so matched numbers give a texture that is
+   calm in dark and shouts in light. Tuned against /privacy, the worst case in
+   the app — long prose sitting straight on the background with no card in
+   between it and the mesh.
+
+   Light  primary-600 #1A73E8 held very low, so what lands is the light blue
+          the accent implies rather than the accent itself.
+   Dark   the register/creator brand blue #4D7CFF, so the workspace and the
+          auth surfaces stay recognisably one system. */
+:root {
+  --nt-wash-near: rgb(66 133 244 / 0.10);
+  --nt-wash-mid: rgb(124 108 255 / 0.045);
+  --nt-edge: rgb(26 115 232 / 0.085);
+  --nt-node: rgb(26 115 232 / 0.22);
+  /* Well above the nodes it travels between — a signal at mesh contrast is not
+     legible as a separate thing moving. Size does the other half of that job;
+     see the radius note in NetworkTexture. */
+  --nt-pulse: rgb(26 115 232 / 0.72);
+}
+
+:root.dark {
+  --nt-wash-near: rgb(77 124 255 / 0.11);
+  --nt-wash-mid: rgb(124 108 255 / 0.055);
+  --nt-edge: rgb(77 124 255 / 0.13);
+  --nt-node: rgb(77 124 255 / 0.32);
+  --nt-pulse: rgb(143 176 255 / 0.82);
+}
+
+.nt-wash-near { stop-color: var(--nt-wash-near); }
+.nt-wash-mid { stop-color: var(--nt-wash-mid); }
+/* Transparent, not the page colour: the layer sits over body's background, and
+   a hardcoded stop would clip to a visible disc the moment the theme changed. */
+.nt-wash-far { stop-color: transparent; }
+
+.nt-edges line {
+  stroke: var(--nt-edge);
+  stroke-width: 1;
+}
+
+.nt-nodes circle {
+  fill: var(--nt-node);
+}
+
+/* The signals.
+
+   The only thing on this layer that moves. The mesh is static and stays that
+   way: two earlier versions drifted the whole field instead, which is either
+   invisible or annoying with very little room in between, and neither of them
+   was the motion worth keeping from the register hero.
+
+   Travel occupies 0-15% of each cycle. Because the six cycles differ (27-38s,
+   set per element in NetworkTexture), that share works out to 3.6-5.7s of
+   flight — the signals deliberately do not all move at one speed. Each is then
+   parked invisible at its destination for the remaining 85%, so at any moment
+   roughly one of the six is in the air and often none.
+
+   The opacity ramps are the point, not decoration. 2->5% in and 12->15% out is
+   about a second of fade at either end: onset and offset are the sharpest
+   transients the visual system has, and a dot that pops into existence is far
+   louder than the same dot sliding the same distance. Do not shorten these to
+   make the signals crisper — crisper is exactly what makes them intrusive.
+
+   `linear`, because a signal that eases is a signal that announces its own
+   arrival and departure.
+
+   One keyframe rule serves every pulse: the endpoints arrive as per-element
+   custom properties, which is what avoids generating a rule per edge into a
+   runtime <style> tag. Lengths are in px and land as viewBox user units, since
+   a CSS transform on an SVG child works in the local coordinate system. */
+.nt-pulses circle {
+  fill: var(--nt-pulse);
+  opacity: 0;
+  animation-name: nt-pulse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes nt-pulse {
+  0%   { transform: translate3d(var(--nt-px1), var(--nt-py1), 0); opacity: 0; }
+  2%   { opacity: 0; }
+  5%   { opacity: 1; }
+  12%  { opacity: 1; }
+  15%  { transform: translate3d(var(--nt-px2), var(--nt-py2), 0); opacity: 0; }
+  100% { transform: translate3d(var(--nt-px2), var(--nt-py2), 0); opacity: 0; }
+}
+
+/* Below `sm` the mesh is cropped hard by `slice`, so what little is on screen
+   sits directly behind a narrow column of body copy rather than out in a
+   margin. Same texture, further back. The signals stay — they are the reason
+   this layer exists, and only two or three of the six fall inside the crop. */
+@media (max-width: 639px) {
+  .network-texture { opacity: 0.6; }
+}
+
+/* Not `animation: none` — that would strand every signal at its source node as
+   a permanently visible dot the mesh does not otherwise have. */
+@media (prefers-reduced-motion: reduce) {
+  .nt-pulses { display: none; }
 }

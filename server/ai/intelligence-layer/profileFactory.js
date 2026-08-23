@@ -18,6 +18,12 @@ function createEmptyProfile(userId) {
     stress: null,
     exams: null,
     placement: null,
+    // '' rather than null: a student with no snapshot history has no trend, and
+    // an empty string is what the context builder must see to omit the segment.
+    trendSummary: '',
+    // Same contract as trendSummary. Empty whenever the cohort is unknown, too
+    // small to report on, or simply not different enough to be worth a sentence.
+    cohortSummary: '',
     scores: {
       currentFocus: 'general',
       currentChallenges: [],
@@ -54,6 +60,8 @@ function buildProfile(userId, collected, scores) {
   profile.stress = collected.stress || null;
   profile.exams = collected.exams || null;
   profile.placement = collected.placement || null;
+  profile.trendSummary = collected.trendSummary || '';
+  profile.cohortSummary = collected.cohortSummary || '';
   profile.scores = scores;
   profile.enrichedContext = buildEnrichedContext(collected, scores);
   return profile;
@@ -122,6 +130,24 @@ function buildEnrichedContext(collected, scores) {
   const directives = buildDeliveryDirectives(scores);
   if (directives) parts.push(directives);
 
+  // Trajectory. Everything above describes the student today; this is the only
+  // segment that says which way they are moving, which is the thing a chatbot
+  // with no history of this person cannot know. Already capped to the few
+  // notable movements by summarizeTrends — this is a prompt, not a report.
+  //
+  // Omitted entirely when empty. A bare "Trends:" label with nothing after it
+  // is an invitation to invent one.
+  if (collected.trendSummary) parts.push(collected.trendSummary);
+
+  // Peers, last. Everything above is about this student alone; this is the only
+  // segment sourced from other people, and it is the one a general assistant
+  // can never have — it is not a reasoning limit, it is a data one.
+  //
+  // Already k-anonymised and reduced to at most three clauses upstream. Omitted
+  // when empty for the same reason as the trend line: a dangling "Peers..."
+  // label is something for the model to invent a comparison into.
+  if (collected.cohortSummary) parts.push(collected.cohortSummary);
+
   return parts.join(' | ');
 }
 
@@ -155,4 +181,42 @@ function buildDeliveryDirectives(scores) {
   return `How to respond: ${clauses.join('; ')}`;
 }
 
-module.exports = { createEmptyProfile, buildProfile, buildEnrichedContext };
+/**
+ * The trendable counters, pulled off the collector output.
+ *
+ * Lives here because it now has two callers: the nightly job freezing today's
+ * row, and the live profile build comparing this student against their cohort.
+ * Both must read the same fields the same way or the comparison is between two
+ * different definitions of "consistency".
+ *
+ * TODO: automation/intelligence/snapshotProfiles.js still carries an identical
+ * private copy and should import this one instead. Until it does, a field added
+ * to one and not the other silently skews every cohort comparison — the live
+ * student would be measured on a definition their peers were not.
+ *
+ * Takes anything profile-shaped — the assembled profile or the raw `collected`
+ * bag, which carry these keys at the same depth.
+ *
+ * A missing counter is null, never 0: "no resume yet" and "a resume scoring
+ * zero" average differently, and only one of them is true.
+ */
+function buildSignals(profile) {
+  const learning = profile.learning || {};
+  const tasks = profile.tasks || {};
+  const career = profile.career || {};
+  const stress = profile.stress || {};
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+  return {
+    streak: num(learning.streak),
+    consistency: num(learning.consistency),
+    pendingTasks: num(tasks.pending),
+    overdueTasks: num(tasks.overdue),
+    applicationsCount: num(career.applications),
+    resumeCompletion: num(career.resumeCompletionPct),
+    stressLevel: num(stress.stressLevel),
+    studyMinutes: num(learning.studyMinutes),
+  };
+}
+
+module.exports = { createEmptyProfile, buildProfile, buildEnrichedContext, buildSignals };

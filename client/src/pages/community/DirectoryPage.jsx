@@ -141,7 +141,7 @@ export default function DirectoryPage() {
             <button key={p._id} onClick={() => setView(p)}
               className="group rounded-2xl border border-gray-200/80 bg-white p-5 text-left hover:border-indigo-300 dark:border-gray-800/80 dark:bg-gray-900">
               <div className="mb-3 flex items-center gap-3">
-                <Avatar name={p.user?.name} avatar={p.user?.avatar} />
+                <Avatar name={p.user?.name} avatar={p.user?.avatarUrl} />
                 <div>
                   <p className="font-semibold">{p.user?.name}</p>
                   {p.specialization && <p className="text-xs text-gray-500">{p.specialization}</p>}
@@ -163,7 +163,7 @@ export default function DirectoryPage() {
         {view && (
           <div className="space-y-4">
             <div className="flex items-center gap-4">
-              <Avatar name={view.user?.name} avatar={view.user?.avatar} size="lg" />
+              <Avatar name={view.user?.name} avatar={view.user?.avatarUrl} size="lg" />
               <div>
                 <p className="text-lg font-bold">{view.user?.name}</p>
                 {view.specialization && <p className="text-sm text-gray-500">{view.specialization}</p>}

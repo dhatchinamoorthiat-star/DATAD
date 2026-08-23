@@ -273,8 +273,28 @@ exports.sendAnnouncementEmail = async (recipients, announcement) => {
     return { sent: 0, failed: 0, skipped: recipients.length };
   }
 
+  // Escaped, not interpolated raw.
+  //
+  // The body reaching this function is either admin-authored or, for the weekly
+  // newsletter, model-generated from student post titles. The old line built
+  // the HTML by hand — `<p>${announcement.body.replace(/\n/g, '<br/>')}</p>` —
+  // so a bare URL in the body was merely visible text, but an `<a href>` in it
+  // became a live, clickable link in every recipient's inbox, delivered over a
+  // verified sender with SPF and DKIM passing. That is the last step of the H4
+  // chain, and `esc()` was already in this file being used correctly two
+  // functions down in sendResumeCopyEmail.
+  //
+  // The cost: an admin cannot embed markup in an announcement. They could not
+  // reliably before either — anything they wrote was at the mercy of whatever
+  // the newsletter model produced in the same template — and plain text that
+  // renders as plain text is the honest contract for this field.
+  // The subject is a plain-text header, not HTML — escaping it would render a
+  // legitimate `&` as `&amp;` in the inbox. Only the HTML body is escaped.
   const subject = `📢 ${announcement.title}`;
-  const html = wrap(announcement.title, `<p>${announcement.body.replace(/\n/g, '<br/>')}</p>`);
+  const html = wrap(
+    esc(announcement.title),
+    `<p>${esc(announcement.body).replace(/\n/g, '<br/>')}</p>`
+  );
 
   let sent = 0;
   let failed = 0;

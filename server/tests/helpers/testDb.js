@@ -45,8 +45,65 @@ function parseUri(uri) {
   return { prefix: match[1], dbName: match[2] || '', query: match[3] || '' };
 }
 
+/**
+ * Jest runs suites in parallel workers, and every worker was pointed at the
+ * same test database.
+ *
+ * That is a shared mutable resource across concurrent processes, and the suites
+ * here all begin with `deleteMany({})`. So one suite's teardown wipes another
+ * suite's fixtures mid-run, and the symptom is a test failing on a count or a
+ * stale value while passing perfectly in isolation. `stockFetcher.test.js`
+ * writes ~194 documents per refresh and its own header already described this
+ * ("the in-flight refresh keeps writing — into the *next* test") — it failed in
+ * a full run and passed alone, which is the signature.
+ *
+ * A per-worker suffix gives each worker its own database, so the isolation is
+ * structural rather than a matter of which suites happen to be scheduled
+ * together. `--runInBand` would also fix it, by making the whole suite serial
+ * and much slower.
+ *
+ * JEST_WORKER_ID is set by jest and is 1-based; absent outside a worker.
+ */
+function workerSuffix() {
+  // Per test FILE, not merely per worker.
+  //
+  // A worker suffix alone stops two workers colliding, but jest runs many
+  // suites sequentially inside one worker, and they share that worker's
+  // database. Every suite here opens with `deleteMany({})`, so a slow suite
+  // whose writes are still in flight when the next one starts — stockFetcher
+  // does ~194 upserts per refresh and its own header describes exactly this —
+  // lands its documents in the next suite's freshly-cleared collections.
+  //
+  // The symptom is the one that wastes the most time: a suite that passes alone
+  // and fails in a full run, at a different assertion each time. Keying on the
+  // test file gives every suite a database nothing else touches, so the result
+  // no longer depends on what happened to be scheduled beside it.
+  const id = process.env.JEST_WORKER_ID || '0';
+
+  let file = '';
+  try {
+    // Set by jest's expect state. Guarded because this helper is also required
+    // from plain scripts, where no jest globals exist.
+    const testPath = typeof expect !== 'undefined' && expect.getState?.().testPath;
+    if (testPath) {
+      file = String(testPath).split('/').pop().replace(/\.test\.js$/, '').replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+    }
+  } catch { /* not running under jest */ }
+
+  return file ? `-${file}` : `-w${id}`;
+}
+
 function resolveTestUri() {
-  if (process.env.MONGODB_TEST_URI) return process.env.MONGODB_TEST_URI;
+  if (process.env.MONGODB_TEST_URI) {
+    // Still per-worker: an explicitly configured test URI has the same
+    // concurrency problem, and silently ignoring it here would make the fix
+    // depend on how the database was configured.
+    const explicit = parseUri(process.env.MONGODB_TEST_URI);
+    if (explicit?.dbName) {
+      return `${explicit.prefix}/${explicit.dbName}${workerSuffix()}${explicit.query}`;
+    }
+    return process.env.MONGODB_TEST_URI;
+  }
 
   const base = process.env.MONGODB_URI;
   if (!base) {
@@ -64,7 +121,7 @@ function resolveTestUri() {
     );
   }
 
-  return `${parts.prefix}/${parts.dbName}-test${parts.query}`;
+  return `${parts.prefix}/${parts.dbName}-test${workerSuffix()}${parts.query}`;
 }
 
 function assertDisposable(uri) {

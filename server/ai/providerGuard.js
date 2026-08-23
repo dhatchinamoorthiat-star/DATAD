@@ -61,12 +61,26 @@ function classifyError(err) {
   if (code === 'ETIMEDOUT' || code === 'ESOCKETTIMEDOUT' || msg.includes('timeout') || msg.includes('timed out')) {
     return 'timeout';
   }
+  // A socket that never opened is a transport failure, not a judgement about
+  // the provider's service. It was folded into `provider_unavailable` before,
+  // which is right for the breaker (both mean "try someone else") but wrong for
+  // an operator: "connection refused" and "your key is dead" want different
+  // responses, and the log line was the only place to tell them apart. Kept
+  // inside isProviderFault() so breaker behaviour is unchanged.
+  if (['ECONNREFUSED', 'ECONNRESET', 'EPIPE', 'EHOSTUNREACH', 'ENETUNREACH', 'ENOTFOUND', 'EAI_AGAIN', 'ECONNABORTED', 'EPROTO'].includes(code)) {
+    return 'transport_error';
+  }
   return 'provider_unavailable';
 }
 
 /** Errors that say something about the provider's health, rather than ours. */
 function isProviderFault(kind) {
-  return kind === 'rate_limited' || kind === 'provider_unavailable' || kind === 'timeout';
+  return (
+    kind === 'rate_limited' ||
+    kind === 'provider_unavailable' ||
+    kind === 'timeout' ||
+    kind === 'transport_error'
+  );
 }
 
 /**

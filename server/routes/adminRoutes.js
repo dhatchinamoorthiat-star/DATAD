@@ -32,6 +32,15 @@ router.get('/referrals', getReferralMap);
 router.post('/announcements', heavyLimiter, createAnnouncement);
 router.delete('/announcements/:id', deleteAnnouncement);
 
+// Weekly newsletter review. The generator no longer sends anything; this is the
+// only route by which a newsletter reaches a student's inbox — see
+// controllers/newsletterController.js and the H4 finding it closes.
+const newsletter = require('../controllers/newsletterController');
+router.get('/newsletter', newsletter.listDrafts);
+router.get('/newsletter/:id', newsletter.getDraft);
+router.post('/newsletter/:id/send', heavyLimiter, newsletter.sendDraft);
+router.delete('/newsletter/:id', newsletter.discardDraft);
+
 // Site-wide meta (placement date, batch name)
 const SiteMeta = require('../models/SiteMeta');
 router.get('/meta', async (req, res, next) => {

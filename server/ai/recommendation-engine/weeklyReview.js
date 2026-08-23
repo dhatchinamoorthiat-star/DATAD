@@ -2,6 +2,7 @@ const WeeklyReview = require('../../models/WeeklyReview');
 const Recommendation = require('../../models/Recommendation');
 const UserMemory = require('../../models/UserMemory');
 const Task = require('../../models/Task');
+const { recordPrediction } = require('../predictions/ledger');
 
 function getWeekBoundary() {
   const now = new Date();
@@ -106,6 +107,10 @@ async function generate(userId) {
 
   const reflection = _buildReflection(completedRecs, memory, wins, challenges);
 
+  // "Focus on readiness this week" is an implicit forecast. Make it explicit
+  // and checkable. Fire-and-forget: the review is the deliverable here.
+  _recordReadinessForecast(userId, memory, nextWeekPriorities).catch(() => {});
+
   const review = await WeeklyReview.create({
     user: userId,
     weekStart: start,
@@ -119,6 +124,36 @@ async function generate(userId) {
   });
 
   return review.toObject();
+}
+
+// A week of focused work is worth about this much readiness. Modest on
+// purpose: an ambitious number would produce a ledger full of misses that say
+// more about the threshold than about the student.
+const WEEKLY_READINESS_GAIN = 5;
+
+/**
+ * Record the claim behind the "focus on readiness" priority: one more week of
+ * this and the number should have moved. Only recorded when that priority was
+ * actually emitted, so the ledger holds claims Dax made rather than claims it
+ * could have made.
+ */
+async function _recordReadinessForecast(userId, memory, priorities) {
+  const readiness = memory?.readinessScore;
+  if (!userId || typeof readiness !== 'number') return;
+  if (!priorities.some((p) => p.text.startsWith('Focus on readiness'))) return;
+
+  const predictedValue = Math.min(100, readiness + WEEKLY_READINESS_GAIN);
+  await recordPrediction({
+    userId,
+    statement:
+      `If you work the readiness priorities this week, your placement readiness should `
+      + `reach ${predictedValue} or better within a fortnight (it is ${readiness} now).`,
+    metric: 'careerReadiness',
+    predictedValue,
+    comparator: 'gte',
+    horizonDays: 14,
+    sourceTask: 'weekly-review-readiness',
+  });
 }
 
 function _buildReflection(completedRecs, memory, wins, challenges) {

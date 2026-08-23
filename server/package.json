@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit --detectOpenHandles"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit --detectOpenHandles",
+    "verify:errors": "node scripts/verifyErrorTracking.js",
+    "test:integration": "ALLOW_REAL_EXTERNAL_CALLS=1 node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit --detectOpenHandles"
   },
   "keywords": [],
   "author": "",
@@ -13,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "@sentry/node": "^10.70.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "compression": "^1.8.1",
@@ -43,6 +46,17 @@
     "moduleNameMapper": {
       "^uuid$": "<rootDir>/tests/__mocks__/uuid.js"
     },
-    "testTimeout": 30000
+    "testTimeout": 30000,
+    "setupFiles": [
+      "<rootDir>/tests/setup/safeEnv.js"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup/blockExternalCalls.js",
+      "<rootDir>/tests/socketGuard.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/setup/"
+    ]
   }
 }

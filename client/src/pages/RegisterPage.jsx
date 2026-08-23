@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, MailCheck, Loader2, AlertTriangle } from 'lucide
 import toast from '../utils/toast';
 import { register as registerApi, checkEmail } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import { isAvailableAccountType } from '../components/register/RoleSelector';
 import {
   IdentityShell,
   RegisterForm,
@@ -152,11 +153,17 @@ export default function RegisterPage() {
         // Honeypot — always empty for real users; the server rejects it if filled.
         website: data.website || '',
         // NOTE: `accountType`, not `role`. The server owns `role` (admin|member)
-        // and sets it from the admin-email check. This field is accepted and
-        // ignored by the current endpoint — see the register controller — so
-        // Faculty/Institution is a routing hint in the client today and needs a
-        // matching User field before it persists.
-        accountType: data.accountType || 'student',
+        // and sets it from the admin-email check.
+        //
+        // Coerced to an account type that actually exists. The server has no
+        // reference to `accountType` anywhere, so whatever is sent is discarded
+        // — which meant someone could select "Faculty", be told they would
+        // "mentor students and track cohort progress", and silently receive a
+        // plain student account. RoleSelector now disables the unbuilt types, but
+        // that is presentation: this line is what makes the sent value and the
+        // created account agree even if the form is manipulated or a default
+        // leaks through from a saved draft.
+        accountType: isAvailableAccountType(data.accountType) ? data.accountType : 'student',
         rollNumber: data.rollNumber || '',
         referralCode: data.referralCode || '',
         studentType: data.studentType || 'fresher',

@@ -114,6 +114,19 @@ module.exports = {
     // the previous day's close and the page then showed that same number all
     // day, which is what made the quotes look frozen.
     stockRefresh:       process.env.CRON_STOCK_REFRESH       || '*/15 3-10 * * 1-5',
+    // 02:30 UTC = 08:00 IST. Ahead of every content job so the day's
+    // snapshot exists before anything wants to read a trend from it.
+    profileSnapshot:    process.env.CRON_PROFILE_SNAPSHOT    || '30 2 * * *',     // 02:30 UTC / 08:00 IST
+    // 03:00 UTC = 08:30 IST. Half an hour after the snapshot, so today's
+    // reading already exists for any prediction whose horizon lands today.
+    predictionResolve:  process.env.CRON_PREDICTION_RESOLVE  || '0 3 * * *',      // 03:00 UTC / 08:30 IST
+    // 03:30 UTC = 09:00 IST. After the snapshot job, whose readings it
+    // aggregates; nightly rather than per request because a cohort scan on a
+    // chat path would be both slow and a wider surface to get privacy wrong on.
+    cohortInsights:     process.env.CRON_COHORT_INSIGHTS     || '30 3 * * *',     // 03:30 UTC / 09:00 IST
+    // 04:00 UTC = 09:30 IST. After the snapshot job it reads from, and at an
+    // hour a student is awake to act on it.
+    judgmentNudge:      process.env.CRON_JUDGMENT_NUDGE      || '0 4 * * *',      // 04:00 UTC / 09:30 IST
     dailyCase:          process.env.CRON_DAILY_CASE          || '0 5 * * *',      // 5am daily
     dailyBriefing:      process.env.CRON_DAILY_BRIEFING      || '0 6 * * *',      // 6am daily
     dailyReflection:    process.env.CRON_DAILY_REFLECTION    || '0 6 * * *',      // 6am daily

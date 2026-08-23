@@ -30,6 +30,13 @@ const fatal = (kind) => (err) => {
     error: err instanceof Error ? err.message : String(err),
     stack: err instanceof Error ? err.stack : undefined,
   });
+  // A crash is the single event most worth an alert, and it is the one the log
+  // stream is least likely to preserve usefully — the process is about to be
+  // replaced. Wrapped because a failure inside the tracker must not stop the
+  // exit below; the log line above has already been written either way.
+  try {
+    require('./observability/errorTracker').capture(err, { source: 'crash', level: 'fatal', context: { kind } });
+  } catch { /* the log line is the record of last resort */ }
   setTimeout(() => process.exit(1), 100).unref();
 };
 process.on('uncaughtException', fatal('uncaughtException'));
@@ -65,7 +72,9 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
-const { generalLimiter, authLimiter } = require('./middleware/rateLimiters');
+// authLimiter is no longer imported here — it is applied to /login inside
+// routes/authRoutes.js, alongside the other per-endpoint limiters.
+const { generalLimiter } = require('./middleware/rateLimiters');
 const entertainmentRoutes = require('./routes/entertainmentRoutes');
 const app = express();
 
@@ -86,10 +95,20 @@ app.use(require('./middleware/requestContext'));
 
 app.use(
   helmet({
-    // The SPA is served from this same server; the app loads cover images from
-    // external hosts (Unsplash, Google Photos), so a strict default CSP would
-    // break them. Cross-origin isolation headers off for the same reason.
-    contentSecurityPolicy: false,
+    // A real policy, defined in config/csp.js.
+    //
+    // This was `false` — the whole header off — because helmet's default
+    // `img-src 'self'` broke the external cover images the app loads from
+    // Unsplash and Google Photos. That is a one-directive problem, and turning
+    // off the other eleven to solve it also removed the only thing standing
+    // between an XSS bug and the JWT in localStorage. See config/csp.js.
+    //
+    // Set CSP_REPORT_ONLY=true to observe violations without blocking anything.
+    contentSecurityPolicy: require('./config/csp').cspOptions(),
+
+    // Still off. COEP requires every cross-origin resource to opt in via CORP
+    // or CORS, and the external image hosts above do not — enabling it would
+    // break exactly the images the CSP above was written to keep working.
     crossOriginEmbedderPolicy: false,
 
     // ─── Hardened headers ──────────────────────────────────────────────
@@ -160,18 +179,35 @@ app.use(hpp());
 app.use(compression());
 app.use('/api', generalLimiter);
 
-// The platform health check routes traffic on this. Reporting "ok" without a
-// database sends real users to an app where every request 500s, and no alert
-// ever fires — so the DB connection state is the health check.
-// readyState: 0 disconnected, 1 connected, 2 connecting, 3 disconnecting.
-app.get('/api/health', (req, res) => {
-  const connected = mongoose.connection.readyState === 1;
-  res.status(connected ? 200 : 503).json({
-    status: connected ? 'ok' : 'degraded',
-    database: connected ? 'connected' : 'disconnected',
-  });
-});
-app.use('/api/auth', authLimiter, require('./routes/authRoutes'));
+// The health check lives in routes/healthRoutes.js — it reports database
+// connectivity and which error sinks are active, and both are testable there.
+app.use(require('./routes/healthRoutes'));
+
+// No prefix-wide limiter here, deliberately.
+//
+// This line used to read `app.use('/api/auth', authLimiter, ...)`, and that one
+// middleware argument was the whole of H5. Every request under /api/auth passed
+// through a single 300-per-15-minutes counter keyed on the network address —
+// including GET /auth/me, which AuthContext calls on every page load. On a
+// campus NAT the arithmetic is brutal: 137 scripted /check-email calls from one
+// actor exhausted the shared budget, and every *authenticated* student behind
+// that address then got 429 on /auth/me and could not load the app, while their
+// requests to /tasks kept returning 200 because that route runs on the
+// account-keyed generalLimiter. It presents as an outage and it is caused by one
+// person. It was reproduced twice — the second time by accident, when a load
+// test could not register 40 accounts.
+//
+// Splitting it per route was not enough on its own: a limiter mounted here runs
+// *before* the router, so the shared bucket was still charged for every call no
+// matter how the individual routes were configured. The endpoint-specific
+// limiters now live in routes/authRoutes.js, next to the handlers whose threat
+// model they encode, and authenticated routes under this prefix (/me, /profile,
+// /password, /devices) fall through to the per-account generalLimiter applied to
+// /api above — the same protection every other authenticated route already had.
+app.use('/api/auth', require('./routes/authRoutes'));
+// Frontend runtime errors. Unauthenticated by necessity — the errors worth
+// hearing about most are the ones that break the page before sign-in.
+app.use('/api/telemetry', require('./routes/telemetryRoutes'));
 app.use('/api/notes', require('./routes/noteRoutes'));
 app.use('/api/albums', require('./routes/albumRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));

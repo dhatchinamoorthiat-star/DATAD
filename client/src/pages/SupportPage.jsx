@@ -76,9 +76,9 @@ const ROADMAP = [
   { label: 'Community Discussions & Announcements', status: 'done' },
   { label: 'Daily Case Study & Intelligence Briefing', status: 'done' },
   { label: 'Journal, Nostalgia Archive & Dax Chat', status: 'done' },
-  { label: 'Custom domain & stable hosting', status: 'active' },
-  { label: 'Dax study companion & case coach', status: 'next' },
-  { label: 'Mobile app (PWA)', status: 'next' },
+  { label: 'Custom domain & stable hosting', status: 'done' },
+  { label: 'Mobile app (PWA)', status: 'done' },
+  { label: 'Dax study companion & case coach', status: 'active' },
 ];
 
 const FAQ = [

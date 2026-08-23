@@ -417,7 +417,21 @@ async function* processStream(request) {
       let streamEnded = false;
       const holdStart = Date.now();
 
-      while (heldChars < HOLD_CHARS && Date.now() - holdStart < HOLD_MS) {
+      // The first pull is unconditional; only the ones after it are governed by
+      // the hold budget. That distinction is the whole of a production bug:
+      // `streamEnded` was only ever assigned inside this loop, and .env ships
+      // DAX_STREAM_HOLD_CHARS=0, so on every real deployment the loop body never
+      // ran. `streamEnded` stayed false, `held` stayed empty, the empty-stream
+      // check below was unreachable, and a provider that yielded nothing was
+      // booked as a SUCCESS whose reply was the empty string — the exact
+      // "AI gateway returned empty response" the check was written to prevent,
+      // reintroduced by a setting meant to affect only latency.
+      //
+      // Pulling once costs nothing: the chunk is buffered, not delayed beyond
+      // what yield-immediately already implies, and failover stays available
+      // until it is handed on.
+      while (!streamEnded &&
+             (held.length === 0 || (heldChars < HOLD_CHARS && Date.now() - holdStart < HOLD_MS))) {
         const next = await gen.next();
         if (next.done) { streamEnded = true; break; }
         held.push(next.value);

@@ -227,15 +227,42 @@ describe('P1-3 rate limiter keying', () => {
     expect(handles.indexOf(authLimiter)).toBeLessThan(handles.indexOf(loginAccountLimiter));
   });
 
-  it('leaves recovery endpoints on the IP limiter only', () => {
+  it('leaves recovery endpoints on an IP limiter, never an account-keyed one', () => {
     // An account-keyed limit on these would let anyone lock a victim out of
     // password reset by exhausting the quota on their behalf.
+    //
+    // Each of these now has its OWN limiter instance rather than the shared
+    // `authLimiter` — see middleware/rateLimiters.js. One shared instance meant
+    // one shared store, so abuse of the cheapest endpoint spent the budget for
+    // sign-in across the whole campus. The invariant this test protects is
+    // unchanged: IP-keyed, never account-keyed.
+    const limiters = require('../middleware/rateLimiters');
     const router = require('../routes/authRoutes');
-    for (const path of ['/forgot-password', '/reset-password', '/resend-verification']) {
+    const expected = {
+      '/forgot-password': limiters.forgotPasswordLimiter,
+      '/reset-password': limiters.resetPasswordLimiter,
+      '/resend-verification': limiters.resendVerificationLimiter,
+    };
+    for (const [path, limiter] of Object.entries(expected)) {
       const layer = router.stack.find((l) => l.route?.path === path);
       const handles = layer.route.stack.map((s) => s.handle);
-      expect(handles).toContain(authLimiter);
+      expect(handles).toContain(limiter);
       expect(handles).not.toContain(loginAccountLimiter);
     }
+  });
+
+  it('gives each unauthenticated endpoint its own limiter instance', () => {
+    // The H5 fix, as an identity check. Two routes sharing an instance share a
+    // counter, and that is precisely how exhausting /check-email denied /login.
+    const limiters = require('../middleware/rateLimiters');
+    const instances = [
+      limiters.checkEmailLimiter,
+      limiters.registerLimiter,
+      limiters.forgotPasswordLimiter,
+      limiters.resendVerificationLimiter,
+      limiters.verifyEmailLimiter,
+      limiters.resetPasswordLimiter,
+    ];
+    expect(new Set(instances).size).toBe(instances.length);
   });
 });

@@ -10,6 +10,7 @@ const learningLoop = require('../ai/recommendation-engine/learningLoop');
 const { generateDailyMission } = require('../ai/recommendation-engine/dailyMission');
 const weeklyReview = require('../ai/recommendation-engine/weeklyReview');
 const goalProgress = require('../ai/recommendation-engine/goalProgress');
+const predictionLedger = require('../ai/predictions/ledger');
 
 router.use(verifyToken);
 
@@ -169,6 +170,16 @@ router.get('/goal-progress', async (req, res, next) => {
     const uid = req.user.userId;
     const progress = await goalProgress.compute(uid);
     res.json(progress);
+  } catch (err) { next(err); }
+});
+
+// GET /api/recommendations/predictions — Dax's own track record.
+// Read-only, and read-only on purpose: nothing a client sends may edit an
+// outcome. The response includes misses in the same list as hits, unfiltered.
+router.get('/predictions', async (req, res, next) => {
+  try {
+    const record = await predictionLedger.getAccuracy(req.user.userId);
+    res.json(record);
   } catch (err) { next(err); }
 });
 

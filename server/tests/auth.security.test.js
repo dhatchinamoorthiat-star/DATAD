@@ -289,9 +289,12 @@ describe('P0-2 verification resend', () => {
     expect(layer).toBeDefined();
     // Identity check against the shared limiter instance — the middleware is
     // anonymous, so matching by name would silently pass against anything.
-    const { authLimiter } = require('../middleware/rateLimiters');
-    expect(layer.route.stack.some((s) => s.handle === authLimiter)).toBe(true);
+    // Its OWN limiter, not the shared one: a single instance across every auth
+    // route gave them a single counter, so scripting /check-email locked this
+    // endpoint too. See middleware/rateLimiters.js.
+    const { resendVerificationLimiter } = require('../middleware/rateLimiters');
+    expect(layer.route.stack.some((s) => s.handle === resendVerificationLimiter)).toBe(true);
     // And it must sit in front of the handler, not behind it.
-    expect(layer.route.stack[0].handle).toBe(authLimiter);
+    expect(layer.route.stack[0].handle).toBe(resendVerificationLimiter);
   });
 });

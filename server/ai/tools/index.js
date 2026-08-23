@@ -205,8 +205,24 @@ const EXECUTORS = {
  * @param {string} userId  scopes every query; never taken from model output
  */
 async function executeTool(call, userId) {
-  const executor = EXECUTORS[call.name];
-  if (!executor) return { error: `Unknown tool: ${call.name}` };
+  // hasOwnProperty, not a plain lookup.
+  //
+  // `EXECUTORS` is an object literal, so it inherits from Object.prototype, and
+  // `EXECUTORS['__proto__']`, `['constructor']` and `['toString']` all resolve
+  // to truthy inherited members. `call.name` comes from model output, so a
+  // response naming one of those walked straight past the `if (!executor)`
+  // guard and *called* it — `Object.prototype.toString(args, userId)` — and the
+  // return value was JSON-stringified back into the conversation as if it were
+  // a tool result.
+  //
+  // Nothing reachable that way leaks another student's data, so this is not the
+  // breach it first looks like. It is worse in a quieter way: it is a code path
+  // chosen by model output that the "unknown tool" check was written to make
+  // impossible, and it silently reported success for a tool that does not
+  // exist. Found by tests/aiSecurityRegression.test.js.
+  const known = Object.prototype.hasOwnProperty.call(EXECUTORS, call.name);
+  const executor = known ? EXECUTORS[call.name] : null;
+  if (typeof executor !== 'function') return { error: `Unknown tool: ${call.name}` };
 
   let args = {};
   try {

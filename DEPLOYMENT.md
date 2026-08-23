@@ -184,7 +184,7 @@ last good build. Data is unaffected (it lives in Atlas/Cloudinary).
 
 ## Post-deploy smoke test
 
-- [ ] `/api/health` OK
+- [ ] `/api/health` OK **and `errorTracking` is not `"log"`** — see below
 - [ ] Register → welcome email arrives
 - [ ] Login, create a note, upload a photo
 - [ ] Finance income+expense, resume PDF export
@@ -194,4 +194,60 @@ last good build. Data is unaffected (it lives in Atlas/Cloudinary).
 - [ ] `POST /api/beta/events` returns 201 (analytics endpoint live)
 - [ ] `GET /api/dax/memory` returns user profile (Dax Profile panel data)
 - [ ] `GET /api/admin/outcomes` returns empty array (outcome vault ready)
-- [ ] Sentry error appears in dashboard when testing (if VITE_SENTRY_DSN set)
+- [ ] `npm run verify:errors` (server) exits 0 and the event arrives — see below
+
+## Error tracking
+
+Errors from all three sources — 500s, process crashes, and frontend runtime
+errors posted to `/api/telemetry/error` — funnel through one seam,
+`server/observability/errorTracker.js`. It has three sinks and the default is
+the honest one: with nothing configured the only sink is the structured log,
+which means no alert fires and the first you hear of an outage is a student
+telling you. **A production deploy must set at least one of the two below.**
+
+Server (Render):
+
+```
+SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>   # @sentry/node is installed
+ERROR_WEBHOOK_URL=https://hooks.slack.com/services/...      # or a plain JSON POST
+```
+
+Client (Vercel) — separate project, separate DSN:
+
+```
+VITE_SENTRY_DSN=<sentry dsn>
+```
+
+The client half is not required for coverage: `reportError` always POSTs to
+`/api/telemetry/error` as well, so frontend crashes land in the server pipeline
+— same redaction, same correlation id — with no vendor at all. The DSN buys
+grouping, breadcrumbs and session replay on top.
+
+### Verify it reaches a human
+
+Reading config proves nothing: a DSN can be present and wrong, and a webhook URL
+can 404. Both failures look exactly like a quiet week. So send a real one, with
+the deployed environment's variables loaded:
+
+```bash
+cd server && npm run verify:errors
+```
+
+Exit 0 means every configured sink accepted it; exit 2 means only the log is
+active, which is the state this section exists to prevent. The script prints a
+nonce — find that string in Sentry or in the webhook's channel. If it is not
+there, error tracking is not wired, whatever the script printed.
+
+`GET /api/health` reports the same thing continuously, as an `errorTracking`
+field naming the live sinks (`sentry+log`, `webhook+log`, or bare `log`). Bare
+`log` in production means a DSN never made it into the deploy.
+
+### What is deliberately not sent
+
+An error tracker copies production failures to a third party, so it is the last
+place to be relaxed. Secret values and secret-shaped strings are redacted, a
+key deny-list (passwords, tokens, and student data such as résumés, notes and
+goals) is dropped outright, and query strings are removed rather than redacted —
+a password-reset link carries a single-use token there. Session replay is
+recorded with `maskAllText`, because the screens include the résumé editor, the
+finance tracker and the onboarding answers.

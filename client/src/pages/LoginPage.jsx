@@ -7,6 +7,7 @@ import AuthShell from '../components/layout/AuthShell';
 import BinaryRainBackground from '../components/common/BinaryRainBackground';
 import { login as loginApi, resendVerification } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
+import { signalWelcome } from '../utils/welcome';
 
 const inputClass =
   'w-full rounded-lg border border-gray-700 bg-black/40 px-3 py-2.5 font-mono text-sm text-emerald-300 placeholder:text-gray-600 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20';
@@ -50,7 +51,10 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     try {
       const res = await loginApi(data);
-      login(res.data.token);
+      const account = login(res.data.token);
+      // Raised before the navigate so the curtain is already up when the
+      // destination starts mounting — it holds until that page has loaded.
+      signalWelcome({ name: account?.name?.split(' ')[0] || '', target: next });
       navigate(next, { replace: true });
     } catch (err) {
       if (err.response?.data?.needsEmailVerification) {

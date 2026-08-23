@@ -83,8 +83,11 @@ async function createOrder({ amountPaise, receipt, notes = {} }) {
     body: JSON.stringify({
       amount: amountPaise,
       currency: 'INR',
-      // Razorpay caps the receipt at 40 characters and rejects the order
-      // outright if it is longer.
+      // Kept at 40 characters. The documented cap is 40, but the live API was
+      // measured accepting 50 in test mode (2026-08-22), so this is defensive
+      // rather than load-bearing — the receipts we build are ~22 characters and
+      // never reach it. Do not widen it on the strength of that measurement:
+      // an undocumented allowance is not a promise.
       receipt: String(receipt).slice(0, 40),
       notes,
     }),

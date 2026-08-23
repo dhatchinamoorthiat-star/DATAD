@@ -6,6 +6,7 @@ import {
   Map,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { canUseFeature } from '../../utils/tier';
 import { getReadiness } from '../../api/experience';
 import { listTasks } from '../../api/tasks';
 import { listNotes } from '../../api/notes';
@@ -30,6 +31,10 @@ import TodayFocus from '../dashboard/TodayFocus';
 import { ProgramHeader } from '../program/ProgramHeader';
 
 // ── 1. Arrival — a personalised morning briefing, not a chat window ────────
+
+// The greeting shown when no AI brief is available — because the plan does not
+// include dashboard insights, or because the call failed.
+const DEFAULT_BRIEF = "Let's see what today looks like.";
 
 function greeting(date = new Date()) {
   const h = date.getHours();
@@ -406,8 +411,25 @@ export default function LivingSurface() {
   useEffect(() => { track('dashboard_viewed'); }, []);
   const { user } = useAuth();
 
+  // The two gated calls are skipped when the plan cannot use them.
+  //
+  // Readiness needs the Placement pass and dashboard insights needs Pro, so on a
+  // free account — the default — both were a guaranteed 403 on every dashboard
+  // load. The `.catch(() => {})` in the effect meant nothing looked broken,
+  // which is why it lasted: two red rows in the network tab every time,
+  // rate-limit budget spent on a known answer, and genuine 403s hidden among
+  // routine ones.
+  //
+  // This is not access control; the server enforces that. It is not asking a
+  // question whose answer we already have.
+  const canSeeReadiness = canUseFeature(user?.tier, 'readinessScore');
+  const canSeeInsights = canUseFeature(user?.tier, 'dashboardInsights');
+
+
   const [readiness, setReadiness] = useState(null);
-  const [readinessLoading, setReadinessLoading] = useState(true);
+  // Seeded from the capability rather than cleared inside the effect: a tile
+  // that is never going to load should not start in a loading state.
+  const [readinessLoading, setReadinessLoading] = useState(canSeeReadiness);
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [notes, setNotes] = useState([]);
@@ -416,15 +438,17 @@ export default function LivingSurface() {
   const [resume, setResume] = useState(null);
   const [internships, setInternships] = useState([]);
   const [internshipsLoading, setInternshipsLoading] = useState(true);
-  const [brief, setBrief] = useState('');
-  const [briefLoading, setBriefLoading] = useState(true);
+  const [brief, setBrief] = useState(canSeeInsights ? '' : DEFAULT_BRIEF);
+  const [briefLoading, setBriefLoading] = useState(canSeeInsights);
   const [roadmapProgress, setRoadmapProgress] = useState(null);
 
   useEffect(() => {
-    getReadiness()
-      .then((res) => setReadiness(typeof res.data === 'object' ? res.data?.score : res.data))
-      .catch(() => {})
-      .finally(() => setReadinessLoading(false));
+    if (canSeeReadiness) {
+      getReadiness()
+        .then((res) => setReadiness(typeof res.data === 'object' ? res.data?.score : res.data))
+        .catch(() => {})
+        .finally(() => setReadinessLoading(false));
+    }
 
     listTasks()
       .then((res) => setTasks(res.data?.data || res.data || []))
@@ -441,18 +465,20 @@ export default function LivingSurface() {
       .catch(() => {})
       .finally(() => setInternshipsLoading(false));
 
-    dashboardInsights()
-      .then((res) => {
-        const d = res.data || {};
-        setBrief(d.nextBestAction || d.overallAssessment || "Let's see what today looks like.");
-      })
-      .catch(() => setBrief("Let's see what today looks like."))
-      .finally(() => setBriefLoading(false));
+    if (canSeeInsights) {
+      dashboardInsights()
+        .then((res) => {
+          const d = res.data || {};
+          setBrief(d.nextBestAction || d.overallAssessment || DEFAULT_BRIEF);
+        })
+        .catch(() => setBrief(DEFAULT_BRIEF))
+        .finally(() => setBriefLoading(false));
+    }
 
     getRoadmapProgress()
       .then((res) => setRoadmapProgress(res.data))
       .catch(() => {});
-  }, []);
+  }, [canSeeReadiness, canSeeInsights]);
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const streak = caseData?.streak || 0;

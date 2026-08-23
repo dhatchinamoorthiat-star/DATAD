@@ -16,6 +16,8 @@ import AppShell from './components/layout/AppShell';
 import WorkspaceLayout from './components/layout/WorkspaceLayout';
 import Loader from './components/common/Loader';
 import SectionTransition from './components/common/SectionTransition';
+import WelcomeCurtain from './components/common/WelcomeCurtain';
+import NetworkTexture from './components/common/NetworkTexture';
 import RouteBeacon from './components/common/RouteBeacon';
 import ErrorBoundary from './components/common/ErrorBoundary';
 
@@ -152,9 +154,16 @@ export default function App() {
           <NotificationProvider>
             <ToastProvider>
           <BrowserRouter>
+            {/* One element for the lifetime of the app rather than one per
+                route: it is static, so a per-page mount would buy nothing and
+                cost a re-render of ~130 SVG nodes on every navigation. Sits at
+                -z-10 over body's background and under all content; nothing
+                needed a z-index to stay above it. */}
+            <NetworkTexture />
             <OfflineBanner />
             <UpdateBanner />
             <SectionTransition />
+            <WelcomeCurtain />
             <Toaster
               position="top-right"
               gutter={12}

@@ -1,362 +1,649 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Sparkles, Compass, Target, Zap, Trophy, TrendingUp,
-  ShieldCheck, Cpu, Brain, Heart, ArrowRight, Database,
-  BarChart2, Eye, Lightbulb, Globe,
-} from 'lucide-react';
+import { useCallback, useMemo } from 'react';
+import { motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import {
+  Banknote, Brain, BookOpen, Briefcase, CalendarRange, Users,
+} from 'lucide-react';
+import { Page } from '../components/common/motion';
+import {
+  AmbientLight,
+  BuildSpine,
+  ModuleStrip,
+  RefusalList,
+  Reveal,
+  SpecPlate,
+  CREATOR,
+  CREATOR_VARS,
+  IDENTITY,
+  useChapterSpy,
+} from '../components/creator';
+import { AboutRail, AboutBar, AcronymLadder, ContrastLedger, MemoryFigure } from '../components/about';
 import { MAKER } from '../utils/maker';
 
-/* ── scroll-reveal hook ── */
-function useReveal(threshold = 0.15) {
-  const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [threshold]);
-  return [ref, visible];
-}
+// ── /about ─────────────────────────────────────────────────────────────────
+//
+// The About page, rebuilt around the question it was never actually answering.
+//
+// ── What changed, and why ──────────────────────────────────────────────────
+//
+// The page this replaces opened with a three-stage animated matrix of the five
+// DATAD letters — cards flying in, dashed connectors drawing themselves,
+// `animate-ping` dots, and a replay button so you could watch it again. Then
+// five statistic cards in five different hues, three gradient "pillar" cards, a
+// gradient-filled headline, and a timeline. It was competent and it was a
+// template, and it never once said why a student should use this instead of the
+// assistant already open in their other tab.
+//
+// That is the question this version is built to answer, and answering it is now
+// possible in a way it was not six months ago: the memory layer shipped. Daily
+// profile snapshots, trends computed over them, a ledger of Dax's own forecasts
+// resolved against reality, and k-anonymous cohort aggregates. Those are
+// structural advantages — a general model cannot have them, because it does not
+// hold the data — so chapter 04 states them as mechanics rather than as
+// adjectives, and chapter 05 shows the actual shape of the data.
+//
+// ── Where it sits relative to /creator ─────────────────────────────────────
+//
+// Same publication. Same `IDENTITY.ink` canvas, same rail with its 26px
+// numbered markers, same numeral-and-rule chapter openers, same CSS-first
+// entrance discipline, same single ember accent rationed to almost nothing.
+// /creator is one person's account of building it; this is the account of what
+// was built. A reader should be able to move between them without noticing a
+// seam, which is why every shared part is imported from components/creator
+// rather than reimplemented a shade off.
+//
+// Deliberately absent, for the reason the creator page gives: gradient-filled
+// headlines, `font-black`, scale-on-hover cards, coloured blur blobs, pill
+// eyebrows in six hues, and the 3-up value grid.
+//
+// ── Copy that was dropped rather than restyled ─────────────────────────────
+//
+// The old "why data matters" section carried four statistics — "1 in 3 career
+// decisions are data-driven", "₹8–30L salary premium for data-literate
+// professionals", "90% of all data was created in the last 2 years", "2.5
+// quintillion bytes a day" — with no source on any of them, and the middle two
+// are not checkable claims at all. A page whose central argument is "this
+// product does not overstate what it knows" cannot open with four unsourced
+// numbers. The argument survives in chapter 02; the numbers did not.
+//
+// Nothing on this page is fetched, so there are no loading or error states to
+// design. Every figure below is either checkable in the repository or is
+// explicitly marked as not yet finished.
 
-function Reveal({ children, delay = 0, className = '' }) {
-  const [ref, visible] = useReveal();
+const CHAPTERS = [
+  { id: 'premise', number: '01', label: 'The premise' },
+  { id: 'data', number: '02', label: 'Why data' },
+  { id: 'name', number: '03', label: 'The name' },
+  { id: 'difference', number: '04', label: 'Why not a chatbot' },
+  { id: 'memory', number: '05', label: 'What it remembers' },
+  { id: 'system', number: '06', label: 'The system' },
+  { id: 'refusals', number: '07', label: 'Refusals' },
+  { id: 'record', number: '08', label: 'The record' },
+];
+
+const SPEC = [
+  { label: 'What it is', value: 'A student operating system' },
+  { label: 'Built for', value: 'Indian students, any field' },
+  { label: 'Assistant', value: 'Dax — one identity, every surface' },
+  { label: 'Surfaces', value: 'Six, one shared memory' },
+  { label: 'Business model', value: 'Subscription. Never ads.' },
+  { label: 'Your data', value: 'Yours', accent: true },
+];
+
+// Discover · Aspire · Transform · Achieve · Develop.
+const ACRONYM = [
+  {
+    letter: 'D',
+    word: 'Discover',
+    body: 'Find the thing you did not know to look for — a company, a skill gap, a case you would have skipped. Most of what changes a placement season is something nobody told you to search for.',
+  },
+  {
+    letter: 'A',
+    word: 'Aspire',
+    body: 'Name the target before the season names it for you. Roles, companies, a readiness number you can actually move — written down, where they can be argued with.',
+  },
+  {
+    letter: 'T',
+    word: 'Transform',
+    body: 'Turn what you have read into something you can do. Cases solved, stories written, a resume that survives a screen. This is the letter the platform spends most of its time on.',
+  },
+  {
+    letter: 'A',
+    word: 'Achieve',
+    body: 'The offer, the milestone, the semester you did not lose. Recorded, because the version of this you remember in an interview is never the version that happened.',
+  },
+  {
+    letter: 'D',
+    word: 'Develop',
+    body: 'Keep going after the offer. The habits that got you through the drive are the ones that decide the two years after it.',
+  },
+];
+
+// The comparison. Every right-hand claim maps to a mechanism in the repository;
+// the two that are not finished say so in their own `note` rather than being
+// quietly left in as though they were.
+const CONTRAST = [
+  {
+    subject: 'Memory',
+    generic:
+      'Starts from nothing each conversation, or remembers what you thought to tell it. It has never seen your task list, because your task list is not in it.',
+    datad:
+      'Reads your planner, notes, resume, applications, study log and stress signals before it answers — then compares today against a daily record of the last fortnight.',
+    note: 'Nine collectors on every request; one snapshot per student per day.',
+  },
+  {
+    subject: 'Evidence',
+    generic:
+      'Fluent about you in general terms. "You seem to have lost some momentum lately" is a sentence it can produce with no information at all.',
+    datad:
+      'Required to name the number behind any claim about your trajectory — "your consistency is down 34 points since the 9th" — and forbidden from asserting a direction when it has no history to read.',
+    note: 'Written into the assistant’s own instructions, not left to the model.',
+  },
+  {
+    subject: 'Accountability',
+    generic:
+      'Makes a forecast, and the conversation moves on. Nothing records what was predicted, so nothing can ever contradict it.',
+    datad:
+      'Forward-looking claims are written to a ledger with a date, checked against what actually happened, and shown to you with misses displayed exactly as prominently as hits.',
+    note: 'Currently records the forecasts it makes about placement readiness. Claims made in open chat are not captured yet.',
+  },
+  {
+    subject: 'Peers',
+    generic:
+      'Knows what students do in general, from the public internet. It has never met your batch.',
+    datad:
+      'Aggregates over students in your batch and college — never a name, never an individual, and nothing at all for a group smaller than five.',
+    note: 'Computed nightly and privacy-gated today; not yet quoted inside Dax’s answers.',
+  },
+  {
+    subject: 'Initiative',
+    generic:
+      'Waits to be opened. It cannot notice that you are eleven days from a drive with three overdue tasks, because it is not running when you are not typing.',
+    datad:
+      'Sends one message when three things line up at once — the drive is close, work is slipping, and the trend confirms it. Once a day, at most, and only on a real threshold.',
+    note: 'One nudge per student per day, hard-capped independently of the thresholds.',
+  },
+  {
+    subject: 'Incentive',
+    generic:
+      'Free at the point of use, funded somewhere you cannot see, and improving on data you supplied.',
+    datad:
+      'Paid for by the people using it. No ads, no data sale, no third-party trackers, and export is one click.',
+  },
+];
+
+const MODULES = [
+  { icon: BookOpen, title: 'Notes', body: 'Rich text, tagging, search and a structure that survives a whole semester of it.' },
+  { icon: CalendarRange, title: 'Planner', body: 'Weekly planning that understands semester rhythm — not a to-do list with dates on it.' },
+  { icon: Banknote, title: 'Finance', body: 'Expenses, budgets, and the ROI maths nobody teaches you before you sign the loan.' },
+  { icon: Briefcase, title: 'Career', body: 'Company prep, placement drives, applications and interview tracking in one place.' },
+  { icon: Users, title: 'Community', body: 'Announcements, events, skill exchange, and the batch memory that usually lives in a chat group.' },
+  { icon: Brain, title: 'Dax', body: 'The layer underneath the rest — it reads context across every surface, and suggests rather than interrupts.' },
+];
+
+const REFUSALS = [
+  {
+    term: 'Ads.',
+    body: 'Attention is the one thing a student has less of than money. It is not inventory, and it will not be sold from inside this product.',
+    note: 'Never, at any tier',
+  },
+  {
+    term: 'Data selling.',
+    body: 'Notes, money and journal entries are the raw material of a life. They stay in the account they were written in, and export is one click away.',
+    note: 'Your data, your account',
+  },
+  {
+    term: 'Flattery.',
+    body: 'An assistant that only ever agrees with you is a very expensive mirror. Dax is built to show you the number even when the number is not the one you wanted.',
+    note: 'Misses shown like hits',
+  },
+];
+
+const TIMELINE = [
+  {
+    year: '2024',
+    title: 'Notes and Planner',
+    body: 'The first two tools, built for one batch during one semester. Classmates started using them without being asked, which is the only product signal worth trusting.',
+  },
+  {
+    year: '2025',
+    title: 'Finance and Resume',
+    body: 'Expense tracking, budgets, and an ATS-ready resume builder — written in the weeks before placement season, because that is when it became obvious they were missing.',
+  },
+  {
+    year: '2025',
+    title: 'Career Hub and Dax',
+    body: 'Company prep, a readiness score, daily cases, and the first version of an assistant that could read across all of it instead of answering in a vacuum.',
+  },
+  {
+    year: '2026',
+    title: 'The memory layer',
+    body: 'Dax stopped being amnesiac. Daily snapshots of every active student, trends computed over them, a ledger that checks its own forecasts, and cohort aggregates that cannot describe an individual.',
+  },
+  {
+    year: 'Now',
+    title: 'Still building',
+    body: 'Chat-sourced predictions, cohort insight inside answers, and the next thing a batch turns out to need. The list did not stop.',
+    open: true,
+  },
+];
+
+// Section frame — the same rhythm /creator uses: a numeral, a word, a rule, a
+// statement, a lede. Kept local in both places because it is a rhythm rather
+// than a component, and the two pages are allowed to diverge in what sits under
+// the lede without negotiating a shared prop.
+function Chapter({ id, index, kicker, title, lede, children }) {
   return (
-    <div
-      ref={ref}
-      className={`transition-all duration-700 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
-      style={{ transitionDelay: `${delay}ms` }}
+    <section
+      id={id}
+      className="scroll-mt-24 border-t px-6 py-20 sm:px-10 lg:px-14 lg:py-28 xl:px-20"
+      style={{ borderColor: IDENTITY.inkLine }}
+      aria-labelledby={`${id}-title`}
     >
-      {children}
-    </div>
+      <Reveal className="mx-auto w-full max-w-[62rem]">
+        <div className="flex items-baseline gap-4">
+          <span
+            className="text-[11px] font-semibold tabular-nums tracking-[0.2em]"
+            style={{ color: IDENTITY.blue }}
+          >
+            {index}
+          </span>
+          <span
+            className="text-[10.5px] font-semibold uppercase tracking-[0.2em]"
+            style={{ color: '#68717F' }}
+          >
+            {kicker}
+          </span>
+          <span className="h-px flex-1" style={{ background: IDENTITY.inkLine }} aria-hidden="true" />
+        </div>
+
+        <h2
+          id={`${id}-title`}
+          className="mt-6 max-w-[22ch] text-[30px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[38px] lg:text-[42px]"
+          style={{ color: IDENTITY.paper }}
+        >
+          {title}
+        </h2>
+
+        {lede && (
+          <p className="mt-5 max-w-[58ch] text-[15.5px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+            {lede}
+          </p>
+        )}
+      </Reveal>
+
+      <div className="mx-auto mt-12 w-full max-w-[62rem] lg:mt-16">{children}</div>
+    </section>
   );
 }
 
-/* ── DATA story facts ── */
-const dataFacts = [
-  { icon: Database, color: 'text-cyan-400', bg: 'bg-cyan-500/10 border-cyan-500/30', stat: '2.5 Quintillion', label: 'bytes created every day', desc: 'Every photo you take, every message you send, every step counted — the world never stops generating data.' },
-  { icon: BarChart2, color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/30', stat: '90%', label: 'of all data was created in the last 2 years', desc: 'The information age is accelerating. What you learn today is already being reshaped by tomorrow\'s data.' },
-  { icon: Eye, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/30', stat: '1 in 3', label: 'career decisions are data-driven', desc: 'Companies that hire you, the roles they offer, the salaries they quote — all shaped by patterns in data.' },
-  { icon: Lightbulb, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/30', stat: '₹8–30L', label: 'salary premium for data-literate professionals', desc: 'Reading, understanding, and communicating data is the single biggest skill premium in the modern workforce.' },
-  { icon: Globe, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30', stat: '100%', label: 'of your decisions are data', desc: 'Every choice you make — what to study, who to network with, which company to target — is a decision that improves with better data.' },
-];
-
-/* ── DATAD acronym ── */
-const letters = [
-  { char: 'D', color: 'text-cyan-400', shadow: 'drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]', topNode: { id: 'discover', title: 'D — Discover', subtitle: 'Uncover Insight', desc: 'Explore knowledge, opportunities, and yourself.', icon: Compass, border: 'border-cyan-500/50', bg: 'bg-cyan-500/10 text-cyan-400' } },
-  { char: 'A', color: 'text-cyan-300', shadow: 'drop-shadow-[0_0_12px_rgba(103,232,249,0.5)]', bottomNode: { id: 'aspire', title: 'A — Aspire', subtitle: 'Set Purpose', desc: 'Dream bigger and set meaningful goals.', icon: Target, border: 'border-blue-500/50', bg: 'bg-blue-500/10 text-blue-400' } },
-  { char: 'T', color: 'text-purple-400', shadow: 'drop-shadow-[0_0_14px_rgba(192,132,252,0.6)]', topNode: { id: 'transform', title: 'T — Transform', subtitle: 'Apply Knowledge', desc: 'Convert learning into practical skills.', icon: Zap, border: 'border-purple-500/50', bg: 'bg-purple-500/10 text-purple-400' } },
-  { char: 'A', color: 'text-amber-300', shadow: 'drop-shadow-[0_0_12px_rgba(252,211,77,0.5)]', bottomNode: { id: 'achieve', title: 'A — Achieve', subtitle: 'Realise Success', desc: 'Reach academic and career milestones.', icon: Trophy, border: 'border-amber-500/50', bg: 'bg-amber-500/10 text-amber-400' } },
-  { char: 'D', color: 'text-amber-400', shadow: 'drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]', topNode: { id: 'develop', title: 'D — Develop', subtitle: 'Continuous Growth', desc: 'Keep growing — personally and professionally.', icon: TrendingUp, border: 'border-rose-500/50', bg: 'bg-rose-500/10 text-rose-400' } },
-];
-
-const pillars = [
-  { icon: Cpu, title: 'Engineered for Clarity', tagline: 'Architecture Meets Intuition', description: 'DATAD is designed as an external digital brain. Real-time data, fluid UX, and structured milestone tracking turn goal-setting into daily action — without adding noise.', gradient: 'from-cyan-500/10 via-slate-900 to-slate-900', border: 'border-cyan-500/30' },
-  { icon: Brain, title: 'Psychologically Balanced', tagline: 'Cognitive Recovery by Design', description: 'Sustainable achievement requires mental restoration. DATAD embeds reflection, nostalgia, and recovery tools alongside productivity systems — because burnout is not a feature.', gradient: 'from-purple-500/10 via-slate-900 to-slate-900', border: 'border-purple-500/30' },
-  { icon: ShieldCheck, title: 'Your Data Stays Yours', tagline: 'Personal Data Sovereignty', description: 'No ads. No tracking. No third parties. Your notes, goals, finances, and reflections belong entirely to you. DATAD does not monetise your personal growth.', gradient: 'from-amber-500/10 via-slate-900 to-slate-900', border: 'border-amber-500/30' },
-];
-
-const milestones = [
-  { when: 'Late 2024', label: 'Notes & Planner', detail: 'The first tools — a shared note system and personal planner to bring peers together academically.' },
-  { when: 'Early 2025', label: 'Finance & Resume', detail: 'Expense tracking, budget visualisation, and an ATS-ready resume builder built around placement season.' },
-  { when: 'Mid 2025', label: 'Career Hub & Intelligence', detail: 'Company prep, placement readiness score, daily case studies, and a live market + news briefing.' },
-  { when: 'Mid 2025', label: 'Community & Journal', detail: 'Discussions, announcements, nostalgia archive, and a private daily journal for reflection.' },
-  { when: 'Now', label: 'v1.0 — Public Launch', detail: 'A complete student operating system: study, career, community, and personal tools in one place.' },
-];
-
 export default function AboutPage() {
-  const [activeNode, setActiveNode] = useState(null);
-  const [columnStages, setColumnStages] = useState([0, 0, 0, 0, 0]);
+  const reduce = useReducedMotion();
+  const chapterIds = useMemo(() => CHAPTERS.map((c) => c.id), []);
+  const active = useChapterSpy(chapterIds);
 
-  const startReveal = () => {
-    setColumnStages([0, 0, 0, 0, 0]);
-    letters.forEach((_, i) => {
-      const base = i * 400;
-      setTimeout(() => setColumnStages((p) => { const n = [...p]; n[i] = 1; return n; }), base + 80);
-      setTimeout(() => setColumnStages((p) => { const n = [...p]; n[i] = 2; return n; }), base + 240);
-      setTimeout(() => setColumnStages((p) => { const n = [...p]; n[i] = 3; return n; }), base + 400);
-    });
-  };
+  const { scrollYProgress } = useScroll();
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 });
 
-  // Kicks off a one-shot timed reveal animation on mount.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { startReveal(); }, []);
+  const jump = useCallback(
+    (id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      el.setAttribute('tabindex', '-1');
+      el.focus({ preventScroll: true });
+    },
+    [reduce]
+  );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 relative overflow-hidden">
+    <Page bare className="min-h-screen">
+      <div
+        className="relative min-h-screen"
+        style={{ ...CREATOR_VARS, background: IDENTITY.ink, color: IDENTITY.paper }}
+      >
+        <motion.div
+          className="fixed inset-x-0 top-0 z-40 h-px origin-left"
+          style={{
+            scaleX: reduce ? 1 : progress,
+            background: `linear-gradient(to right, ${IDENTITY.violet}, ${IDENTITY.blue}, ${IDENTITY.blueSoft})`,
+          }}
+          aria-hidden="true"
+        />
+        <AmbientLight />
 
-      {/* Dot matrix background */}
-      <div className="absolute inset-0 z-0 opacity-25 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, rgba(168,85,247,0.4) 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }} />
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-purple-600/12 blur-[160px] pointer-events-none rounded-full" />
+        <AboutBar />
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
-        <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white text-sm transition-colors">
-          <ArrowRight className="w-4 h-4 rotate-180" /> Back to DATAD
-        </Link>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" /> The Story Behind DATAD
-        </div>
-        <button onClick={startReveal} title="Replay" className="w-8 h-8 rounded-full bg-slate-900/80 border border-slate-800 hover:border-purple-500/50 text-slate-400 hover:text-white transition-all flex items-center justify-center">
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
-          </svg>
-        </button>
-      </header>
+        <div className="relative z-10 flex">
+          <AboutRail chapters={CHAPTERS} active={active} onJump={jump} />
 
-      {/* ── DATAD Matrix ── */}
-      <main className="relative z-10 max-w-6xl mx-auto w-full min-h-[560px] flex flex-col items-center justify-center px-4 my-4">
-        <div className="w-full grid grid-cols-5 gap-2 sm:gap-4 mb-6 z-20">
-          {letters.map((item, idx) => {
-            const revealed = columnStages[idx] >= 3;
-            return (
-              <div key={`top-${idx}`} className="flex justify-center">
-                {item.topNode ? (
-                  <button type="button" onClick={() => revealed && setActiveNode(activeNode?.id === item.topNode.id ? null : item.topNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.topNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={`p-1.5 rounded-lg ${item.topNode.bg}`}><item.topNode.icon className="w-3.5 h-3.5" /></div>
-                      <span className="text-[11px] font-bold text-white truncate">{item.topNode.title}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 line-clamp-2">{item.topNode.desc}</p>
+          <main className="min-w-0 flex-1">
+            {/* ── 01 The premise ────────────────────────────────────────── */}
+            <section
+              id="premise"
+              className="relative flex min-h-[82vh] scroll-mt-24 items-center px-6 py-20 sm:px-10 lg:min-h-screen lg:px-14 lg:py-24 xl:px-20"
+              aria-labelledby="premise-title"
+            >
+              <div className="relative z-10 w-full max-w-[52rem]">
+                <p
+                  className="identity-rise text-[11px] font-semibold uppercase tracking-[0.22em]"
+                  style={{ '--rise-delay': '0.05s', color: IDENTITY.blueSoft }}
+                >
+                  About DATAD
+                </p>
+
+                {/* Three lines, two paper and one blue — the shape /register and
+                    /creator both open with, so all three surfaces start in the
+                    same voice before they diverge. */}
+                <h1
+                  id="premise-title"
+                  className="mt-6 text-[clamp(2.2rem,6.2vw,4.2rem)] font-semibold leading-[1.05] tracking-[-0.035em]"
+                >
+                  <span className="identity-rise block" style={{ '--rise-delay': '0.12s', color: IDENTITY.paper }}>
+                    Every assistant
+                  </span>
+                  <span className="identity-rise block" style={{ '--rise-delay': '0.24s', color: IDENTITY.paper }}>
+                    forgets you.
+                  </span>
+                  <span className="identity-rise block" style={{ '--rise-delay': '0.36s', color: IDENTITY.blueSoft }}>
+                    This one keeps the receipts.
+                  </span>
+                </h1>
+
+                <p
+                  className="identity-rise mt-8 max-w-[56ch] text-[16px] leading-relaxed"
+                  style={{ '--rise-delay': '0.48s', color: IDENTITY.muted }}
+                >
+                  DATAD is a student operating system: notes, planner, finances,
+                  career prep and community in one place, with an assistant
+                  called Dax underneath all of it. The difference is not that Dax
+                  is cleverer than the model in your other tab. It is that Dax
+                  has been paying attention to your semester, keeps a dated
+                  record of it, and is required to show you that record before it
+                  claims anything about you.
+                </p>
+
+                <div
+                  className="identity-rise mt-10 flex flex-wrap items-center gap-4"
+                  style={{ '--rise-delay': '0.58s' }}
+                >
+                  <Link
+                    to="/register"
+                    className="creator-focus group inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold transition-transform duration-200"
+                    style={{ background: IDENTITY.blue, color: '#050810' }}
+                  >
+                    Start using it
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => jump('difference')}
+                    className="creator-focus text-[13.5px] font-medium underline-offset-4 transition-colors duration-200 hover:underline"
+                    style={{ color: IDENTITY.blueSoft }}
+                  >
+                    Why not just use a chatbot?
                   </button>
-                ) : <div className="h-12" />}
+                </div>
+
+                <SpecPlate
+                  rows={SPEC}
+                  className="identity-rise mt-14 max-w-[46rem]"
+                  style={{ '--rise-delay': '0.68s' }}
+                />
               </div>
-            );
-          })}
-        </div>
+            </section>
 
-        <div className="relative w-full py-8 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-            {[
-              { x: '10%', dir: 'up', color: 'rgba(34,211,238,0.9)', idx: 0 },
-              { x: '30%', dir: 'down', color: 'rgba(103,232,249,0.9)', idx: 1 },
-              { x: '50%', dir: 'up', color: 'rgba(192,132,252,1)', idx: 2 },
-              { x: '70%', dir: 'down', color: 'rgba(252,211,77,0.9)', idx: 3 },
-              { x: '90%', dir: 'up', color: 'rgba(251,191,36,0.9)', idx: 4 },
-            ].map(({ x, dir, color, idx }) => (
-              <line key={idx} x1={x} y1="50%" x2={x} y2={dir === 'up' ? '0%' : '100%' } stroke={color} strokeWidth="3" strokeDasharray="4 10" strokeLinecap="round"
-                style={{ strokeDashoffset: columnStages[idx] >= 2 ? '0' : '200', opacity: columnStages[idx] >= 2 ? 1 : 0, transition: 'stroke-dashoffset 1.1s cubic-bezier(0.4,0,0.2,1), opacity 0.3s' }} />
-            ))}
-          </svg>
+            {/* ── 02 Why data ───────────────────────────────────────────── */}
+            <Chapter
+              id="data"
+              index="02"
+              kicker="Why data"
+              title="Your semester is a dataset nobody is keeping."
+              lede="Two years, and a few hundred decisions: which electives, which companies, which skills, which weekends. Each one is a fact about you. Almost all of them evaporate within a week of happening."
+            >
+              <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-16">
+                <Reveal>
+                  <p className="max-w-[56ch] text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                    This matters in one specific room. In an interview you are
+                    asked to account for two years in about forty minutes, and
+                    the honest answer for most students is that they cannot
+                    remember. Not because nothing happened — because nothing was
+                    written down while it was happening.
+                  </p>
+                  <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                    The students who walk in confident are rarely the ones who
+                    did more. They are the ones who can point at what they did.
+                    That is the entire premise: a record is not admin overhead,
+                    it is the raw material of every claim you will make about
+                    yourself.
+                  </p>
+                  <p className="mt-5 max-w-[56ch] text-[15px] leading-relaxed" style={{ color: IDENTITY.paper }}>
+                    DATAD is built to keep that record as a side effect of using
+                    it, rather than as a chore you are nagged into.
+                  </p>
+                </Reveal>
 
-          <div className="relative z-10 grid grid-cols-5 gap-2 sm:gap-4 w-full text-center">
-            {letters.map((item, idx) => {
-              const visible = columnStages[idx] >= 1;
-              return (
-                <div key={idx} className="flex flex-col items-center justify-center">
-                  {item.topNode ? <div className={`w-2.5 h-2.5 rounded-full bg-purple-400 mb-2 transition-all duration-300 ${columnStages[idx] >= 2 ? 'scale-100 opacity-100 animate-ping' : 'scale-0 opacity-0'}`} /> : <div className="h-4" />}
-                  <div className={`p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 backdrop-blur-xl shadow-2xl transition-all duration-500 ${visible ? 'scale-100 opacity-100 translate-y-0' : 'scale-50 opacity-0 translate-y-4'}`}>
-                    <span className={`text-4xl sm:text-7xl font-black ${item.color} ${item.shadow}`}>{item.char}</span>
+                <Reveal delay={120}>
+                  <blockquote
+                    className="border-l pl-6 text-[17px] leading-[1.55] sm:text-[19px]"
+                    style={{ borderColor: IDENTITY.blue, color: IDENTITY.paper }}
+                  >
+                    Data does not make the decision for you. It gives your
+                    instinct something real to argue with.
+                  </blockquote>
+                  <p className="mt-6 max-w-[42ch] text-[13.5px] leading-relaxed" style={{ color: '#68717F' }}>
+                    Which is also why the name starts where it starts — DATAD
+                    opens with data, and that was never a coincidence.
+                  </p>
+                </Reveal>
+              </div>
+            </Chapter>
+
+            {/* ── 03 The name ───────────────────────────────────────────── */}
+            <Chapter
+              id="name"
+              index="03"
+              kicker="The name"
+              title="Five letters, and one set of initials."
+              lede="DATAD is an acronym for the arc it was built to support, and it carries the initials of the student who built it. Both readings are intentional."
+            >
+              <AcronymLadder steps={ACRONYM} />
+
+              <Reveal delay={120} className="mt-14 max-w-[62ch]">
+                <p className="text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                  The letters <span style={{ color: IDENTITY.paper }}>T</span>,{' '}
+                  <span style={{ color: IDENTITY.paper }}>A</span> and{' '}
+                  <span style={{ color: IDENTITY.paper }}>D</span> sit at the
+                  centre of DA<span style={{ color: IDENTITY.blueSoft }}>TAD</span>, and they are the initials of{' '}
+                  <Link to="/creator" className="creator-focus underline-offset-4 hover:underline" style={{ color: IDENTITY.blueSoft }}>
+                    {MAKER.legalName}
+                  </Link>
+                  , who built it as a student, for his own batch, while the
+                  problems were still happening.
+                </p>
+                <p className="mt-5 text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                  Not a tool someone made for students. A tool a student made,
+                  with them, for them.
+                </p>
+              </Reveal>
+            </Chapter>
+
+            {/* ── 04 Why not a chatbot ──────────────────────────────────── */}
+            <Chapter
+              id="difference"
+              index="04"
+              kicker="Why not a chatbot"
+              title="The model is not the advantage. The memory is."
+              lede="You can already ask a general assistant to explain a case, rewrite a bullet, or plan a week — and it will do all three well. What it cannot do is any of the six things below, and none of them are a matter of it being a smaller model. They are a matter of where the data lives."
+            >
+              <ContrastLedger rows={CONTRAST} />
+
+              <Reveal delay={100} className="mt-12 max-w-[62ch]">
+                <p className="text-[14px] leading-relaxed" style={{ color: '#68717F' }}>
+                  Two rows above are marked as unfinished, and they are marked
+                  because a page arguing that this product does not overstate
+                  itself would be a strange place to start overstating. What is
+                  built is built; what is half-built says so.
+                </p>
+              </Reveal>
+            </Chapter>
+
+            {/* ── 05 What it remembers ──────────────────────────────────── */}
+            <Chapter
+              id="memory"
+              index="05"
+              kicker="What it remembers"
+              title="One reading a day, and the line it makes."
+              lede="Once a day, DATAD writes down where you actually are: streak, consistency, overdue work, applications, resume completeness, stress signals, placement readiness. Not a summary of a conversation — a measurement, dated, kept."
+            >
+              <Reveal>
+                <MemoryFigure />
+              </Reveal>
+
+              <div className="mt-16 grid gap-10 sm:grid-cols-3 sm:gap-8">
+                {[
+                  {
+                    head: 'It cannot be backfilled.',
+                    body: 'A day that is not recorded is gone. There is no reconstructing last Tuesday from today, and nothing here invents one — which is why the record starts the day you join and not before.',
+                  },
+                  {
+                    head: 'It checks its own forecasts.',
+                    body: 'When Dax says your readiness should reach a number by a date, that claim is stored with the date. On the date it is compared against the reading, and marked hit, miss, or — when no reading exists — unresolvable.',
+                  },
+                  {
+                    head: 'It shows the misses.',
+                    body: 'Both sides of the record are visible to you, in one list, unranked. An assistant that says "I predicted five weeks and it took eight" is more useful than one that only remembers being right.',
+                  },
+                ].map((item, i) => (
+                  <Reveal key={item.head} delay={i * 100}>
+                    <h3 className="text-[15.5px] font-semibold tracking-[-0.01em]" style={{ color: IDENTITY.paper }}>
+                      {item.head}
+                    </h3>
+                    <p className="mt-3 max-w-[38ch] text-[13.5px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                      {item.body}
+                    </p>
+                  </Reveal>
+                ))}
+              </div>
+
+              {/* The three rules above are the ones most easily quietly dropped
+                  in a refactor — they are all restraint, and restraint does not
+                  announce itself when it breaks. Saying they are held by tests
+                  belongs here and only here, stated once and without a number:
+                  a page that quotes its own coverage figure is arguing for
+                  itself rather than describing itself. */}
+              <Reveal delay={140} className="mt-12">
+                <p className="max-w-[62ch] text-[14px] leading-relaxed" style={{ color: '#68717F' }}>
+                  Each of those three is enforced in code and held there by a
+                  test that fails if it stops being true.
+                </p>
+              </Reveal>
+
+              <Reveal delay={120} className="mt-16">
+                <div
+                  className="rounded-2xl border p-7 sm:p-9"
+                  style={{ borderColor: IDENTITY.inkLine, background: CREATOR.plate }}
+                >
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.18em]" style={{ color: '#68717F' }}>
+                    And what it will not remember
+                  </p>
+                  <p className="mt-4 max-w-[62ch] text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                    Nothing about another student. Comparisons against your batch
+                    are computed as aggregates over five people or more, and a
+                    group smaller than that returns nothing at all — not a
+                    smaller sample, not a wider bucket quietly substituted.
+                    Nobody&rsquo;s individual record is ever readable through
+                    yours, and that rule is enforced where the numbers are
+                    written, not where they are displayed.
+                  </p>
+                </div>
+              </Reveal>
+            </Chapter>
+
+            {/* ── 06 The system ─────────────────────────────────────────── */}
+            <Chapter
+              id="system"
+              index="06"
+              kicker="The system"
+              title="Six surfaces that share one memory."
+              lede="The reason Dax can see your week at all is that these are not six apps with a shared login. They are one system, and every one of them writes into the same record."
+            >
+              <ModuleStrip modules={MODULES} />
+            </Chapter>
+
+            {/* ── 07 Refusals ───────────────────────────────────────────── */}
+            <Chapter
+              id="refusals"
+              index="07"
+              kicker="Refusals"
+              title="Three things this will not become."
+              lede="A product that holds a student's notes, money and reflections has to be specific about what it will never do with them. Specific, and short enough to hold anyone to."
+            >
+              <RefusalList items={REFUSALS} />
+            </Chapter>
+
+            {/* ── 08 The record ─────────────────────────────────────────── */}
+            <Chapter
+              id="record"
+              index="08"
+              kicker="The record"
+              title="Built one semester at a time."
+              lede="Each phase answered something a batch was actually struggling with that term. Nothing here was planned two years out."
+            >
+              <BuildSpine entries={TIMELINE} />
+
+              <Reveal delay={140} className="mt-20">
+                <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:gap-16">
+                  <div>
+                    <h3
+                      className="text-[28px] font-semibold leading-[1.12] tracking-[-0.03em] sm:text-[34px]"
+                      style={{ color: IDENTITY.paper }}
+                    >
+                      Bring your own semester.
+                      <br />
+                      <span style={{ color: IDENTITY.blueSoft }}>It starts recording on day one.</span>
+                    </h3>
+                    <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed" style={{ color: IDENTITY.muted }}>
+                      There is no history to import and nothing to migrate. The
+                      only thing that cannot be recovered is the time before you
+                      start, which is the honest argument for starting now rather
+                      than a marketing one.
+                    </p>
+
+                    <div className="mt-9 flex flex-wrap items-center gap-5">
+                      <Link
+                        to="/register"
+                        className="creator-focus inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[13.5px] font-semibold"
+                        style={{ background: IDENTITY.blue, color: '#050810' }}
+                      >
+                        Create an account
+                      </Link>
+                      <Link
+                        to="/creator"
+                        className="creator-focus text-[13.5px] font-medium underline-offset-4 hover:underline"
+                        style={{ color: IDENTITY.blueSoft }}
+                      >
+                        Who built it
+                      </Link>
+                    </div>
                   </div>
-                  {item.bottomNode ? <div className={`w-2.5 h-2.5 rounded-full bg-purple-400 mt-2 transition-all duration-300 ${columnStages[idx] >= 2 ? 'scale-100 opacity-100 animate-ping' : 'scale-0 opacity-0'}`} /> : <div className="h-4" />}
+
+                  <div className="lg:pt-2">
+                    <p className="max-w-[44ch] text-[13.5px] leading-relaxed" style={{ color: '#68717F' }}>
+                      DATAD is made by {MAKER.legalName} at {MAKER.studio},{' '}
+                      {MAKER.place}. It is funded by the people who use it, which
+                      is the shortest available explanation for every refusal on
+                      this page.
+                    </p>
+                    <p className="mt-6 text-[10.5px] font-semibold uppercase tracking-[0.16em]" style={{ color: CREATOR.ember }}>
+                      No ads · No trackers · Export is one click
+                    </p>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </Reveal>
+            </Chapter>
+          </main>
         </div>
-
-        <div className="w-full grid grid-cols-5 gap-2 sm:gap-4 mt-6 z-20">
-          {letters.map((item, idx) => {
-            const revealed = columnStages[idx] >= 3;
-            return (
-              <div key={`bottom-${idx}`} className="flex justify-center">
-                {item.bottomNode ? (
-                  <button type="button" onClick={() => revealed && setActiveNode(activeNode?.id === item.bottomNode.id ? null : item.bottomNode)} className={`p-3 sm:p-4 rounded-2xl bg-slate-900/90 border ${item.bottomNode.border} backdrop-blur-md shadow-xl cursor-pointer hover:scale-105 transition-all duration-500 w-full max-w-[190px] ${revealed ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className={"p-1.5 rounded-lg " + item.bottomNode.bg}><item.bottomNode.icon className="w-3.5 h-3.5" /></div>
-                      <span className="text-[11px] font-bold text-white truncate">{item.bottomNode.title}</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400 line-clamp-2">{item.bottomNode.desc}</p>
-                  </button>
-                ) : <div className="h-12" />}
-              </div>
-            );
-          })}
-        </div>
-      </main>
-
-      {activeNode && (
-        <div className="relative z-30 max-w-xl mx-auto px-6 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-slate-900/95 border border-purple-500/40 p-5 rounded-2xl backdrop-blur-xl shadow-2xl flex justify-between items-start gap-4">
-            <div>
-              <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">{activeNode.subtitle}</span>
-              <h3 className="text-base font-bold text-white mt-0.5">{activeNode.title}</h3>
-              <p className="text-xs text-slate-300 leading-relaxed mt-1.5">{activeNode.desc}</p>
-            </div>
-            <button onClick={() => setActiveNode(null)} className="text-[11px] text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 shrink-0">Close</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── The Story of DATA ── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 mt-24">
-        <Reveal>
-          <div className="text-center mb-14">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs font-semibold mb-4">
-              <Database className="w-3.5 h-3.5" /> Why Data Changes Everything
-            </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-              The most powerful resource <br className="hidden sm:block" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">in the world is DATA.</span>
-            </h2>
-            <p className="text-slate-400 text-sm mt-4 max-w-2xl mx-auto leading-relaxed">
-              Before we tell you about the platform — let us tell you about the word that starts it all. Because the name DATAD begins with data, and that&rsquo;s not an accident.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Opening hook */}
-        <Reveal delay={100}>
-          <div className="bg-gradient-to-br from-cyan-500/8 via-slate-900 to-purple-500/8 border border-cyan-500/20 rounded-3xl p-8 sm:p-12 mb-10 text-center">
-            <p className="text-lg sm:text-2xl text-slate-200 leading-relaxed font-light italic">
-              &ldquo;Every great decision in history — in business, in medicine, in your career —<br className="hidden sm:block" />
-              was made by someone who had <strong className="text-cyan-300 not-italic font-bold">better data</strong> than everyone else.&ldquo;
-            </p>
-          </div>
-        </Reveal>
-
-        {/* Data facts grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
-          {dataFacts.map((fact, i) => (
-            <Reveal key={i} delay={i * 80}>
-              <div className={"bg-slate-900/80 border " + fact.bg + " rounded-2xl p-6 backdrop-blur-md hover:-translate-y-1 transition-all duration-300"}>
-                <div className="p-2.5 rounded-xl bg-slate-950/60 w-fit mb-4">
-                  <fact.icon className={"w-5 h-5 " + fact.color} />
-                </div>
-                <div className={"text-2xl sm:text-3xl font-black " + fact.color + " mb-1"}>{fact.stat}</div>
-                <div className="text-xs font-semibold text-slate-300 mb-2">{fact.label}</div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">{fact.desc}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        {/* The turning point */}
-        <Reveal delay={200}>
-          <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-10 space-y-5">
-            <h3 className="text-lg sm:text-xl font-bold text-white">Your journey is your first dataset.</h3>
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Think about it. Two years. Hundreds of decisions — which electives to take, which companies to target, which skills to build, how to spend your weekend, who to network with. Each one of those is a data point. And if you don&rsquo;t track them, they disappear.
-            </p>
-            <p className="text-sm text-slate-400 leading-relaxed">
-              Students who keep track of their placements, their learning, their finances, and their goals are not just more prepared — they are more confident. They walk into an interview knowing their story, because they&rsquo;ve been writing it in data all along.
-            </p>
-            <p className="text-sm text-slate-300 leading-relaxed font-medium">
-              That&rsquo;s what DATAD was built to do. Not to replace your instinct — but to give your instinct something real to work with.
-            </p>
-            <div className="pt-2 border-t border-slate-800">
-              <p className="text-xs text-cyan-400 italic">
-                &ldquo;Data doesn&rsquo;t make decisions for you. It gives you the clarity to make better ones yourself.&rdquo;
-              </p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── The Name Behind the Platform (T.A.D story) ── */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 mt-24">
-        <Reveal>
-          <div className="bg-gradient-to-br from-purple-500/8 to-slate-900 border border-purple-500/20 rounded-3xl p-8 sm:p-12">
-            <span className="text-[10px] font-bold tracking-widest text-purple-400 uppercase">The Name Behind the Platform</span>
-            <h2 className="text-xl sm:text-2xl font-bold text-white mt-3 mb-5">T · A · D</h2>
-            <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              The letters <strong className="text-white">T, A, D</strong> appear at the heart of <strong className="text-white">DA<span className="text-purple-300">T</span>AD</strong> — and they are the initials of the person who built it: <strong className="text-white">{MAKER.legalName}</strong>.
-            </p>
-            <p className="text-sm text-slate-300 leading-relaxed mb-4">
-              DATAD was not named for a logo or a marketing brief. It was named for a student who believed the best tools are built by the people who most need them. The acronym — Discover, Aspire, Transform, Achieve, Develop — is the journey that student wanted every student to take.
-            </p>
-            <p className="text-sm text-slate-500 leading-relaxed italic">
-              &ldquo;Not a tool someone made for students. A tool a student made — with them, for them.&rdquo;
-            </p>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* ── Core Pillars ── */}
-      <section className="relative z-10 max-w-5xl mx-auto px-6 mt-24 space-y-10">
-        <Reveal>
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">What DATAD Is Built On</h2>
-            <p className="text-slate-400 text-sm max-w-xl mx-auto">Three principles that inform every feature decision.</p>
-          </div>
-        </Reveal>
-        <div className="grid md:grid-cols-3 gap-6">
-          {pillars.map((p, idx) => (
-            <Reveal key={idx} delay={idx * 120}>
-              <div className={"bg-gradient-to-b " + p.gradient + " border " + p.border + " p-6 sm:p-8 rounded-3xl backdrop-blur-md shadow-xl hover:-translate-y-1 transition-all duration-300 h-full"}>
-                <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 w-fit text-purple-400 shadow-md mb-4"><p.icon className="w-5 h-5" /></div>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-purple-400">{p.tagline}</span>
-                <h3 className="text-base font-bold text-white mt-1 mb-3">{p.title}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{p.description}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Real Milestones (animated timeline) ── */}
-      <section className="relative z-10 max-w-4xl mx-auto px-6 mt-24 space-y-10">
-        <Reveal>
-          <div className="text-center space-y-3">
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">How We Got Here</h2>
-            <p className="text-slate-400 text-sm max-w-xl mx-auto">Built incrementally — each phase responding to what the batch actually needed.</p>
-          </div>
-        </Reveal>
-        <div className="space-y-5 relative before:absolute before:inset-0 before:left-6 sm:before:left-1/2 before:-translate-x-px before:w-0.5 before:bg-gradient-to-b before:from-purple-500/50 before:via-cyan-500/50 before:to-transparent">
-          {milestones.map((m, idx) => (
-            <Reveal key={idx} delay={idx * 100}>
-              <div className={"relative flex items-center gap-6 sm:gap-12 " + (idx % 2 === 0 ? 'sm:flex-row-reverse' : '')}>
-                <div className="absolute left-6 sm:left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-slate-950 border-2 border-purple-400 z-10 shadow-[0_0_10px_rgba(192,132,252,0.8)]" />
-                <div className="ml-12 sm:ml-0 sm:w-1/2 bg-slate-900/60 border border-slate-800 p-5 rounded-2xl backdrop-blur-md hover:border-purple-500/40 transition-all shadow-lg">
-                  <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">{m.when}</span>
-                  <h4 className="text-sm font-bold text-white mt-3">{m.label}</h4>
-                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">{m.detail}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Founder Statement ── */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 mt-24 text-center">
-        <Reveal>
-          <div className="bg-slate-900/80 border border-slate-800 p-8 sm:p-12 rounded-3xl backdrop-blur-xl shadow-2xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 text-slate-800 pointer-events-none"><Heart className="w-32 h-32 opacity-10" /></div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold">
-              <Heart className="w-3.5 h-3.5" /> Crafted with purpose
-            </div>
-            <blockquote className="text-sm sm:text-base text-slate-200 leading-relaxed italic">
-              &ldquo;DATAD was created out of a desire for a unified digital sanctuary — a place where raw analytical data meets human craftsmanship, and where productivity and deliberate rest coexist seamlessly.&rdquo;
-            </blockquote>
-            <div className="pt-2">
-              {/* Formal register: full name, real title, studio mark. The
-                  handle lives one click away on /creator, where it belongs.
-                  See MAKER_IDENTITY.md. */}
-              <h4 className="text-sm font-bold text-white">{MAKER.legalName}</h4>
-              <p className="text-xs text-slate-500 mt-0.5">{MAKER.role}</p>
-              <p className="text-xs text-slate-600 mt-0.5">
-                <Link to="/creator" className="text-indigo-400 hover:underline">{MAKER.studio}</Link>{' '}· {MAKER.studioLine}
-              </p>
-            </div>
-          </div>
-        </Reveal>
-      </section>
-
-      {/* Footer CTA */}
-      <footer className="relative z-10 text-center mt-16 space-y-4">
-        <Reveal>
-          <Link to="/" className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold rounded-2xl transition-all shadow-xl shadow-purple-950/50">
-            <span>Enter DATAD</span><ArrowRight className="w-4 h-4" />
-          </Link>
-        </Reveal>
-        <p className="text-[11px] text-slate-600">No tracking · No ads · Your data belongs to you</p>
-      </footer>
-    </div>
+      </div>
+    </Page>
   );
 }

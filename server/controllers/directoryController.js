@@ -2,6 +2,7 @@ const UserProfile = require('../models/UserProfile');
 const User = require('../models/User');
 const { updateIdentity } = require('../services/studentIdentityService');
 const { searchRegex } = require('../utils/safeRegex');
+const { publicProjection, toPublicProfile, PUBLIC_USER_FIELDS } = require('../models/profileVisibility');
 
 /**
  * Largest directory page we will assemble for one request.
@@ -44,13 +45,24 @@ exports.getDirectory = async (req, res, next) => {
 
     // Still an array, not a paginated envelope: the client reads r.data as a
     // list, and changing that shape here would break it silently.
+    //
+    // The projection is the M2 fix. This used to select nothing, which in
+    // mongoose means everything, so a student's onboarding answers —
+    // difficultSubjects, dreamRole, learningStyle, goals — were served to any
+    // member who opened the directory. See models/profileVisibility.js for
+    // which fields are public and why the default is to withhold.
     const profiles = await UserProfile.find(filter)
-      .populate('user', 'name avatar')
+      .select(publicProjection())
+      .populate('user', PUBLIC_USER_FIELDS.join(' '))
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
-    res.json(profiles);
+    // Belt and braces. The projection above is the control; this is a second,
+    // cheap pass so that a projection lost in a future refactor fails closed
+    // rather than quietly publishing the whole document again.
+    res.json(profiles.map(toPublicProfile));
   } catch (err) { next(err); }
 };
 

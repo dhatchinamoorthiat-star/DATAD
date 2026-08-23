@@ -1,5 +1,7 @@
-const { buildProfile, createEmptyProfile } = require('./profileFactory');
+const { buildProfile, createEmptyProfile, buildSignals } = require('./profileFactory');
 const { computeScores } = require('./scoringEngine');
+const { summarizeTrends } = require('./trends');
+const { summarizeCohort } = require('../cohort/cohortInsights');
 
 const identityCollector = require('./collectors/identityCollector');
 const memoryCollector = require('./collectors/memoryCollector');
@@ -39,6 +41,27 @@ async function buildStudentProfile(userId) {
 
     const collected = { identity, memory, tasks, notes, planner, career, learning, activity, stress };
     const scores = computeScores(collected);
+
+    // Trajectory and peers. Both are deliberately fetched after the collectors
+    // rather than alongside them: each reads what the nightly jobs wrote, and
+    // both derive from data the collectors produce. Run as a pair so the second
+    // one costs no extra wall time.
+    //
+    // Either failing must cost only its own segment. A student with no snapshot
+    // history, or in a cohort too small to report on, still gets the profile
+    // they do have — an empty string here simply omits the segment downstream.
+    const [trendSummary, cohortSummary] = await Promise.all([
+      summarizeTrends(userId).catch(() => ''),
+      // The comparison is against the same signals the nightly job froze for
+      // everyone else, plus careerReadiness, which lives on the snapshot's top
+      // level rather than in its signals bag.
+      summarizeCohort(userId, {
+        ...buildSignals(collected),
+        careerReadiness: scores.careerReadiness,
+      }).catch(() => ''),
+    ]);
+    collected.trendSummary = trendSummary;
+    collected.cohortSummary = cohortSummary;
 
     return buildProfile(userId, collected, scores);
   } catch (err) {

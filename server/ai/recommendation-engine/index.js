@@ -43,6 +43,11 @@ function effectiveWeight(userId, name, defaultWeight = 1.0) {
 async function generateRecommendations(userId, profile) {
   if (!userId || !profile) return [];
 
+  // Pull this student's learned generator weights into the loop's cache once,
+  // so effectiveWeight() below stays a synchronous map read rather than eleven
+  // database round trips. No-op while the cached copy is fresh.
+  await learningLoop.loadUserWeights(userId);
+
   const allRecs = [];
   for (const { name, gen } of GENERATORS) {
     try {

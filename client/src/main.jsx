@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App.jsx';
+import { installGlobalErrorReporting } from './utils/reportError';
 
 // Sentry is gated on the DSN env var — no DSN = no crash reporting overhead.
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -13,15 +14,55 @@ if (sentryDsn) {
     integrations: [
       Sentry.browserTracingIntegration(),
       Sentry.replayIntegration({
-        maskAllText: false,           // student names are ok to see
-        blockAllMedia: false,         // don't block images
+        // Masked, reversing the previous setting.
+        //
+        // The old comment read "student names are ok to see", and for a name on
+        // a dashboard that is true. But replay records whatever is on screen,
+        // and the screens here include private notes, the résumé editor, the
+        // finance tracker, and the onboarding answers the M2 fix just stopped
+        // showing to other students. Sending those to a third-party replay
+        // service would reintroduce that exposure through a side door, and with
+        // a longer retention than our own database.
+        //
+        // Masking costs the ability to read exact copy in a replay; the layout,
+        // the clicks, and the sequence — which is what a replay is actually for
+        // — all survive.
+        maskAllText: true,
+        blockAllMedia: true,
       }),
     ],
     tracesSampleRate: 0.25,          // 1-in-4 sessions for performance
     replaysSessionSampleRate: 0.1,   // 1-in-10 session replays
     replaysOnErrorSampleRate: 1.0,   // always capture replay on error
+
+    /**
+     * Last gate before an event leaves the browser.
+     *
+     * Two things the SDK will otherwise send: the full URL including any query
+     * string, and request headers. A password-reset or verification link puts a
+     * single-use token in the query string, so a captured error on that page
+     * would ship a working token to a third party.
+     */
+    beforeSend(event) {
+      const strip = (url) => (typeof url === 'string' ? url.split('?')[0] : url);
+      if (event.request) {
+        event.request.url = strip(event.request.url);
+        delete event.request.headers;
+        delete event.request.cookies;
+      }
+      for (const crumb of event.breadcrumbs || []) {
+        if (crumb.data?.url) crumb.data.url = strip(crumb.data.url);
+      }
+      return event;
+    },
   });
 }
+
+// Covers what React error boundaries structurally cannot see: errors thrown in
+// event handlers and async callbacks, and rejected promises nobody awaited.
+// Installed unconditionally — it reports to our own API, so it works with no
+// Sentry DSN configured.
+installGlobalErrorReporting();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

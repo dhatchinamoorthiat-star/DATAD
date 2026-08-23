@@ -23,22 +23,14 @@
     <meta name="theme-color" content="#080B14" />
     <meta name="color-scheme" content="dark light" />
 
-    <!-- Theme resolution, before first paint. Mirrors ThemeContext's rule
-         (dark-first; an explicit saved choice always wins) so a light-theme
-         user never sees a flash of the dark surface. Keep the two in sync. -->
-    <script>
-      (function () {
-        try {
-          var saved = localStorage.getItem('theme');
-          var dark = saved
-            ? saved === 'dark'
-            : !window.matchMedia('(prefers-color-scheme: light)').matches;
-          document.documentElement.classList.toggle('dark', dark);
-        } catch (e) {
-          document.documentElement.classList.add('dark');
-        }
-      })();
-    </script>
+    <!-- Theme resolution, before first paint. The code moved to
+         /public/theme-init.js because the Content-Security-Policy sets
+         `script-src 'self'`, which blocks inline scripts — and allowing
+         'unsafe-inline' back for this one snippet would undo most of what that
+         directive is for. Synchronous and un-deferred on purpose: it has to run
+         before the first paint, and both `defer` and `type="module"` would push
+         it after. See server/config/csp.js. -->
+    <script src="/theme-init.js"></script>
 
     <!-- Favicon — brand marks live in /brand (see components/common/Logo.jsx).
          The 32/16 PNGs are the two-step cut, which stays legible below 24px. -->

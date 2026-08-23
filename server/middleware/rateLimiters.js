@@ -11,6 +11,45 @@ const LIMITS = {
   authNetwork: { windowMinutes: 15, max: 300 },
   loginAccount: { windowMinutes: 15, max: 10 },
   heavy: { windowMinutes: 15, max: 40 },
+
+  // ── Per-endpoint unauthenticated policies ────────────────────────────────
+  //
+  // These exist because a shared bucket is a shared failure. Every one of these
+  // routes used to be handed the SAME `authLimiter` instance, and
+  // express-rate-limit gives one instance one store — so /check-email,
+  // /register, /forgot-password, /resend-verification and /login all drew from
+  // a single 300-per-15-minutes counter keyed on the network address. An
+  // attacker scripting /check-email (the cheapest of them, and unauthenticated)
+  // exhausted the budget for *sign-in* for every student behind that campus
+  // NAT. The lockout was the cheap endpoint's, and the cost was the critical
+  // endpoint's.
+  //
+  // Separate instances mean separate stores, so abuse of one route can no
+  // longer deny another. The numbers below are then set per route by what that
+  // route actually costs and how a whole campus uses it in fifteen minutes —
+  // not by one number that had to be safe for all of them at once.
+
+  // Typed during registration, so it fires per keystroke-batch for every
+  // student signing up. The most-called and cheapest of the group; also the
+  // enumeration probe, which is why it is bounded at all rather than left open.
+  checkEmail: { windowMinutes: 15, max: 120 },
+
+  // Orientation day is the sizing case: a cohort registering from a handful of
+  // NAT addresses in one sitting. 60/15min is 240/hour from a single address,
+  // comfortably above a real intake and far below scripted signup abuse.
+  register: { windowMinutes: 15, max: 60 },
+
+  // Recovery. Deliberately NOT account-keyed — see loginAccountLimiter's note:
+  // an account-keyed limit here lets an attacker lock a victim out of their own
+  // password reset by spending the victim's quota for them.
+  forgotPassword: { windowMinutes: 15, max: 40 },
+  resendVerification: { windowMinutes: 15, max: 40 },
+
+  // Token submission. Higher than the send limits because a student may
+  // legitimately retry a link, and a wrong token is already rejected on its
+  // own merits.
+  verifyEmail: { windowMinutes: 15, max: 60 },
+  resetPassword: { windowMinutes: 15, max: 40 },
 };
 
 const make = (windowMinutes, max, message, extra = {}) =>
@@ -89,6 +128,58 @@ const authLimiter = make(
 );
 
 /**
+ * One limiter instance per unauthenticated endpoint.
+ *
+ * The isolation is the point, and it comes from the instances rather than from
+ * the numbers: each `make()` call builds its own store, so these counters
+ * cannot drain one another. `authLimiter` above is now applied to /login alone,
+ * where it is a network ceiling sitting in front of the account-keyed
+ * brute-force guard.
+ *
+ * All of them key on the network address, which is the correct choice here and
+ * the wrong one everywhere else in this file: these requests carry no
+ * authenticated identity, so the address is the only attribution available.
+ * That is exactly why the ceilings are set per-campus rather than per-person,
+ * and why nothing an authenticated student does can be throttled by them —
+ * /auth/me and the rest of the API run on the account-keyed generalLimiter.
+ */
+const checkEmailLimiter = make(
+  LIMITS.checkEmail.windowMinutes,
+  LIMITS.checkEmail.max,
+  'Too many email checks from this network, please try again shortly'
+);
+
+const registerLimiter = make(
+  LIMITS.register.windowMinutes,
+  LIMITS.register.max,
+  'Too many sign-ups from this network, please try again later'
+);
+
+const forgotPasswordLimiter = make(
+  LIMITS.forgotPassword.windowMinutes,
+  LIMITS.forgotPassword.max,
+  'Too many password reset requests from this network, please try again later'
+);
+
+const resendVerificationLimiter = make(
+  LIMITS.resendVerification.windowMinutes,
+  LIMITS.resendVerification.max,
+  'Too many verification resends from this network, please try again later'
+);
+
+const verifyEmailLimiter = make(
+  LIMITS.verifyEmail.windowMinutes,
+  LIMITS.verifyEmail.max,
+  'Too many verification attempts from this network, please try again later'
+);
+
+const resetPasswordLimiter = make(
+  LIMITS.resetPassword.windowMinutes,
+  LIMITS.resetPassword.max,
+  'Too many password reset attempts from this network, please try again later'
+);
+
+/**
  * Key a login attempt by the account being targeted, falling back to the IP
  * when the request names no account.
  */
@@ -136,6 +227,12 @@ module.exports = {
   authLimiter,
   loginAccountLimiter,
   heavyLimiter,
+  checkEmailLimiter,
+  registerLimiter,
+  forgotPasswordLimiter,
+  resendVerificationLimiter,
+  verifyEmailLimiter,
+  resetPasswordLimiter,
   // Exported for tests: the middleware itself hides its configuration.
   loginAccountKey,
   generalKey,
