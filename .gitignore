@@ -37,3 +37,7 @@ datad-secrets.bundle.json
 # config; the .local.json sibling holds one developer's own permission grants
 # and would churn on every machine.
 **/.claude/settings.local.json
+
+# Throwaway one-off scripts (e.g. server/verify_user.tmp.js) — some of these
+# connect to a real database, so they must never be committed by accident.
+*.tmp.js
