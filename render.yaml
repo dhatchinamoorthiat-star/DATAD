@@ -107,3 +107,51 @@ services:
       # means a failed primary surfaces as an error instead of a hang.
       - key: AI_FALLBACK_PROVIDER
         sync: false
+
+  # ── Event worker ────────────────────────────────────────────────────────────
+  #
+  # Consumes the BusEvent collection (server/worker.js): polls for pending
+  # events every 5s in batches of 20 and dispatches to the handlers registered
+  # in server/events/handlers/index.js. The API server deliberately does NOT
+  # run this loop — async work must never block the request path.
+  #
+  # Without this service the talent flows (application, engagement, review,
+  # opportunity), the profile-refresh handler and the notification bridge all
+  # write BusEvent rows that are never consumed. They accumulate as `pending`
+  # forever, silently.
+  #
+  # Unlike the web service, this one is safe to scale: it runs no cron, so
+  # there is nothing to duplicate. Concurrency is bounded by whatever claim
+  # semantics events.pollBatch() uses — verify those before raising
+  # numInstances above 1.
+  #
+  # `plan: free` does not exist for worker services on Render — background
+  # workers start at `starter`. That is the cost of turning this on, and it is
+  # the reason the service is defined here rather than already running.
+  - type: worker
+    name: datad-worker
+    runtime: node
+    plan: starter
+    numInstances: 1
+    rootDir: .
+    buildCommand: cd server && npm install
+    startCommand: cd server && node worker.js
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: NODE_ENV
+        value: production
+      # Notification payloads embed deep links back into the app.
+      - key: CLIENT_URL
+        sync: false
+      - key: BASE_URL
+        sync: false
+      # The profile handler rebuilds the intelligence profile, which calls the
+      # AI gateway — so the worker needs provider credentials of its own.
+      # Same rationale as the web service: no Ollama fallback on Render.
+      - key: NVIDIA_API_KEY
+        sync: false
+      - key: AI_PRIMARY_PROVIDER
+        value: nvidia
+      - key: AI_FALLBACK_PROVIDER
+        sync: false
