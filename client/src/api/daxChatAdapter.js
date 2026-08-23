@@ -2,6 +2,15 @@ import api from './axios';
 import { getChatHistory, clearChat } from './dax';
 import { DAX_CONTINUE_INTENT } from '../dax/constants';
 
+// What to tell the model when an attachment's text never materialised. Each
+// reads as a fact about the file, not an apology for the product.
+const UNREADABLE_NOTE = {
+  unsupported: 'this file format cannot be read on this deployment — only the file name is available',
+  scanned: 'this looks like a scanned or photographed document, so no text could be extracted from it — only the file name is available',
+  empty: 'no text could be extracted from this file — only the file name is available',
+  default: "only the file name is available; this file's contents could not be read",
+};
+
 function composePrompt(text, attachments = []) {
   const parts = [];
   if (text && text !== DAX_CONTINUE_INTENT) parts.push(text);
@@ -11,7 +20,11 @@ function composePrompt(text, attachments = []) {
     if (att.extractedText) {
       parts.push(`\n\n[Attached file: "${att.name}"]\n\`\`\`\n${att.extractedText}\n\`\`\``);
     } else {
-      parts.push(`\n\n[Attached file: "${att.name}" — Dax cannot read this file's contents yet, only the file name.]`);
+      // Why it could not be read matters to the answer. "Scanned" invites Dax
+      // to say the pages are images and ask for the text; the blanket "cannot
+      // read this yet" invited it to apologise for a limitation that no longer
+      // applies to most documents.
+      parts.push(`\n\n[Attached file: "${att.name}" — ${UNREADABLE_NOTE[att.unreadableReason] || UNREADABLE_NOTE.default}]`);
     }
   }
   return parts.join('');

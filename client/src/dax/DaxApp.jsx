@@ -19,7 +19,7 @@ import { DAX_MAINTENANCE_BANNER } from './maintenance';
 import toast from '../utils/toast';
 import {
   getAvailableModels, getModelPreference, setModelPreference,
-  deleteConversationRemote, updateConversationRemote,
+  deleteConversationRemote, updateConversationRemote, extractAttachmentText,
 } from '../api/dax';
 import './theme/dax-theme.css';
 
@@ -265,18 +265,56 @@ export default function DaxApp({ adapter, config = {} }) {
     setTimeout(() => send(text, toSend), 0);
   }
 
+  // Types the server extractor handles. Images, audio and video are absent on
+  // purpose — there is no OCR or vision behind the endpoint, and sending them
+  // would spend a round trip to be told what we already know.
+  const EXTRACTABLE = ['pdf', 'doc', 'sheet'];
+
   async function handleAttachFiles(files) {
     const built = files.map(buildAttachment);
     setAttachments((prev) => [...prev, ...built]);
+
+    const patch = (id, fields) =>
+      setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, ...fields } : a)));
+
     for (const att of built) {
-      if (['code', 'other'].includes(att.type) && att._file.size <= TEXT_ATTACHMENT_MAX_BYTES && att._file.type.startsWith('text')) {
-        setAttachments((prev) => prev.map((a) => (a.id === att.id ? { ...a, status: 'reading' } : a)));
+      // A small plain-text file is already text — reading it in the browser is
+      // instant and costs no upload, so it never goes to the server.
+      const readableHere =
+        ['code', 'other'].includes(att.type)
+        && att._file.size <= TEXT_ATTACHMENT_MAX_BYTES
+        && att._file.type.startsWith('text');
+
+      if (readableHere) {
+        patch(att.id, { status: 'reading' });
         try {
-          const text = await att._file.text();
-          setAttachments((prev) => prev.map((a) => (a.id === att.id ? { ...a, extractedText: text, status: 'ready' } : a)));
+          patch(att.id, { extractedText: await att._file.text(), status: 'ready' });
         } catch {
-          setAttachments((prev) => prev.map((a) => (a.id === att.id ? { ...a, status: 'ready' } : a)));
+          patch(att.id, { status: 'ready' });
         }
+        continue;
+      }
+
+      if (!EXTRACTABLE.includes(att.type)) continue;
+
+      patch(att.id, { status: 'reading' });
+      try {
+        const { data } = await extractAttachmentText(att._file);
+        // A scanned PDF comes back with almost nothing. Storing the empty
+        // string would be indistinguishable from a file we never tried to
+        // read, and composePrompt would then claim the contents were attached.
+        patch(att.id, {
+          extractedText: data.text || undefined,
+          unreadableReason: data.text
+            ? undefined
+            : (data.unsupported ? 'unsupported' : data.handwritten ? 'scanned' : 'empty'),
+          status: 'ready',
+        });
+      } catch {
+        // Extraction is a convenience, not a precondition for sending. The
+        // attachment stays on the message and composePrompt falls back to
+        // naming the file.
+        patch(att.id, { status: 'ready' });
       }
     }
   }

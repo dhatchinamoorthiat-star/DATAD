@@ -140,3 +140,15 @@ export function listPendingProposals(conversationId) {
     params: conversationId ? { conversationId } : undefined,
   });
 }
+
+// Read an attached document's text server-side. Reuses the same extractor the
+// Content Studio uses (PDF, Word, Excel, ZIP); the file is read in memory and
+// never stored. Images, audio, video and slides come back with empty text —
+// there is no OCR or vision behind this.
+export const extractAttachmentText = (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post('/dax/attachments/extract', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};

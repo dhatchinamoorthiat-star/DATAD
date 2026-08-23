@@ -11,6 +11,10 @@ const UserModelPref = require('../models/UserModelPref');
 const { getAvailableModels, getDefaultModelId, parseModelId } = require('../ai/modelList');
 const { CHAT_QUOTAS } = require('../subscription/subscriptionService');
 const ChatMessage = require('../models/ChatMessage');
+const studioUpload = require('../middleware/studioUpload');
+const { extract } = require('../services/publishing/extractors');
+const { checkRequestSize, verifyFileSignatures, LIMITS } = require('../middleware/uploadGuards');
+const { heavyLimiter } = require('../middleware/rateLimiters');
 
 router.use(verifyToken);
 router.use(refreshTier);
@@ -144,6 +148,57 @@ router.delete('/memory', async (req, res, next) => {
     res.json(result);
   } catch (err) { next(err); }
 });
+
+/**
+ * Read an attachment's text so Dax can actually answer questions about it.
+ *
+ * The chat route takes JSON, so an attached file never reached the server at
+ * all: the composer read plain-text files in the browser and told the student
+ * "Dax cannot read this file's contents yet" for everything else — which was
+ * true, and covered exactly the formats (PDF, Word, Excel, ZIP) that the studio
+ * pipeline has been extracting all along. This reuses that extractor rather
+ * than growing a second one.
+ *
+ * Nothing is stored. No Cloudinary upload, no ContentItem, no database write —
+ * the file is read in memory and the text goes straight back in the response.
+ * Attaching a document to a chat is not the same act as publishing it to the
+ * batch, and it should not leave the same trace.
+ *
+ * Images, audio, video and slides return empty text: there is no OCR or vision
+ * here, so the caller keeps saying so plainly rather than implying a read that
+ * did not happen.
+ */
+router.post(
+  '/attachments/extract',
+  heavyLimiter,
+  checkRequestSize(LIMITS.studioFile),
+  studioUpload.single('file'),
+  verifyFileSignatures,
+  async (req, res, next) => {
+    try {
+      if (!req.file) return res.status(400).json({ message: 'No file provided' });
+
+      const type = studioUpload.detectType(req.file);
+      const { text, pageCount, handwritten, unsupported } = await extract(type, req.file.buffer);
+
+      res.json({
+        type,
+        text: text || '',
+        pageCount,
+        // A scanned PDF extracts almost nothing per page. Saying so lets the
+        // composer explain the empty result instead of silently attaching a
+        // filename and letting the student wonder why Dax ignored the file.
+        handwritten: Boolean(handwritten),
+        // True when the format needs a dependency this deployment does not
+        // have (Word/Excel/ZIP). Distinct from an empty read: the caller says
+        // "this format is not supported here", not "the file had no text".
+        unsupported: Boolean(unsupported),
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 router.post('/chat/stream', async (req, res, next) => {
   const { message, modelId, conversationId, clientConversationId } = req.body;
