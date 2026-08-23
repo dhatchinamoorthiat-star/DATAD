@@ -17,12 +17,20 @@ const ProgramApproval = require('../models/ProgramApproval');
 const { resolveProgramFromCourse } = require('../utils/programResolver');
 const { upsertFromRegistration, updateIdentity } = require('../services/studentIdentityService');
 const { inferNewsInterests } = require('../utils/domainClassifier');
-const { sendWelcomeEmail, sendPasswordResetEmail, sendVerificationEmail } = require('../config/mailer');
+const {
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  sendAdminNewRegistrationEmail,
+  esc,
+} = require('../config/mailer');
+const { approveAccount, adminUser } = require('../services/accountApproval');
+const { mintApprovalToken, approvalTokenMatches } = require('../utils/approvalToken');
 const logActivity = require('../utils/logActivity');
 const { cleanupUserData } = require('../services/userCleanup');
 const cloudinary = require('../config/cloudinary');
 const logger = require('../utils/logger');
-const { emailLinkBase } = require('../utils/clientUrl');
+const { emailLinkBase, serverLinkBase } = require('../utils/clientUrl');
 const sessionVersion = require('../services/sessionVersion');
 const deviceSessions = require('../services/deviceSessions');
 const signToken = require('../utils/signToken');
@@ -485,6 +493,63 @@ exports.register = async (req, res, next) => {
   }
 };
 
+/**
+ * Tell the admin somebody is waiting.
+ *
+ * Sent on confirmation rather than on submit, deliberately. Registration is
+ * unauthenticated and rate-limited but still scriptable, and the whole reason
+ * login is gated on a confirmed address is that "a bot with a fake address
+ * costs the admin nothing". Alerting at submit would hand that cost straight
+ * back: an inbox full of approve buttons for accounts that do not exist. From
+ * a real student's side the two moments are seconds apart.
+ *
+ * Fire-and-forget by design — the student's confirmation response must not wait
+ * on, or fail with, the admin's mail server.
+ */
+async function notifyAdminOfPendingRegistration(user) {
+  const admin = await adminUser();
+  if (!admin) {
+    logger.warn('No ADMIN_EMAIL account — pending signup not announced', {
+      userId: String(user._id),
+    });
+    return;
+  }
+
+  // The approval screen's fields live on StudentIdentity, not on User. A
+  // missing identity (the backfill path in register) must not cost the admin
+  // the alert, so this degrades to the User fields alone.
+  let details = {};
+  try {
+    const identity = await StudentIdentity.findOne({ user: user._id }).lean();
+    if (identity) {
+      details = {
+        college: identity.college,
+        course: identity.course,
+        specialization: identity.specialization,
+        batch: identity.batch,
+        graduationYear: identity.graduationYear,
+        dreamRole: identity.dreamRole,
+        skills: identity.skills,
+        careerInterests: identity.careerInterests,
+      };
+    }
+  } catch (err) {
+    logger.warn('Could not load identity for admin alert', { error: err.message });
+  }
+
+  if (user.referredBy) {
+    const referrer = await User.findById(user.referredBy).select('name').lean().catch(() => null);
+    if (referrer) details.referredByName = referrer.name;
+  }
+
+  const base = serverLinkBase();
+  const approveUrl = base
+    ? `${base}/api/auth/approve/${user._id}/${mintApprovalToken(user)}`
+    : '';
+
+  await sendAdminNewRegistrationEmail(admin, user, details, approveUrl);
+}
+
 // Confirming the address is what turns a raw signup into a real account: it's
 // where the referral auto-approve resolves and where the program sync fires.
 // Doing that work at registration would mean bots trigger it.
@@ -527,6 +592,12 @@ exports.verifyEmail = async (req, res, next) => {
       await deviceSessions.register(user._id, device);
       return res.json({ token: signToken(user, device.deviceId), verified: true });
     }
+
+    notifyAdminOfPendingRegistration(user).catch((err) =>
+      logger.error('Admin registration alert failed', {
+        error: err.message, userId: String(user._id),
+      })
+    );
 
     res.json({
       verified: true,
@@ -848,4 +919,105 @@ exports.uploadAvatar = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+// ---- One-click approval from the registration alert email ----------------
+//
+// Two handlers for one button, and the split is the point. Corporate mail
+// scanners GET every link in an inbound message before the human sees it, so
+// the URL in the email must be safe to fetch: it renders a page. Only the POST
+// that page submits changes anything.
+
+/**
+ * A standalone page, since the recipient has no session and may not be signed
+ * in. No script of any kind: the API's CSP sets `script-src 'self'` and
+ * `script-src-attr 'none'`, so an inline handler here would silently not run.
+ */
+const approvalPage = (heading, body) => `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${heading} — DATAD</title>
+<style>
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#F6F7FB;color:#111827;
+       margin:0;display:grid;place-items:center;min-height:100vh;padding:24px}
+  .card{background:#fff;border-radius:14px;padding:32px;max-width:460px;width:100%;
+        box-shadow:0 1px 3px rgba(8,11,20,.08),0 12px 32px rgba(8,11,20,.06)}
+  h1{font-size:19px;margin:0 0 14px}
+  dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:14px;margin:0 0 22px}
+  dt{color:#6b7280}
+  dd{margin:0}
+  p{font-size:14px;line-height:1.6;color:#374151}
+  button{background:#4D7CFF;color:#fff;border:0;border-radius:8px;padding:11px 22px;
+         font-size:14px;font-weight:600;cursor:pointer}
+</style></head>
+<body><div class="card"><h1>${heading}</h1>${body}</div></body></html>`;
+
+/**
+ * The confirmation screen behind the email's button. Safe for a link scanner to
+ * fetch: it reads, it does not write.
+ */
+exports.approvalLanding = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).catch(() => null);
+    if (!user || !approvalTokenMatches(user, req.params.token)) {
+      return res.status(400).type('html').send(
+        approvalPage('This link is not valid', '<p>It may belong to an account that was removed. Approve from the admin dashboard instead.</p>')
+      );
+    }
+    if (user.status !== 'pending') {
+      return res.type('html').send(
+        approvalPage('Already handled', `<p><strong>${esc(user.name)}</strong> is already approved — nothing left to do.</p>`)
+      );
+    }
+
+    res.type('html').send(
+      approvalPage(
+        'Approve this account?',
+        `<dl>
+           <dt>Name</dt><dd>${esc(user.name)}</dd>
+           <dt>Email</dt><dd>${esc(user.email)}</dd>
+           <dt>Program</dt><dd>${esc(user.program?.label || '—')}</dd>
+         </dl>
+         <p>Approving admits them immediately and emails them the good news.</p>
+         <form method="post">
+           <button type="submit">Approve ${esc(user.name.split(' ')[0])}</button>
+         </form>`
+      )
+    );
+  } catch (err) { next(err); }
+};
+
+/**
+ * The actual approval. Authorised by the signed token alone — the admin is
+ * reading mail, not holding a session — which is why the token is an HMAC over
+ * JWT_SECRET and why the handler refuses anything not still `pending`: that is
+ * what stops a forwarded email from being replayed into a second approval.
+ */
+exports.approveFromEmail = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).catch(() => null);
+    if (!user || !approvalTokenMatches(user, req.params.token)) {
+      logger.warn('Rejected an email approval link', { userId: req.params.id, ip: req.ip });
+      return res.status(400).type('html').send(
+        approvalPage('This link is not valid', '<p>Approve from the admin dashboard instead.</p>')
+      );
+    }
+
+    const admin = await adminUser();
+    const result = await approveAccount(user, { approvedBy: admin?._id, via: 'email' });
+
+    if (!result.approved) {
+      return res.type('html').send(
+        approvalPage('Already handled', `<p><strong>${esc(user.name)}</strong> is already approved.</p>`)
+      );
+    }
+
+    res.type('html').send(
+      approvalPage(
+        'Approved ✅',
+        `<p><strong>${esc(user.name)}</strong> can log in now, and we've emailed them to say so.</p>`
+      )
+    );
+  } catch (err) { next(err); }
 };

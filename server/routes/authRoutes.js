@@ -14,6 +14,8 @@ const {
   resendVerification,
   listDevices,
   revokeDevice,
+  approvalLanding,
+  approveFromEmail,
 } = require('../controllers/authController');
 const verifyToken = require('../middleware/verifyToken');
 const upload = require('../middleware/upload');
@@ -47,6 +49,20 @@ router.post('/verify-email', verifyEmailLimiter, verifyEmail);
 // unauthenticated entry points, and the handler answers generically so it
 // cannot be used to test which addresses hold accounts.
 router.post('/resend-verification', resendVerificationLimiter, resendVerification);
+// One-click approval from the registration alert email. Unauthenticated on
+// purpose: the admin is in their inbox, not in the app, so the signed token in
+// the path is the whole authorisation — see utils/approvalToken.
+//
+// The GET only renders a confirmation page. That split is not decoration:
+// corporate link scanners fetch every URL in an inbound email, so a GET that
+// approved directly would admit every applicant before the admin read the
+// subject line. Only the POST from that page writes.
+//
+// authLimiter, because these paths take an unauthenticated id + token and must
+// not become an offline-ish oracle for guessing either.
+router.get('/approve/:id/:token', authLimiter, approvalLanding);
+router.post('/approve/:id/:token', authLimiter, approveFromEmail);
+
 router.post('/forgot-password', forgotPasswordLimiter, forgotPassword);
 router.post('/reset-password', resetPasswordLimiter, resetPassword);
 router.get('/me', verifyToken, getMe);

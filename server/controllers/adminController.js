@@ -6,7 +6,8 @@ const Announcement = require('../models/Announcement');
 const JournalEntry = require('../models/JournalEntry');
 const AutomationLog = require('../models/AutomationLog');
 const SubscriptionRequest = require('../models/SubscriptionRequest');
-const { sendAnnouncementEmail, sendAccountApprovedEmail, sendWelcomeEmail } = require('../config/mailer');
+const { sendAnnouncementEmail } = require('../config/mailer');
+const { approveAccount } = require('../services/accountApproval');
 const { notify } = require('./notificationController');
 const ActivityLog = require('../models/ActivityLog');
 const logActivity = require('../utils/logActivity');
@@ -124,41 +125,13 @@ exports.approveStudent = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.status !== 'pending') return res.status(400).json({ message: 'User is already approved' });
 
-    user.status = 'approved';
-    await user.save();
-    // verifyToken reads status from the cached session record; drop it so the
-    // approval takes effect on the student's very next request.
-    sessionVersion.invalidate(user._id);
+    // Every step of an approval — status, session cache, program provisioning,
+    // the student's mail, the activity log — lives in services/accountApproval,
+    // because the registration alert email approves through the same path.
+    const result = await approveAccount(user, { approvedBy: req.user.userId, via: 'dashboard' });
+    if (!result.approved) return res.status(400).json({ message: 'User is already approved' });
 
-    // Approving the person also provisions their program. These were two
-    // separate admin actions; forgetting the second one let a student in with
-    // an empty feed, so there is now only one.
-    const ProgramApproval = require('../models/ProgramApproval');
-    const ProgramRegistry = require('../models/ProgramRegistry');
-    const programId = user.program?.id;
-    if (programId && !(await ProgramRegistry.exists({ _id: programId }))) {
-      const approval = await ProgramApproval.findById(user.program?.approvalId);
-      if (approval) {
-        approval.status = 'approved';
-        approval.approvedBy = req.user.userId;
-        approval.approvedAt = new Date();
-        await approval.save();
-
-        // Fire-and-forget: the sync reports its own progress on the approval
-        // doc, and a slow sync must not hold up the admin's response.
-        require('../services/programSyncService')
-          .runProgramSync(approval._id)
-          .catch((err) => logger.error('Program sync on approval failed', { error: err.message, programId }));
-      }
-    }
-
-    sendAccountApprovedEmail(user).catch((err) => logger.error('Approval email failed:', err.message));
-    sendWelcomeEmail(user).catch((err) => logger.error('Welcome email failed:', err.message));
-    notify({ user: user._id, type: 'general', title: `Welcome to DATAD, ${user.name.split(' ')[0]}! Your account has been approved.`, link: '/' }).catch(() => {});
-    logActivity('approved', `Admin approved ${user.name}'s account`, user);
-    events.admin.accountApproved(user._id, { name: user.name, email: user.email }).catch(() => {});
     res.json({ message: `${user.name} approved`, user });
   } catch (err) {
     next(err);

@@ -103,6 +103,79 @@ exports.sendAccountApprovedEmail = (user) =>
     ),
   }).catch((err) => logger.error('Approval email failed:', { error: err.message }));
 
+/**
+ * The registration alert an admin gets when someone new lands in the queue.
+ *
+ * Three things shape it:
+ *
+ *  - It carries the details the approval screen shows (program, college,
+ *    course, referral), so the admin can usually decide without opening the
+ *    dashboard at all. Everything student-supplied goes through esc() — this is
+ *    the one template built entirely out of text a stranger typed.
+ *  - The button is a GET to a confirmation page, not the approval itself.
+ *    Corporate link scanners (Outlook Safe Links and friends) fetch every URL
+ *    in an inbound mail; if the link approved directly, the scanner would admit
+ *    every applicant before the admin read the subject line.
+ *  - The link is omitted rather than faked when BASE_URL is unset, and the mail
+ *    still goes out. A missing button costs the admin one dashboard visit; a
+ *    button pointing at localhost costs them the trust that these links work.
+ */
+exports.sendAdminNewRegistrationEmail = (admin, user, details = {}, approveUrl = '') => {
+  const row = (label, value) =>
+    value
+      ? `<tr>
+           <td style="padding:4px 12px 4px 0;color:#6b7280;white-space:nowrap;vertical-align:top">${esc(label)}</td>
+           <td style="padding:4px 0;color:#111827">${esc(value)}</td>
+         </tr>`
+      : '';
+
+  const list = (value) => (Array.isArray(value) ? value.filter(Boolean).join(', ') : value);
+
+  return send({
+    to: [{ email: admin.email, name: admin.name || 'Admin' }],
+    // Flattened, not esc()'d: this is a header, not markup. A newline in a
+    // student-supplied name is the injection that matters here.
+    subject: `New DATAD signup — ${String(user.name).replace(/[\r\n]+/g, ' ').slice(0, 120)} is waiting for approval`,
+    html: wrap(
+      'Someone new is waiting for approval',
+      `<p><strong>${esc(user.name)}</strong> confirmed their email address and is now in the
+         approval queue.</p>
+       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+              style="border-collapse:collapse;font-size:13px;margin:16px 0;width:100%">
+         ${row('Name', user.name)}
+         ${row('Email', user.email)}
+         ${row('Roll number', user.rollNumber)}
+         ${row('Program', user.program?.label)}
+         ${row('College', details.college)}
+         ${row('Course', details.course)}
+         ${row('Specialisation', details.specialization)}
+         ${row('Batch', details.batch)}
+         ${row('Graduating', details.graduationYear)}
+         ${row('Dream role', details.dreamRole)}
+         ${row('Skills', list(details.skills))}
+         ${row('Interests', list(details.careerInterests))}
+         ${row('Referred by', details.referredByName)}
+         ${row('Registered', new Date(user.createdAt || Date.now()).toLocaleString('en-IN'))}
+       </table>
+       ${
+         approveUrl
+           ? `<p><a href="${approveUrl}"
+                style="display:inline-block;background:#4D7CFF;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600">
+                Review &amp; approve
+              </a></p>
+              <p style="color:#6b7280">You'll get one confirmation screen before anything changes.
+              Approving from here mails ${esc(user.name.split(' ')[0])} straight away.</p>`
+           : `<p style="color:#6b7280">Set <code>BASE_URL</code> on the API service to get a
+              one-click approve button in these emails. For now, approve from the admin
+              dashboard.</p>`
+       }`
+    ),
+  }).catch((err) => {
+    logger.error('Admin registration alert failed:', { error: err.message });
+    return { delivered: false, error: err.message };
+  });
+};
+
 // Sent immediately at signup. Until this link is clicked the account cannot
 // log in and never reaches the admin queue, so a bot with a fake address
 // costs the admin nothing.

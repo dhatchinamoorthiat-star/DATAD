@@ -75,6 +75,35 @@ function emailLinkBase(req) {
 }
 
 /**
+ * Base URL for a link that must reach the API server itself, not the SPA.
+ *
+ * Almost every emailed link points at the client, which then calls the API.
+ * The admin approval link cannot: it is clicked from a mail client by someone
+ * who has no session, so the handler is on the server and the link has to name
+ * the server's own public origin. BASE_URL is that origin (already declared for
+ * both Render services); without it there is no safe guess in production, so
+ * the caller is told to skip the link rather than emit one pointing at
+ * localhost — a dead button in an inbox is worse than a plain notification.
+ */
+function serverLinkBase() {
+  const configured = String(process.env.BASE_URL || process.env.API_URL || '')
+    .split(',')[0]
+    .trim()
+    .replace(/\/+$/, '');
+  if (!configured) {
+    if (isProduction()) return '';
+    return `http://localhost:${process.env.PORT || 5001}`;
+  }
+  // Render's `fromService: property: host` substitutes a bare hostname, with no
+  // scheme — and render.yaml uses it precisely so nobody hand-types the origin.
+  // A bare host would emit `datad.onrender.com/api/...`, which a mail client
+  // resolves as a relative path and turns into a dead button, so the scheme is
+  // supplied here rather than being a thing the deployer must remember.
+  if (/^https?:\/\//.test(configured)) return configured;
+  return `${isProduction() ? 'https' : 'http'}://${configured}`;
+}
+
+/**
  * Whether a browser Origin should be allowed through CORS. Kept here so the
  * CORS allow-list and the emailed-link allow-list cannot drift apart — the
  * tunnel exception applies to both, or to neither.
@@ -93,5 +122,6 @@ module.exports = {
   primaryClientUrl,
   isDevTunnelOrigin,
   emailLinkBase,
+  serverLinkBase,
   isAllowedCorsOrigin,
 };

@@ -3,10 +3,11 @@
 # `free` is not a viable plan for this service, for two reasons that are not
 # about raw capacity:
 #
-#   1. Free instances spin down after ~15 minutes idle. All 14 cron jobs run
+#   1. Free instances spin down after ~15 minutes idle. All 23 cron jobs run
 #      in-process (server/schedulers/index.js) — daily briefings, case studies,
-#      moderation, and the trial-expiry job that is the ONLY thing downgrading
-#      lapsed paid tiers. A sleeping instance runs none of them.
+#      moderation, the trial-expiry job that is the ONLY thing downgrading
+#      lapsed paid tiers, and the 02:30 UTC profile snapshot, whose history
+#      cannot be backfilled. A sleeping instance runs none of them.
 #   2. Free is 512 MB, and uploads are buffered in memory. The upload limits
 #      have been cut to fit (server/middleware/uploadGuards.js), but there is
 #      no headroom left for concurrency on top.
@@ -46,8 +47,21 @@ services:
         value: 10000
       - key: CLIENT_URL
         sync: false
+      # The API's own public origin, used to build the one-click approve link in
+      # the registration alert email (server/utils/clientUrl.js serverLinkBase).
+      # Resolved from the service rather than typed in: a hand-entered value is
+      # one typo away from mailing the admin a dead button, and the failure is
+      # invisible until someone actually clicks it. Render substitutes the
+      # hostname only, so the scheme is added when the link is built.
+      #
+      # Set this manually only if a custom domain is in front of the API — then
+      # it must be that domain, since the onrender.com host would still work but
+      # would leak the internal name into the admin's inbox.
       - key: BASE_URL
-        sync: false
+        fromService:
+          type: web
+          name: datad
+          property: host
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
@@ -144,8 +158,12 @@ services:
       # Notification payloads embed deep links back into the app.
       - key: CLIENT_URL
         sync: false
+      # Same origin as the web service — see the BASE_URL note there.
       - key: BASE_URL
-        sync: false
+        fromService:
+          type: web
+          name: datad
+          property: host
       # The profile handler rebuilds the intelligence profile, which calls the
       # AI gateway — so the worker needs provider credentials of its own.
       # Same rationale as the web service: no Ollama fallback on Render.
