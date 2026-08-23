@@ -18,3 +18,12 @@ export const downloadResumePdf = () => api.get('/resume/pdf', { responseType: 'b
 export const uploadResumePhoto = (formData) =>
   api.post('/resume/photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const deleteResumePhoto = () => api.delete('/resume/photo');
+
+// Today's AI-written resume tip. A scheduler writes one a day (see
+// server/automation/resume/generateResumeTip.js); until this call existed the
+// tip was generated, stored and never read by anyone.
+//
+// 404 means "no tip published for today yet", which is an ordinary state on a
+// day the scheduler has not run — the caller renders nothing rather than an
+// error.
+export const getResumeTipToday = () => api.get('/resume-tip/today');

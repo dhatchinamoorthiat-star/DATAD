@@ -12,6 +12,7 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import { useAuth } from '../context/AuthContext';
 import { Page } from '../components/common/motion';
+import ResumeTipCard from '../components/career/ResumeTipCard';
 
 /** One radio row in SendDialog — the whole card is the label, so the hit target
  *  is the card rather than the 16px radio itself. */
@@ -540,6 +541,8 @@ export default function ResumePage() {
           </button>
         </div>
       </div>
+
+      <ResumeTipCard className="mb-4" />
 
       <CompletenessMeter {...completeness} />
 

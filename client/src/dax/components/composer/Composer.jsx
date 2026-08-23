@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useAutosizeTextarea } from '../../hooks/useAutosizeTextarea';
 import ComposerToolbar from './ComposerToolbar';
 import AttachmentChip from './AttachmentChip';
@@ -24,7 +24,6 @@ export default function Composer({
 }) {
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
-  const [activeCapability, setActiveCapability] = useState(null);
   useAutosizeTextarea(textareaRef, value);
 
   const trimmed = value.trim();
@@ -81,8 +80,6 @@ export default function Composer({
           <div className="min-w-0 flex-1">
             <ComposerToolbar
               onAttachClick={() => fileInputRef.current?.click()}
-              activeCapability={activeCapability}
-              onToggleCapability={(id) => setActiveCapability((c) => (c === id ? null : id))}
               models={models}
               selectedModelId={selectedModelId}
               onModelSelect={onModelSelect}
