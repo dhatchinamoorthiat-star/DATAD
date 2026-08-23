@@ -172,6 +172,10 @@ export default function AlbumsListPage() {
                     value={option.value}
                     checked={kind === option.value}
                     onChange={() => setKind(option.value)}
+                    // The visible label is two sibling spans, which the input
+                    // does not pick up as its accessible name — a screen reader
+                    // otherwise announces the raw value ("hosted").
+                    aria-label={option.label}
                     className="sr-only"
                   />
                   <span className="block text-sm font-medium">{option.label}</span>

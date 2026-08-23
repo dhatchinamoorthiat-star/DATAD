@@ -6,6 +6,7 @@ import {
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { listAnnouncements } from '../../api/admin';
 import { listPosts } from '../../api/posts';
+import { listRecentPhotos } from '../../api/photos';
 import { formatDate } from '../../utils/dateUtils';
 import { FeedSkeleton } from '../../components/common/Skeleton';
 import ErrorState from '../../components/common/ErrorState';
@@ -17,9 +18,10 @@ export default function CommunityHubPage() {
   useDocumentTitle('Community');
 
   const { data, error, loading, reload } = useAsync(async () => {
-    const [announcementsRes, postsRes] = await Promise.allSettled([
+    const [announcementsRes, postsRes, photosRes] = await Promise.allSettled([
       listAnnouncements(),
       listPosts({ limit: 4 }),
+      listRecentPhotos(),
     ]);
     // Both sections failing is a real error, not an empty campus — otherwise
     // the hub renders as a ghost town and the student assumes nothing happened.
@@ -29,7 +31,10 @@ export default function CommunityHubPage() {
     const announcements = announcementsRes.status === 'fulfilled' ? announcementsRes.value.data.slice(0, 3) : [];
     const raw = postsRes.status === 'fulfilled' ? postsRes.value.data : {};
     const posts = (raw.posts || raw).slice(0, 4);
-    return { announcements, posts };
+    // Deliberately not part of the both-failed check above: the gallery strip is
+    // a preview, and losing it should never turn the hub into an error page.
+    const photos = photosRes.status === 'fulfilled' ? (photosRes.value.data || []).slice(0, 4) : [];
+    return { announcements, posts, photos };
   }, []);
 
   if (loading) return <div className="mx-auto w-full max-w-3xl px-4 py-6"><FeedSkeleton count={4} /></div>;
@@ -116,11 +121,25 @@ export default function CommunityHubPage() {
           )}
         </div>
 
-        {/* Gallery */}
-        <Link to="/community/gallery" className="card-hover block rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
+        {/* Gallery — a live strip once the batch has uploaded anything, and the
+            plain tile until then, so an empty gallery still reads as an invitation. */}
+        <Link to="/community/memories" className="card-hover block rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
           <Camera className="mb-2 h-5 w-5 text-primary-500" />
           <p className="font-semibold">Gallery</p>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Batch albums and photos</p>
+          {data.photos.length > 0 && (
+            <div className="mt-3 grid grid-cols-4 gap-1.5">
+              {data.photos.map((photo) => (
+                <img
+                  key={photo._id}
+                  src={photo.url}
+                  alt={photo.caption || `Photo in ${photo.album?.title || 'the gallery'}`}
+                  loading="lazy"
+                  className="h-14 w-full rounded-lg object-cover"
+                />
+              ))}
+            </div>
+          )}
         </Link>
 
         {/* BatchVault (formerly Nostalgia Archive) */}
