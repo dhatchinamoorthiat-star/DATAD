@@ -19,6 +19,7 @@ import EmptyState from '../components/common/EmptyState';
 import Modal from '../components/common/Modal';
 import IntelligenceCard from '../components/intelligence/IntelligenceCard';
 import MarketStrip from '../components/intelligence/MarketStrip';
+import DailyBriefingPanel from '../components/intelligence/DailyBriefingPanel';
 
 const chip = (active) =>
   `shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
@@ -139,6 +140,11 @@ export default function IntelligencePage() {
       <p className="mb-4 text-xs text-gray-400">
         Live business news, auto-updated from the newsroom and sorted by topic — useful for placement prep and staying market-aware, whatever you&rsquo;re studying.
       </p>
+
+      {/* The briefing the dashboard card, the career journey and the readiness
+          breakdown all link here for. It renders nothing on the days the
+          scheduler has not produced one. */}
+      <DailyBriefingPanel />
 
       {/* Market snapshot (live) */}
       {market.length > 0 && (

@@ -19,7 +19,10 @@ const COMPONENT_LINKS = {
 const HOW_TO_IMPROVE = {
   resume: 'Fill in every section of your resume — experience, education, skills, projects, and certifications each add points.',
   companies: 'Save companies to your watchlist and read their prep cards. Each card you study counts toward your score.',
-  market: 'Read daily briefings and bookmark stories. Market awareness points increase with each briefing you open.',
+  // Points come from bookmarks and interests — see the market block in
+  // server/controllers/readinessController.js. This used to promise that
+  // opening a briefing scored, which nothing has ever measured.
+  market: 'Bookmark news stories you could discuss in an interview — each of the first five adds points — and set your news interests.',
   planner: 'Add and complete interview-prep tasks in your planner. Completed tasks are weighted toward your score.',
 };
 
