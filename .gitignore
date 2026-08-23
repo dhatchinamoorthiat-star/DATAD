@@ -32,3 +32,8 @@ odysseus/
 # Credential bundle written by `node scripts/datad.mjs export`. Contains live
 # Mongo, Brevo and Cloudinary credentials — must never reach the repo.
 datad-secrets.bundle.json
+
+# Per-machine Claude Code settings. settings.json is the shared, committed
+# config; the .local.json sibling holds one developer's own permission grants
+# and would churn on every machine.
+**/.claude/settings.local.json
