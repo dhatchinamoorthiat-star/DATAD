@@ -210,6 +210,9 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/telemetry', require('./routes/telemetryRoutes'));
 app.use('/api/notes', require('./routes/noteRoutes'));
 app.use('/api/albums', require('./routes/albumRoutes'));
+// Photos live inside albums, so this mount is what makes a hosted album
+// (one holding uploaded files rather than a Google Photos link) possible.
+app.use('/api/photos', require('./routes/photoRoutes'));
 app.use('/api/tasks', require('./routes/taskRoutes'));
 app.use('/api/finance', require('./routes/financeRoutes'));
 app.use('/api/resume', require('./routes/resumeRoutes'));

@@ -88,6 +88,7 @@ const CommunityHubPage  = lazy(() => import('./pages/community/CommunityHubPage'
 const AnnouncementsPage = lazy(() => import('./pages/community/AnnouncementsPage'));
 const StreamPage        = lazy(() => import('./pages/community/StreamPage'));
 const MemoriesPage      = lazy(() => import('./pages/community/MemoriesPage'));
+const AlbumDetailPage   = lazy(() => import('./pages/AlbumDetailPage'));
 const DirectoryPage     = lazy(() => import('./pages/community/DirectoryPage'));
 const EventsPage        = lazy(() => import('./pages/community/EventsPage'));
 const MarketplacePage   = lazy(() => import('./pages/community/MarketplacePage'));
@@ -274,6 +275,7 @@ export default function App() {
                   <Route path="announcements" element={<AnnouncementsPage />} />
                   <Route path="feed" element={<StreamPage />} />
                   <Route path="memories" element={<MemoriesPage />} />
+                  <Route path="albums/:id" element={<AlbumDetailPage />} />
                   <Route path="archive/:category/:slug" element={<EntertainmentDetailPage />} />
                   <Route path="directory" element={<DirectoryPage />} />
                   <Route path="events" element={<EventsPage />} />
