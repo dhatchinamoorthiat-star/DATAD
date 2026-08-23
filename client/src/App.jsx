@@ -89,6 +89,8 @@ const AnnouncementsPage = lazy(() => import('./pages/community/AnnouncementsPage
 const StreamPage        = lazy(() => import('./pages/community/StreamPage'));
 const MemoriesPage      = lazy(() => import('./pages/community/MemoriesPage'));
 const AlbumDetailPage   = lazy(() => import('./pages/AlbumDetailPage'));
+const TalentExchangePage= lazy(() => import('./pages/talent/TalentExchangePage'));
+const OpportunityDetailPage = lazy(() => import('./pages/talent/OpportunityDetailPage'));
 const DirectoryPage     = lazy(() => import('./pages/community/DirectoryPage'));
 const EventsPage        = lazy(() => import('./pages/community/EventsPage'));
 const MarketplacePage   = lazy(() => import('./pages/community/MarketplacePage'));
@@ -282,6 +284,8 @@ export default function App() {
                   {/* No top tab — reachable from the Community overview */}
                   <Route path="marketplace" element={<MarketplacePage />} />
                   <Route path="skills" element={<SkillExchangePage />} />
+                  <Route path="talent" element={<TalentExchangePage />} />
+                  <Route path="talent/:id" element={<OpportunityDetailPage />} />
                   {/* Merged tabs — old URLs keep working */}
                   <Route path="discussions" element={<Navigate to="/community/feed?view=discussions" replace />} />
                   <Route path="gallery" element={<Navigate to="/community/memories" replace />} />

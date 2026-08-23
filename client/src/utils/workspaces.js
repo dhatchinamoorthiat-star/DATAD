@@ -96,6 +96,7 @@ export const WORKSPACE_TABS = {
     { to: '/community/memories', label: 'BatchVault' },
     { to: '/community/marketplace', label: 'Marketplace' },
     { to: '/community/skills', label: 'Skills' },
+    { to: '/community/talent', label: 'Talent' },
   ],
   me: LIFE_TABS,
   finance: [

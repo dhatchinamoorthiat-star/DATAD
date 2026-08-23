@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import {
+  Handshake,
   Megaphone, Camera, Archive, ArrowRight, Pin, ShoppingBag, Award,
   MessageSquare, 
 } from 'lucide-react';
@@ -161,6 +162,12 @@ export default function CommunityHubPage() {
           <Award className="mb-2 h-5 w-5 text-amber-500" />
           <p className="font-semibold">Skills Exchange</p>
           <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Teach, learn and collaborate with batchmates</p>
+        </Link>
+
+        <Link to="/community/talent" className="card-hover block rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
+          <Handshake className="mb-2 h-5 w-5 text-emerald-500" />
+          <p className="font-semibold">Talent Exchange</p>
+          <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Ask the batch for help, or offer what you are good at</p>
         </Link>
       </div>
 
