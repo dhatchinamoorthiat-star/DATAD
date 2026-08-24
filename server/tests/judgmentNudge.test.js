@@ -158,8 +158,11 @@ describe('each condition can hold the nudge back on its own', () => {
     mockCandidates = [{ user: 'u1', dateKey: keyDaysAgo(9), signals: { overdueTasks: 9 } }];
     await sendJudgmentNudges();
     expect(mockNotify).not.toHaveBeenCalled();
-    const cutoff = new Date(mockSnapshotQuery.dateKey.$gte);
-    expect(Math.round((Date.now() - cutoff) / dayMs)).toBe(2);
+    // Compare the dateKey the job actually builds. Deriving an elapsed-day
+    // count from it instead made this time-of-day dependent: the cutoff is
+    // truncated to midnight UTC, so Math.round flipped from 2 to 3 at noon.
+    const expectedCutoff = new Date(Date.now() - 2 * dayMs).toISOString().slice(0, 10);
+    expect(mockSnapshotQuery.dateKey.$gte).toBe(expectedCutoff);
   });
 });
 

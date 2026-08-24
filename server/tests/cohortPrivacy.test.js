@@ -143,8 +143,12 @@ describe('k-anonymity — the ways it stops holding', () => {
     // Stale readings are not members: the cohort falls to zero with data and is
     // suppressed rather than reported from history.
     expect(res.meta).toMatchObject({ written: 0, suppressed: 1 });
-    const cutoff = new Date(mockSnapshotQuery.dateKey.$gte);
-    expect(Math.round((Date.now() - cutoff) / 86400000)).toBe(30);
+    // The cutoff is a dateKey — midnight UTC — so compare it as one. Measuring
+    // elapsed days off it instead made this depend on the time of day: the
+    // truncation means Math.round gave 30 before noon UTC and 31 after, so the
+    // assertion passed every morning and failed every afternoon.
+    const expectedCutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    expect(mockSnapshotQuery.dateKey.$gte).toBe(expectedCutoff);
   });
 
   it('withholds the converted/unconverted split when one side is a single student', async () => {
