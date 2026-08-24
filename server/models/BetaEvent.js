@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
 
 const betaEventSchema = new mongoose.Schema({
-  user:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  event:    { type: String, required: true, index: true },
+  user:     { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  event:    { type: String, required: true },
   properties: { type: mongoose.Schema.Types.Mixed, default: {} },
   sessionId:  { type: String, default: null },
   url:        { type: String, default: null },

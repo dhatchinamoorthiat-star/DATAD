@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const weeklyReviewSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   weekStart: { type: String, required: true },
   weekEnd: { type: String, required: true },
   reflection: { type: String },

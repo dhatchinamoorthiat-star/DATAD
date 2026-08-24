@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 // Powers the study streak on the dashboard.
 const dailyCaseSolveSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     dailyCase: { type: mongoose.Schema.Types.ObjectId, ref: 'DailyCase', required: true },
     // Denormalized from the case so streaks are computable without a join.
     dateKey: { type: String, required: true },

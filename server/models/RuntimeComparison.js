@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const runtimeComparisonSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   task: { type: String, index: true },
-  intent: { type: String, index: true },
+  intent: { type: String },
 
   runtimeSelected: { type: String, enum: ['v1', 'v2', 'shadow'], required: true },
   fallbackRuntime: { type: String, enum: ['v1', 'v2', null], default: null },

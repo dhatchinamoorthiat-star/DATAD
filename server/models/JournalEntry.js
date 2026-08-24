@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 // tracking mood, and recording personal thoughts. Never exposed to admin, Dax, or other users.
 const journalEntrySchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, trim: true, maxlength: 200 },
     content: { type: String, required: true, maxlength: 20000 },
     mood: {

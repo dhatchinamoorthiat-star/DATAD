@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const calendarEventSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, maxlength: 200 },
     date: { type: String, required: true }, // YYYY-MM-DD
     time: { type: String, default: '' },

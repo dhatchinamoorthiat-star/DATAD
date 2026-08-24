@@ -65,7 +65,7 @@ const actionSchema = new mongoose.Schema(
 
 const proposedActionSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Which conversation proposed this, so the card can be re-rendered when a
     // thread is reopened on another device.

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const automationLogSchema = new mongoose.Schema({
-  job: { type: String, required: true, index: true },
+  job: { type: String, required: true },
   status: { type: String, enum: ['running', 'success', 'failed', 'partial'], default: 'running' },
   startedAt: { type: Date, default: Date.now },
   finishedAt: { type: Date },

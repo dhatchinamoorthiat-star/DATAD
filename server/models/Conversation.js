@@ -12,7 +12,7 @@ const mongoose = require('mongoose');
  */
 const conversationSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Client-generated id from the pre-migration localStorage records. Kept so
     // the one-time import is idempotent: re-running it (a second device, a

@@ -25,8 +25,8 @@ const engagementSchema = new mongoose.Schema(
     opportunity: { type: mongoose.Schema.Types.ObjectId, ref: 'Opportunity', required: true, index: true },
     application: { type: mongoose.Schema.Types.ObjectId, ref: 'Application', default: null },
 
-    requester: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    helper: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    requester: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    helper: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Denormalised so reputation/analytics can group without a join.
     category: { type: String, required: true },
@@ -52,7 +52,7 @@ const engagementSchema = new mongoose.Schema(
     // The CreditLedger 'hold' entry that escrows this engagement's credits.
     escrowLedgerId: { type: mongoose.Schema.Types.ObjectId, ref: 'CreditLedger', default: null },
 
-    status: { type: String, enum: ENGAGEMENT_STATUS, default: 'accepted', index: true },
+    status: { type: String, enum: ENGAGEMENT_STATUS, default: 'accepted' },
 
     milestones: [
       {

@@ -18,7 +18,6 @@ const contentItemSchema = new mongoose.Schema(
         'failed',
       ],
       default: 'uploaded',
-      index: true,
     },
 
     file: {

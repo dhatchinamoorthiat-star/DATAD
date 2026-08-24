@@ -40,7 +40,7 @@ const v2ScoreSchema = new mongoose.Schema({
 }, { _id: false });
 
 const recommendationSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   type: {
     type: String,
     enum: [

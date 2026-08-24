@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const chatMessageSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
     // Null only for messages written before conversations existed. The import
     // in scripts/migrateConversations.js adopts those into a single "Earlier
@@ -17,7 +17,6 @@ const chatMessageSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       refPath: 'conversationModel',
       default: null,
-      index: true,
     },
     // Which conversation collection `conversation` points at. Defaults to
     // 'Conversation' so every pre-existing Dax message resolves correctly with
