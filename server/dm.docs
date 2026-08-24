@@ -1,0 +1,259 @@
+# DATAD — Give Dax persistent state (the "memory layer" sprint)
+
+You are working in /Users/Shared/DATAD, a Node/Express + MongoDB (Mongoose) +
+React/Vite app called DATAD — a student operating system for Indian students.
+Its AI assistant is called Dax and lives in `server/ai/`.
+
+## Repo rules you MUST follow
+
+- This repo has a knowledge graph. Before reading/grepping source files, orient
+  with `graphify query "<question>"`, `graphify explain "<concept>"`, or
+  `graphify path "<A>" "<B>"`. Read `graphify-out/GRAPH_REPORT.md` only for
+  broad architecture review.
+- After modifying code, run `graphify update .` to keep the graph current.
+- Do not commit or push unless I explicitly ask.
+
+## The problem (verified against the working tree, but RE-VERIFY before acting)
+
+Dax computes a deep, per-student understanding on every request and then
+throws it away. Concretely:
+
+1. `server/ai/intelligence-layer/index.js` → `buildStudentProfile(userId)` runs
+   9 collectors in parallel (identity, memory, tasks, notes, planner, career,
+   learning, activity, stress), computes 12 scores via
+   `intelligence-layer/scoringEngine.js`, assembles a profile in
+   `intelligence-layer/profileFactory.js`, returns it in memory — and **nothing
+   persists it**. `grep -rl "intelligenceScore" server/models/` returns nothing.
+   There is no snapshot collection. It is recomputed from scratch per request.
+
+2. `server/ai/recommendation-engine/learningLoop.js` learns which recommendation
+   generators a student dismisses and adjusts weights — into an in-memory
+   `const _overrides = new Map()` (~line 24). Wiped on every restart and every
+   deploy. Its own comment says "In a future version these will be persisted."
+
+3. `server/schedulers/index.js` registers ~20 cron jobs (news, market, daily
+   case, briefing, reflection, reminders, streaks). **None** snapshots the
+   profile, and nothing records or resolves Dax's predictions.
+
+The consequence: the "temporal", "prediction", and "feedback-loop" moats
+described in `docs/qwen-context/STUDENT_INTELLIGENCE_GRAPH.md` §29 have code
+written for them but no storage behind them. Dax is amnesiac by construction.
+
+**Snapshot data cannot be backfilled.** Every day without a snapshot is student
+history permanently lost. That is why Phase 1 is urgent even at low user counts.
+
+### Phase 0 — verify first, then report before you build
+
+Confirm each of the three claims above against the current tree. If any is
+already fixed or was inaccurate, say so plainly and adjust the plan rather than
+implementing something redundant. Then give me a short plan and proceed.
+
+---
+
+## Conventions you must match
+
+- **Models**: `server/models/*.js`, Mongoose, CommonJS. Use the existing
+  re-registration guard pattern seen in `server/ai/embeddings/vectorStore.js`:
+  `mongoose.models.X || mongoose.model('X', schema)`. Add indexes explicitly.
+- **Cron jobs**: implement the job under `server/automation/<area>/<name>.js`
+  exporting a named function, wrap the body in `runJob(...)` from
+  `server/automation/jobRunner.js` (see
+  `server/automation/briefing/generateDailyBriefing.js` for the reference
+  pattern, including the "already exists for today — skipping" idempotency
+  guard). Register it in `server/schedulers/index.js` inside `register()` using
+  the existing `safe(name, fn)` wrapper.
+- **Schedules**: add the cron expression to `cfg.schedules` in
+  `server/config/automation.js` with a `process.env.CRON_*` override and a
+  sensible default, matching the style of the entries already there. Note
+  server time is UTC and the users are in IST — comment the IST equivalent.
+- **Tests**: Jest, in `server/tests/`. `tests/setup/blockExternalCalls.js` and
+  `tests/socketGuard.js` run as setup — **tests must not make network calls or
+  open sockets.** Follow the mocking style of the existing tests.
+- **No new AI providers, no new LLM calls** unless a phase explicitly needs one.
+  Most of this work is deterministic and should stay that way.
+
+## Exact score keys (from scoringEngine.js — verify)
+
+`currentFocus` (string), `currentChallenges` (string[]), `recommendedTone`
+(string), `recommendedResponseLength` (string), `recommendedExamples`
+(string[]), `urgencyLevel`, `motivationLevel`, `confidence`,
+`learningVelocity`, `careerReadiness`, `contextQualityScore`,
+`intelligenceScore` (all 0–100 numbers).
+
+---
+
+## Phase 1 — StudentProfileSnapshot (do this first, ship it alone)
+
+Create `server/models/StudentProfileSnapshot.js`:
+- `user` (ObjectId ref User, indexed), `dateKey` (YYYY-MM-DD string)
+- the 12 score fields above (numeric ones as Number, the string/array ones as-is)
+- a small `signals` sub-object of raw counters worth trending: streak,
+  consistency, pendingTasks, overdueTasks, applicationsCount, resumeCompletion,
+  stressLevel, studyMinutes — pull whatever the collectors already return; do
+  not invent new collection logic
+- `contextQualityScore` is already in the scores; also store `collectedAt`
+- Unique compound index on `{ user: 1, dateKey: 1 }` so re-runs are idempotent
+- Index `{ user: 1, dateKey: -1 }` for trend queries
+
+Create `server/automation/intelligence/snapshotProfiles.js`:
+- Export `snapshotProfiles()`, wrapped in `runJob('profile-snapshot', ...)`
+- Iterate **active** users only — define active as having any activity in the
+  last N days (check what signal is cheapest and most reliable; `ActivityLog`,
+  `User.lastLoginAt`, or recent `ChatMessage`/`Task` writes — pick one and
+  document the choice). Do NOT load all users into memory: batch with a cursor
+  or paginate, and cap concurrency (e.g. 5 at a time) so 9 collector queries ×
+  N users doesn't melt Atlas.
+- For each user call `buildStudentProfile(userId)` and upsert the snapshot on
+  `{ user, dateKey }`.
+- Skip users whose `contextQualityScore` is 0 (no data — a snapshot of nothing
+  is noise).
+- Log counts processed/skipped/failed; never let one user's failure abort the run.
+
+Register it at ~02:30 UTC (08:00 IST) as `CRON_PROFILE_SNAPSHOT`, before the
+briefing job at 06:00.
+
+Then add `server/ai/intelligence-layer/trends.js`:
+- `getTrend(userId, metric, { days = 30 })` → the series
+- `getDelta(userId, metric, { days = 14 })` → `{ start, end, delta, pctChange }`
+- `summarizeTrends(userId)` → a short human-readable string of only the
+  *notable* movements (e.g. changes beyond a threshold), suitable for injection
+  into a prompt. Keep it terse — this goes into a token budget.
+
+**Acceptance:** running the job twice on the same day creates exactly one
+snapshot per user. Tests cover idempotency, the active-user filter, the
+skip-empty rule, and `getDelta` maths.
+
+---
+
+## Phase 2 — Persist the learning loop
+
+Move `learningLoop.js`'s in-memory `_overrides` Map into MongoDB
+(`server/models/GeneratorWeight.js` or a field on an existing per-user prefs
+model — check `UserModelPref.js` first and reuse if it fits).
+
+- Keep the existing public API (`getGeneratorWeight`, `processFeedback`) so
+  callers in `recommendation-engine/index.js` don't change.
+- `getGeneratorWeight` is called in hot paths, so read through a small in-process
+  cache with a TTL rather than hitting Mongo per call; write through on update.
+- Preserve the existing MIN_WEIGHT/MAX_WEIGHT clamps.
+
+**Acceptance:** learned weights survive a simulated process restart in a test.
+
+---
+
+## Phase 3 — Prediction ledger (the differentiator — do not skip)
+
+The goal: when Dax makes a forward-looking claim, it is recorded, later
+resolved against reality, and Dax's own accuracy is shown to the student.
+
+Create `server/models/DaxPrediction.js`:
+- `user`, `statement` (the human sentence Dax asserted), `metric` (which score
+  it's about, e.g. `careerReadiness`), `predictedValue`, `comparator`
+  (`gte`/`lte`/`eq`), `horizonDays`, `predictedAt`, `resolveBy` (Date, indexed),
+  `resolvedAt`, `actualValue`, `outcome` (enum:
+  `pending|hit|miss|partial|unresolvable`), `sourceTask`, `model`, `provider`
+- Index `{ outcome: 1, resolveBy: 1 }` for the resolver, `{ user: 1, predictedAt: -1 }`
+  for display.
+
+Recording: start narrow and deterministic. Do **not** try to parse arbitrary
+free-form chat for predictions. Instead, record predictions from the structured
+places where Dax already produces forward-looking output — start with the
+recommendation engine's readiness/goal-progress paths
+(`recommendation-engine/goalProgress.js`, `weeklyReview.js`) and add an explicit
+`recordPrediction()` call there. Note in comments that chat-sourced predictions
+are a later phase.
+
+Resolver: `server/automation/intelligence/resolvePredictions.js`, daily.
+For each `pending` prediction whose `resolveBy` has passed, look up the
+`StudentProfileSnapshot` nearest that date, compare, set outcome. If no snapshot
+exists in a reasonable window, mark `unresolvable` — never guess.
+
+Expose `getAccuracy(userId)` → `{ total, hits, misses, accuracy }` plus the
+recent resolved list, and a read-only route for the client.
+
+**This must be honest.** Show misses as prominently as hits. An assistant that
+says "I predicted 5 weeks, it took 8" is the entire point of the feature. Do not
+add logic that hides or softens misses.
+
+**Acceptance:** tests cover hit, miss, and unresolvable paths, and confirm the
+resolver is idempotent (re-running doesn't double-resolve).
+
+---
+
+## Phase 4 — Cohort insights (privacy-gated)
+
+Let Dax say things like "students in your batch who converted this drive had 3×
+more STAR stories by this point" — something a general chatbot structurally
+cannot say.
+
+- Build aggregates over cohorts defined by fields that already exist on
+  `StudentIdentity` / `UserProfile` / `ProgramRegistry` (batch, college,
+  program) joined with `PlacementOutcome`.
+- **Hard privacy rules, non-negotiable:**
+  - Suppress any cohort with fewer than 5 members (k-anonymity). Return null,
+    not a smaller sample.
+  - Return aggregates only — never individual students, names, or anything
+    re-identifiable.
+  - Respect existing visibility settings; read `server/models/profileVisibility.js`
+    and extend that model rather than inventing a parallel one.
+  - Never expose another student's raw data through Dax's context.
+- Precompute nightly into a cached collection; do not aggregate per request.
+
+**Acceptance:** a test proves a 4-member cohort returns nothing and a 5-member
+cohort returns aggregates only.
+
+---
+
+## Phase 5 — Make the crons push judgment, not just content
+
+The existing ~20 jobs push content ("here's today's case"). Add one that pushes
+judgment: e.g. a student 6 days from a placement drive with 3 overdue tasks and
+a falling consistency trend gets a specific, actionable nudge with an offer to
+replan — using the Phase 1 trend data.
+
+Reuse the existing notification path (`controllers/notificationController.js`,
+`notifyBulk`) and the existing quiet-hours/rate-limit conventions if any exist —
+check before adding new ones. Cap frequency hard (at most one judgment nudge per
+student per day, and only when a real threshold is crossed). A nudge that fires
+every day is spam and will get Dax muted.
+
+---
+
+## Phase 6 — Actually use it (otherwise none of the above matters)
+
+Wire the new state into Dax's context so it changes what Dax says:
+- Inject `summarizeTrends(userId)` output into the enriched context built by
+  `intelligence-layer/profileFactory.js` → `buildEnrichedContext()`, so the
+  chat path sees trajectory, not just current state.
+- Keep it token-cheap: only notable deltas, capped length.
+- Extend `server/ai/dax.js`'s guidance so Dax cites the evidence when it makes a
+  claim about the student ("your consistency is down 30% since the 10th"),
+  and never fabricates a trend when no snapshot history exists yet.
+- Add a test in the style of `server/tests/daxSystemPrompt.test.js`.
+
+---
+
+## Also fix while you're here
+
+`server/ai/intelligence-layer/ARCHITECTURE.md` is stale and actively misleading:
+it documents V1/V2 hybrid routing, `_execV2`, and profile-driven routing
+overrides that were **removed** in the July 2026 consolidation (see the header
+comment in `server/ai/aiGateway.js`). Update it to describe what actually runs,
+and document the new snapshot/prediction layer.
+
+## Out of scope — do not do these
+
+- Do not add new recommendation generators (there are already 11) or new
+  `runtime-v2` modules (there are already 12).
+- Do not swap, add, or fine-tune LLM providers.
+- Do not refactor `daxService.js` broadly.
+- Do not backfill snapshots with synthetic history — the data doesn't exist and
+  fabricating it would poison every trend and prediction downstream.
+
+## How to work
+
+Ship the phases **in order, as separate reviewable commits** (don't commit until
+I ask). After each phase: run `cd server && npm test`, report what passed and
+what failed with real output, and pause for my go-ahead before the next phase.
+If a phase turns out to be blocked or a premise is wrong, finish the others and
+tell me explicitly what you left out and why.
