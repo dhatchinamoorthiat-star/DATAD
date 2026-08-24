@@ -1,101 +1,78 @@
 /**
- * P9 regression — the client's copy of the tier rules must match the server's.
+ * P9 regression — the dashboard must not gate on a capability key the server
+ * does not emit.
  *
  * The dashboard called `getReadiness()` and `dashboardInsights()` on every load
  * for every user. Readiness requires the Placement pass and dashboard insights
  * require Pro, so for a free account — the default, and most accounts — both
  * were a guaranteed 403 on every page view, swallowed by `.catch(() => {})`.
  *
- * The fix skips those calls when the plan cannot use them, which means the
- * client now holds a copy of two facts the server owns. A copy that drifts is
- * worse than no copy: if the client's number is too high a paying student
- * silently loses a feature they bought, and no error is raised anywhere,
- * because the fix's whole mechanism is *not making a request*.
+ * The fix skips those calls when the plan cannot use them, asking the server's
+ * own capability map (`GET /api/subscription/me` → `capabilities`) rather than
+ * keeping a second copy of the tier table on the client. That removes the
+ * drift this suite used to guard, and introduces a narrower one: the client
+ * names two capability keys as strings, and a key the server never emits reads
+ * as `false` forever — silently withholding a feature from the people who paid
+ * for it, with no error anywhere, because the mechanism is *not making a
+ * request*.
  *
- * So this test reads both sides and asserts they agree. It fails the moment
- * someone changes a tier in the registry without changing client/src/utils/tier.js.
+ * So this test reads the keys out of the dashboard and asserts the server
+ * actually publishes them, at the tier the product intends.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-// getMinimumTier() rather than the FEATURE_ACCESS map directly: the accessor
-// is the module's stated contract, and it applies whatever default the
-// registry uses for a feature with no explicit entry.
-const { FEATURE, getMinimumTier } = require('../subscription/featureRegistry');
+const { FEATURE, getFeaturesForTier, getMinimumTier } = require('../subscription/featureRegistry');
 const { TIERS, isAtLeast } = require('../subscription/tierHierarchy');
 
 /**
- * Read the client's table without bundling it.
+ * Read the capability keys the dashboard gates on, without bundling it.
  *
  * The client is ESM with Vite-specific imports, so requiring it from a CommonJS
- * jest suite is not straightforward. Parsing the two literals is a narrow,
- * honest hack: it reads exactly the two things that must not drift, and it
+ * jest suite is not straightforward. Scanning for `hasFeature('…')` is a
+ * narrow, honest hack: it reads exactly the thing that must not drift, and it
  * fails loudly if the file is restructured, which is the moment a human should
  * look at this anyway.
  */
-function readClientTier() {
+function dashboardCapabilityKeys() {
   const source = fs.readFileSync(
-    path.join(__dirname, '..', '..', 'client', 'src', 'utils', 'tier.js'),
+    path.join(__dirname, '..', '..', 'client', 'src', 'components', 'experience', 'LivingSurface.jsx'),
     'utf8'
   );
 
-  const tiersMatch = source.match(/export const TIERS = \[([^\]]+)\]/);
-  if (!tiersMatch) throw new Error('client/src/utils/tier.js: could not find TIERS');
-  const tiers = tiersMatch[1].split(',').map((s) => s.trim().replace(/['"]/g, '')).filter(Boolean);
-
-  const mapMatch = source.match(/export const FEATURE_MIN_TIER = \{([\s\S]*?)\};/);
-  if (!mapMatch) throw new Error('client/src/utils/tier.js: could not find FEATURE_MIN_TIER');
-
-  const minTier = {};
-  for (const line of mapMatch[1].split('\n')) {
-    const entry = line.match(/^\s*(\w+)\s*:\s*'([^']+)'/);
-    if (entry) minTier[entry[1]] = entry[2];
+  const keys = [...source.matchAll(/hasFeature\(\s*'([^']+)'\s*\)/g)].map((m) => m[1]);
+  if (!keys.length) {
+    throw new Error('LivingSurface.jsx: no hasFeature() gates found — has the gating moved?');
   }
-  return { tiers, minTier };
+  return keys;
 }
 
-/** Client feature key → the server FEATURE the client is gating on. */
-const FEATURE_ALIAS = {
-  readinessScore: FEATURE.READINESS_SCORE,
-  dashboardInsights: FEATURE.DASHBOARD_INSIGHTS,
-};
+describe('the dashboard gates on capabilities the server publishes', () => {
+  const keys = dashboardCapabilityKeys();
 
-describe('client and server tier tables agree', () => {
-  const client = readClientTier();
-
-  it('ranks the same tiers in the same order', () => {
-    // Order is the whole meaning of the table: isAtLeast() is an index compare.
-    expect(client.tiers).toEqual(TIERS);
-  });
-
-  it('gates every mirrored feature at exactly the tier the server requires', () => {
-    for (const [clientKey, serverFeature] of Object.entries(FEATURE_ALIAS)) {
-      expect(client.minTier[clientKey]).toBeDefined();
-      expect(client.minTier[clientKey]).toBe(getMinimumTier(serverFeature));
+  it('names only keys present in the capability map', () => {
+    // getFeaturesForTier is what `GET /subscription/me` returns to the client,
+    // so its key set is exactly what `hasFeature` can ever find.
+    const published = getFeaturesForTier('placement');
+    for (const key of keys) {
+      expect(Object.keys(published)).toContain(key);
     }
   });
 
-  it('mirrors only features that exist on the server', () => {
-    // A stale client entry gates a feature the server no longer restricts,
-    // hiding something everyone is entitled to.
-    for (const clientKey of Object.keys(client.minTier)) {
-      expect(FEATURE_ALIAS[clientKey]).toBeDefined();
-      expect(getMinimumTier(FEATURE_ALIAS[clientKey])).toBeDefined();
-    }
+  it('still gates the two dashboard calls it was written for', () => {
+    expect(keys).toContain(FEATURE.READINESS_SCORE);
+    expect(keys).toContain(FEATURE.DASHBOARD_INSIGHTS);
   });
 
-  it('never lets the client suppress a call the server would have allowed', () => {
-    // The dangerous direction, stated directly. If the client demands a HIGHER
-    // tier than the server, a paying student silently loses a feature and
-    // nothing errors — because the mechanism is the absence of a request.
-    for (const [clientKey, serverFeature] of Object.entries(FEATURE_ALIAS)) {
+  it('never suppresses a call the server would have allowed', () => {
+    // The dangerous direction, stated directly. The client attempts the request
+    // exactly when the capability map says true, so this holds by construction
+    // — and this asserts the construction, because a regression here is silent.
+    for (const key of keys) {
       for (const tier of TIERS) {
-        const serverAllows = isAtLeast(tier, getMinimumTier(serverFeature));
-        const clientAttempts = isAtLeast(tier, client.minTier[clientKey]);
-        if (serverAllows) {
-          expect(clientAttempts).toBe(true);
-        }
+        const serverAllows = isAtLeast(tier, getMinimumTier(key));
+        expect(getFeaturesForTier(tier)[key]).toBe(serverAllows);
       }
     }
   });
@@ -107,5 +84,14 @@ describe('free is the default and is genuinely gated', () => {
     // rather than left in place suppressing a call that would now succeed.
     expect(getMinimumTier(FEATURE.READINESS_SCORE)).not.toBe('free');
     expect(getMinimumTier(FEATURE.DASHBOARD_INSIGHTS)).not.toBe('free');
+  });
+
+  it('withholds both from a free account and grants both to placement', () => {
+    const free = getFeaturesForTier('free');
+    const placement = getFeaturesForTier('placement');
+    expect(free[FEATURE.READINESS_SCORE]).toBe(false);
+    expect(free[FEATURE.DASHBOARD_INSIGHTS]).toBe(false);
+    expect(placement[FEATURE.READINESS_SCORE]).toBe(true);
+    expect(placement[FEATURE.DASHBOARD_INSIGHTS]).toBe(true);
   });
 });

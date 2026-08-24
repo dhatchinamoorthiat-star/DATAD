@@ -12,6 +12,12 @@ export function SubscriptionProvider({ children }) {
   const { user } = useAuth();
   const [status, setStatus] = useState({ tier: 'free', tierExpiresAt: null, trialUsed: false, capabilities: {} });
   const [loading, setLoading] = useState(false);
+  // Distinct from `!loading`: before the first response `loading` is also
+  // false, and `capabilities` is an empty object that reads as "nothing is
+  // permitted". A caller that skips a request when a capability is absent
+  // needs to tell "not allowed" apart from "not asked yet", or it suppresses
+  // the feature for the people who paid for it.
+  const [loaded, setLoaded] = useState(false);
   const now = useNow();
 
   // Keyed on the id, not the user object: a new object identity for the same
@@ -21,7 +27,10 @@ export function SubscriptionProvider({ children }) {
     if (!userId) return;
     setLoading(true);
     getSubscriptionStatus()
-      .then((res) => setStatus(res.data))
+      .then((res) => {
+        setStatus(res.data);
+        setLoaded(true);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [userId]);
@@ -56,7 +65,7 @@ export function SubscriptionProvider({ children }) {
   const hasFeature = (feature) => capabilities[feature] === true;
 
   return (
-    <SubscriptionContext.Provider value={{ tier, tierExpiresAt, trialUsed, daysLeft, loading, hasAccess, hasFeature, capabilities, credits, chatQuota, refresh: fetch }}>
+    <SubscriptionContext.Provider value={{ tier, tierExpiresAt, trialUsed, daysLeft, loading, loaded, hasAccess, hasFeature, capabilities, credits, chatQuota, refresh: fetch }}>
       {children}
     </SubscriptionContext.Provider>
   );

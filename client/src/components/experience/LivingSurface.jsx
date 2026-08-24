@@ -6,7 +6,7 @@ import {
   Map,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { canUseFeature } from '../../utils/tier';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { getReadiness } from '../../api/experience';
 import { listTasks } from '../../api/tasks';
 import { listNotes } from '../../api/notes';
@@ -420,16 +420,27 @@ export default function LivingSurface() {
   // rate-limit budget spent on a known answer, and genuine 403s hidden among
   // routine ones.
   //
+  // The answer comes from the subscription status the dashboard already fetches,
+  // not from the tier claim in the JWT. That claim is a login-time snapshot with
+  // a 7-day life: the server re-reads the tier from the database before every
+  // feature check (`permissionEngine.refreshTier`), so a student who upgrades
+  // mid-session is entitled to both calls while their token still says `free`.
+  // Gating on the token would have withheld the feature they just paid for
+  // until they happened to sign in again.
+  //
   // This is not access control; the server enforces that. It is not asking a
   // question whose answer we already have.
-  const canSeeReadiness = canUseFeature(user?.tier, 'readinessScore');
-  const canSeeInsights = canUseFeature(user?.tier, 'dashboardInsights');
+  const { hasFeature, loaded: plansLoaded } = useSubscription();
+  const canSeeReadiness = hasFeature('readiness_score');
+  const canSeeInsights = hasFeature('dashboard_insights');
 
 
   const [readiness, setReadiness] = useState(null);
-  // Seeded from the capability rather than cleared inside the effect: a tile
-  // that is never going to load should not start in a loading state.
-  const [readinessLoading, setReadinessLoading] = useState(canSeeReadiness);
+  // Tracks the request, not the tile. Whether the tile *reads* as loading is
+  // derived below, because "the plan cannot have this" resolves the tile
+  // without any request ever settling — and deriving it beats a second
+  // setState in the effect.
+  const [readinessPending, setReadinessPending] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [notes, setNotes] = useState([]);
@@ -438,18 +449,11 @@ export default function LivingSurface() {
   const [resume, setResume] = useState(null);
   const [internships, setInternships] = useState([]);
   const [internshipsLoading, setInternshipsLoading] = useState(true);
-  const [brief, setBrief] = useState(canSeeInsights ? '' : DEFAULT_BRIEF);
-  const [briefLoading, setBriefLoading] = useState(canSeeInsights);
+  const [brief, setBrief] = useState('');
+  const [briefPending, setBriefPending] = useState(true);
   const [roadmapProgress, setRoadmapProgress] = useState(null);
 
   useEffect(() => {
-    if (canSeeReadiness) {
-      getReadiness()
-        .then((res) => setReadiness(typeof res.data === 'object' ? res.data?.score : res.data))
-        .catch(() => {})
-        .finally(() => setReadinessLoading(false));
-    }
-
     listTasks()
       .then((res) => setTasks(res.data?.data || res.data || []))
       .catch(() => {})
@@ -465,6 +469,25 @@ export default function LivingSurface() {
       .catch(() => {})
       .finally(() => setInternshipsLoading(false));
 
+    getRoadmapProgress()
+      .then((res) => setRoadmapProgress(res.data))
+      .catch(() => {});
+  }, []);
+
+  // The gated pair waits for the capability map, so it runs one render later
+  // than the ungated fetches above. Kept in its own effect for that reason: the
+  // ungated calls must not refire when the map lands. `loaded` only ever goes
+  // false → true, so neither request can be issued twice.
+  useEffect(() => {
+    if (!plansLoaded) return;
+
+    if (canSeeReadiness) {
+      getReadiness()
+        .then((res) => setReadiness(typeof res.data === 'object' ? res.data?.score : res.data))
+        .catch(() => {})
+        .finally(() => setReadinessPending(false));
+    }
+
     if (canSeeInsights) {
       dashboardInsights()
         .then((res) => {
@@ -472,13 +495,16 @@ export default function LivingSurface() {
           setBrief(d.nextBestAction || d.overallAssessment || DEFAULT_BRIEF);
         })
         .catch(() => setBrief(DEFAULT_BRIEF))
-        .finally(() => setBriefLoading(false));
+        .finally(() => setBriefPending(false));
     }
+  }, [plansLoaded, canSeeReadiness, canSeeInsights]);
 
-    getRoadmapProgress()
-      .then((res) => setRoadmapProgress(res.data))
-      .catch(() => {});
-  }, [canSeeReadiness, canSeeInsights]);
+  // A tile is loading only while a request it will actually make is still out.
+  // Once the capability map says the plan cannot have the feature, the tile is
+  // settled — it just settles on the free-tier content rather than a result.
+  const readinessLoading = readinessPending && (!plansLoaded || canSeeReadiness);
+  const briefLoading = briefPending && (!plansLoaded || canSeeInsights);
+  const briefText = brief || (plansLoaded && !canSeeInsights ? DEFAULT_BRIEF : '');
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const streak = caseData?.streak || 0;
@@ -513,7 +539,7 @@ export default function LivingSurface() {
       <div className="space-y-12 pb-16">
         {/* ⭐ Program Header */}
         <ProgramHeader />
-        <Arrival firstName={firstName} brief={brief} briefLoading={briefLoading} />
+        <Arrival firstName={firstName} brief={briefText} briefLoading={briefLoading} />
         <UsageSummary />
 
         {/* Today's Focus — from the rich rules engine */}
