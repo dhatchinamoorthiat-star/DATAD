@@ -55,3 +55,19 @@ export const getProgramSyncStatus = (id) => api.get(`/admin/programs/${id}/sync-
 // as soon as the sync is queued, not when it finishes.
 export const approveProgram = (id) => api.post(`/admin/programs/${id}/approve`);
 export const rejectProgram = (id, reason) => api.post(`/admin/programs/${id}/reject`, { reason });
+
+// --- Placement outcomes (the Outcome Vault) --------------------------------
+//
+// The result of a student's placement attempt. Per models/PlacementOutcome.js
+// this is deliberately never shown to employers or third parties — only the
+// student and the placement office see an individual row.
+
+// Filters are all optional: { company, outcome, verified, userId, limit }.
+// Returns { outcomes, count }.
+export const listOutcomes = (params = {}) => api.get('/admin/outcomes', { params });
+// Per-company totals: { stats: [{ _id: company, total, offers, rejections, inProgress }] }
+export const getOutcomeStats = () => api.get('/admin/outcomes/stats');
+// Anything recorded here is marked verified — an admin entering it is the
+// verification. Self-reported rows would arrive unverified from elsewhere.
+export const createOutcome = (body) => api.post('/admin/outcomes', body);
+export const updateOutcome = (id, body) => api.patch(`/admin/outcomes/${id}`, body);

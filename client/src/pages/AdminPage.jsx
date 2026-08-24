@@ -10,6 +10,7 @@ import {
   CreditCard,
   GraduationCap,
   Megaphone,
+  Trophy,
   Newspaper,
   Users,
   Clapperboard,
@@ -167,6 +168,12 @@ export default function AdminPage() {
       icon: Megaphone,
       title: 'Announcements',
       description: 'Post to the dashboard, optionally email the batch',
+    },
+    {
+      to: '/admin/outcomes',
+      icon: Trophy,
+      title: 'Placement outcomes',
+      description: 'Who applied where, and how it ended',
     },
     {
       to: '/admin/programs',
