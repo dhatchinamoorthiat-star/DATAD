@@ -11,6 +11,8 @@
  * collected. Prices below are the full amount payable.
  */
 
+import { normalizeTier } from './tiers';
+
 export const PRICES = {
   free:      { monthly: 0, yearly: 0 },
   trial:     { monthly: 0, yearly: 0 },
@@ -160,6 +162,37 @@ export const FAQ_ITEMS = [
   { q: 'Do yearly Pro subscribers save money?', a: 'Yes — ₹1,199 a year against ₹149 a month works out to roughly two months free.' },
   { q: 'How do I pay?', a: 'By UPI. You will see a QR code and a UPI ID at checkout; pay from any UPI app and submit the reference number. Your plan is activated once the payment is verified, usually within 24 hours.' },
 ];
+
+/**
+ * What a student actually gained by moving from one tier to another.
+ *
+ * Reads FEATURE_ROWS, so it can never advertise something the comparison table
+ * does not — and that table is asserted against the server registry by
+ * server/tests/pricing.test.js. Rows whose values are strings (the credit and
+ * Dax quotas) are reported as a before/after change rather than as an unlock,
+ * because they were never locked, only smaller.
+ */
+export function computeUnlocks(fromTier, toTier) {
+  // Aliases are folded by tiers.js, never spelled out here: this file is
+  // asserted to contain no retired tier name at all (server/tests/pricing.test.js).
+  const from = normalizeTier(fromTier || 'free');
+  const to = normalizeTier(toTier);
+  const unlocked = [];
+  const upgraded = [];
+
+  for (const row of FEATURE_ROWS) {
+    const before = row[from];
+    const after = row[to];
+    if (after === undefined) continue;
+    if (typeof after === 'string') {
+      if (before !== after) upgraded.push({ label: row.label, from: before, to: after });
+    } else if (after === true && before !== true) {
+      unlocked.push(row.label);
+    }
+  }
+
+  return { unlocked, upgraded };
+}
 
 export const TIER_TO_PLAN = {
   free: 'free',

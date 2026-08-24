@@ -4,7 +4,9 @@ import { ArrowLeft, CheckCircle2, Crown, Sparkles, Zap, Shield, CreditCard } fro
 import { Link, useNavigate } from 'react-router-dom';
 import toast from '../utils/toast';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { activateTrial, getSubscriptionStatus } from '../api/subscription';
+import UpgradeCelebration from '../components/subscription/UpgradeCelebration';
 import BillingToggle from '../components/subscription/BillingToggle';
 import PricingCard from '../components/subscription/PricingCard';
 import CheckoutSummary from '../components/subscription/CheckoutSummary';
@@ -19,6 +21,7 @@ const fmtDate = (d) =>
 
 export default function SubscribePage() {
   const { user } = useAuth();
+  const { refresh: refreshSubscription } = useSubscription();
   const navigate = useNavigate();
 
   const [billing, setBilling] = useState('monthly');
@@ -31,6 +34,9 @@ export default function SubscribePage() {
   // has already happened.
   const [instant, setInstant] = useState(false);
   const [dbStatus, setDbStatus] = useState(null);
+  // Held from before the status refresh: the celebration diffs old tier against
+  // new one, and the refresh overwrites the old value.
+  const [celebration, setCelebration] = useState(null);
   const now = useNow();
 
   useEffect(() => {
@@ -80,12 +86,26 @@ export default function SubscribePage() {
     setInstant(Boolean(meta.instant));
     setSubmitted(true);
     if (meta.instant) {
+      setCelebration({ from: currentTier, to: plan.id, label: plan.label });
       getSubscriptionStatus().then((res) => setDbStatus(res.data)).catch(() => {});
+      // The rest of the app reads tier from the context, not from this page —
+      // without this the avatar ring, tier badge and every TierGate stay on the
+      // old plan until a reload, which reads as the payment not having landed.
+      refreshSubscription();
     }
-  }, []);
+  }, [currentTier, refreshSubscription]);
 
   if (submitted) {
     return (
+      <>
+      {celebration && (
+        <UpgradeCelebration
+          fromTier={celebration.from}
+          toTier={celebration.to}
+          planLabel={celebration.label}
+          onDismiss={() => setCelebration(null)}
+        />
+      )}
       <div className="flex min-h-screen flex-col items-center justify-center gap-5 p-6 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-success-50 dark:bg-success-950/20">
           <CheckCircle2 className="h-8 w-8 text-success-500" />
@@ -114,6 +134,7 @@ export default function SubscribePage() {
           Back to Dashboard
         </Link>
       </div>
+      </>
     );
   }
 
