@@ -71,6 +71,25 @@ async function processEvent(event) {
     }
   }
 
+  // No handler matched. Previously this fell through and left the row as
+  // `processing` forever, relying on the createdAt TTL to sweep it up. That
+  // TTL now keys on processedAt (see models/BusEvent.js), so falling through
+  // would leak the row permanently — pollBatch only claims `pending`, so
+  // nothing would ever look at it again.
+  //
+  // Completing it is also the honest status: an event with no subscriber has
+  // nothing left to happen to it. Emitting a type nobody handles is usually a
+  // typo or a half-finished feature, so it is worth a line in the log rather
+  // than silence.
+  if (handlers.length === 0 && _catchAll.length === 0) {
+    console.warn(`[events] No handler registered for ${event.type} — completing unprocessed`);
+    await BusEvent.updateOne(
+      { _id: event._id, status: 'processing' },
+      { $set: { status: 'completed', processedAt: new Date(), error: 'no handler registered' } }
+    );
+    return;
+  }
+
   // Mark completed only if all handlers succeeded
   if (!anyFailed && handlers.length > 0) {
     await BusEvent.updateOne(

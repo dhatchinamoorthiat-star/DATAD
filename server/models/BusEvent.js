@@ -55,8 +55,23 @@ const busEventSchema = new mongoose.Schema(
   }
 );
 
-// TTL index: clean up processed events after 7 days
-busEventSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
+// TTL index: clean up processed events 7 days after they were PROCESSED.
+//
+// This was keyed on `createdAt`, which expires every event 7 days after it was
+// emitted regardless of whether anything ever consumed it. That is a silent
+// data-loss path: any worker outage longer than a week permanently drops
+// events, and the evidence deletes itself along with them. Observed on
+// 2026-08-24 with 662 pending events, the oldest six days old and hours from
+// vanishing unprocessed.
+//
+// Keying on `processedAt` inverts the guarantee. MongoDB's TTL monitor ignores
+// documents where the indexed field is absent or not a date, so `pending` and
+// `processing` rows — which never set it — are now retained indefinitely. Only
+// events that actually completed expire.
+//
+// `failed` rows also never set processedAt, so they persist. That is
+// deliberate: a terminal failure is the thing you most want to still have.
+busEventSchema.index({ processedAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 });
 
 // Worker polling: find oldest unprocessed events first
 busEventSchema.index({ status: 1, createdAt: 1 });
