@@ -17,6 +17,19 @@ import { useEffect, useRef, useState } from 'react';
 // Framer, for the reason the register screen gives: a JS animation loop is
 // throttled in a background tab, and anything that decides whether words are
 // on screen must run on the document timeline instead.
+
+// Both fallbacks are answerable before the first paint, so they are answered
+// there — as the lazy initial state — rather than by rendering hidden and
+// correcting in an effect. Setting state synchronously from an effect costs a
+// second render pass, and for the reduced-motion reader it is the wrong second
+// pass: the element mounts hidden and un-hides a frame later, which is a flash
+// shown to precisely the person who asked not to be shown motion.
+function visibleOnMount() {
+  if (typeof window === 'undefined') return true;
+  if (typeof IntersectionObserver === 'undefined') return true;
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+}
+
 export default function Reveal({
   as: Tag = 'div',
   delay = 0,
@@ -26,20 +39,13 @@ export default function Reveal({
   ...rest
 }) {
   const ref = useRef(null);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(visibleOnMount);
 
   useEffect(() => {
     const el = ref.current;
+    // Already revealed — by the mount-time fallbacks above, or by a previous
+    // run of this effect. Either way there is nothing left to observe.
     if (!el || shown) return;
-
-    if (typeof IntersectionObserver === 'undefined') {
-      setShown(true);
-      return;
-    }
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-      setShown(true);
-      return;
-    }
 
     const obs = new IntersectionObserver(
       ([entry]) => {
