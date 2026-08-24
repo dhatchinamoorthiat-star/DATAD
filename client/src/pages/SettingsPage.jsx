@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import toast from '../utils/toast';
-import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Clock, Laptop } from 'lucide-react';
+import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Laptop } from 'lucide-react';
 import { usePWA } from '../context/PWAContext';
 import { changePassword, deleteAccount, getMe, listDevices, revokeDevice, updateProfile, uploadAvatar } from '../api/auth';
 import { whatsappInviteUrl } from '../components/common/InviteCard';
@@ -301,23 +301,10 @@ function fmtBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function fmtTime(date) {
-  if (!date) return 'Never';
-  const d = new Date(date);
-  const now = new Date();
-  const diff = Math.floor((now - d) / 1000);
-  if (diff < 60) return 'Just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-}
-
 function AppSection() {
   const {
     installed,
     isOnline,
-    syncing,
-    lastSynced,
     cacheSize,
     updateAvailable,
     deferredPrompt,
@@ -375,26 +362,6 @@ function AppSection() {
           <span className={`text-xs font-semibold ${isOnline ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
             {isOnline ? 'Online' : 'Offline'}
           </span>
-        </div>
-        <div className={row}>
-          <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-            <RefreshCw className="h-3.5 w-3.5" />
-            Sync status
-          </span>
-          <span className="text-xs font-medium">
-            {syncing ? (
-              <span className="flex items-center gap-1 text-indigo-500">
-                <RefreshCw className="h-3 w-3 animate-spin" /> Syncing…
-              </span>
-            ) : 'Up to date'}
-          </span>
-        </div>
-        <div className={row}>
-          <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-            <Clock className="h-3.5 w-3.5" />
-            Last synced
-          </span>
-          <span className="text-xs font-medium">{fmtTime(lastSynced)}</span>
         </div>
         <div className={row}>
           <span className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">

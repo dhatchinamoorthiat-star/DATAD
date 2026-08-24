@@ -101,15 +101,6 @@
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ],
-  "screenshots": [
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "DATAD Dashboard"
-    }
-  ],
   "prefer_related_applications": false,
   "related_applications": []
 }

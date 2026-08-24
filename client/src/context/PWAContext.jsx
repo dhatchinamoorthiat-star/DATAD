@@ -26,11 +26,6 @@ export function PWAProvider({ children }) {
   const [installed, setInstalled] = useState(isStandalone);
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
   const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [lastSynced, setLastSynced] = useState(() => {
-    const v = localStorage.getItem('datad-last-synced');
-    return v ? new Date(v) : null;
-  });
   const [cacheSize, setCacheSize] = useState(null);
   const swReg = useRef(null);
 
@@ -67,26 +62,9 @@ export function PWAProvider({ children }) {
     };
   }, [installed, isIOS]);
 
-  function triggerBackgroundSync() {
-    const reg = swReg.current;
-    if (!reg) return;
-    if (reg.sync) {
-      // Chromium: real Background Sync — fires even if the tab closes
-      reg.sync.register('datad-background-sync').catch(() => {
-        reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
-      });
-    } else {
-      // iOS Safari / Firefox: no Sync API — flush the queue directly
-      reg.active?.postMessage({ type: 'FLUSH_QUEUE' });
-    }
-  }
-
   // Online / offline
   useEffect(() => {
-    const goOnline = () => {
-      setIsOnline(true);
-      triggerBackgroundSync();
-    };
+    const goOnline = () => setIsOnline(true);
     const goOffline = () => setIsOnline(false);
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
@@ -99,6 +77,8 @@ export function PWAProvider({ children }) {
   // Service worker lifecycle + messages
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
+
+    let onVisible;
 
     navigator.serviceWorker.ready.then((reg) => {
       swReg.current = reg;
@@ -113,16 +93,18 @@ export function PWAProvider({ children }) {
           }
         });
       });
+
+      // The worker no longer activates itself on install — this banner is the
+      // only path to a new version. An installed PWA can stay open for days
+      // without a navigation, and the browser's own re-check is roughly daily,
+      // so ask on every return to the tab.
+      onVisible = () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      };
+      document.addEventListener('visibilitychange', onVisible);
     });
 
     const onMessage = (e) => {
-      if (e.data?.type === 'SYNC_START') setSyncing(true);
-      if (e.data?.type === 'SYNC_DONE') {
-        setSyncing(false);
-        const now = new Date();
-        setLastSynced(now);
-        localStorage.setItem('datad-last-synced', now.toISOString());
-      }
       if (e.data?.type === 'CACHE_SIZE') setCacheSize(e.data.size);
     };
     navigator.serviceWorker.addEventListener('message', onMessage);
@@ -133,7 +115,10 @@ export function PWAProvider({ children }) {
       if (!refreshing) { refreshing = true; window.location.reload(); }
     });
 
-    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onMessage);
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   async function installApp() {
@@ -177,8 +162,6 @@ export function PWAProvider({ children }) {
       isIOS,
       isOnline,
       updateAvailable,
-      syncing,
-      lastSynced,
       cacheSize,
       deferredPrompt,
       installApp,

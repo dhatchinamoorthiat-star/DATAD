@@ -1,14 +1,13 @@
-// DATAD Service Worker — v3
+// DATAD Service Worker — v4
 // Cache strategy:
-//   • Static assets  → cache-first (JS/CSS/fonts/images)
-//   • Navigation     → network-first, stale-while-revalidate, offline fallback
-//   • API            → network-only (never cached)
-//   • Background sync → queue offline mutations, flush on reconnect
+//   • /assets/* + fonts → cache-first (content-hashed, so immutable)
+//   • Navigation        → network-first, cached page, then offline.html
+//   • API               → network-only (never cached)
+//   • Everything else   → stale-while-revalidate
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const STATIC_CACHE  = `datad-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `datad-dynamic-${CACHE_VERSION}`;
-const SYNC_TAG      = 'datad-background-sync';
 
 // App shell — precache on install
 const PRECACHE_URLS = [
@@ -22,11 +21,13 @@ const PRECACHE_URLS = [
 ];
 
 // ── Install ──────────────────────────────────────────────────────────────────
+// No skipWaiting() here on purpose. A new worker waits until the user accepts
+// the update in UpdateBanner, which posts SKIP_WAITING below. Activating on
+// install instead would claim the clients mid-session and force a reload
+// through PWAContext's controllerchange handler, discarding unsaved work.
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((c) => c.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
+    caches.open(STATIC_CACHE).then((c) => c.addAll(PRECACHE_URLS))
   );
 });
 
@@ -51,11 +52,6 @@ self.addEventListener('message', (e) => {
   }
   if (e.data?.type === 'GET_CACHE_SIZE') {
     getCacheSize().then((size) => e.source.postMessage({ type: 'CACHE_SIZE', size }));
-  }
-  // iOS Safari has no Background Sync API — the page asks us to flush directly
-  if (e.data?.type === 'FLUSH_QUEUE') {
-    e.waitUntil?.(flushOfflineQueue());
-    if (!e.waitUntil) flushOfflineQueue();
   }
 });
 
@@ -115,7 +111,7 @@ async function cacheFirst(request, cacheName) {
     }
     return res;
   } catch {
-    return new Response('Asset unavailable offline', { status: 503 });
+    return unavailableOffline();
   }
 }
 
@@ -129,113 +125,31 @@ async function staleWhileRevalidate(request, cacheName) {
   if (cached) return cached;
   const fetched = await fetchPromise;
   if (fetched) return fetched;
-  return caches.match('/offline.html');
+  // offline.html is a navigation fallback only. Returning it for a script or
+  // stylesheet hands the browser an HTML body under the asked-for MIME type,
+  // which `X-Content-Type-Options: nosniff` then rejects outright — a blank
+  // page instead of the offline screen.
+  return unavailableOffline();
 }
 
+function unavailableOffline() {
+  return new Response('Unavailable offline', {
+    status: 503,
+    statusText: 'Offline',
+    headers: { 'Content-Type': 'text/plain' },
+  });
+}
+
+// Vite emits `assets/AboutPage-CRYsU4QL.js` — a dash before a mixed-case
+// base64url hash, not `name.a1b2c3d4.js`. Everything Vite puts under /assets/
+// is content-hashed and therefore immutable, so match the directory rather
+// than trying to re-derive the hash format.
 function isStaticAsset(pathname) {
-  return /\/assets\/[^/]+\.[a-f0-9]{8,}\.(js|css)$/.test(pathname) ||
+  return pathname.startsWith('/assets/') ||
     /\.(woff2?|ttf|otf|eot)$/.test(pathname);
 }
 
-// ── Background Sync ───────────────────────────────────────────────────────────
-self.addEventListener('sync', (e) => {
-  if (e.tag === SYNC_TAG) {
-    e.waitUntil(flushOfflineQueue());
-  }
-});
-
-async function flushOfflineQueue() {
-  const db = await openDB();
-  const items = await getAllItems(db);
-  const clients = await self.clients.matchAll();
-
-  if (items.length === 0) return;
-
-  const notify = (msg) => clients.forEach((c) => c.postMessage(msg));
-  notify({ type: 'SYNC_START', count: items.length });
-
-  let success = 0;
-  for (const item of items) {
-    try {
-      const res = await fetch(item.url, {
-        method: item.method,
-        headers: { 'Content-Type': 'application/json', ...item.headers },
-        body: item.body,
-      });
-      if (res.ok) {
-        await deleteItem(db, item.id);
-        success++;
-      }
-    } catch {
-      // Keep in queue for next sync attempt
-    }
-  }
-
-  notify({ type: 'SYNC_DONE', synced: success, remaining: items.length - success });
-}
-
-// ── Push Notifications ────────────────────────────────────────────────────────
-self.addEventListener('push', (e) => {
-  if (!e.data) return;
-  const data = e.data.json();
-  e.waitUntil(
-    self.registration.showNotification(data.title || 'DATAD', {
-      body: data.body || '',
-      icon: '/icons/icon-192x192.png',
-      badge: '/icons/icon-96x96.png',
-      tag: data.tag || 'datad-notification',
-      data: { url: data.url || '/' },
-      actions: data.actions || [],
-      requireInteraction: data.requireInteraction || false,
-    })
-  );
-});
-
-self.addEventListener('notificationclick', (e) => {
-  e.notification.close();
-  const url = e.notification.data?.url || '/';
-  e.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      const existing = windowClients.find((c) => c.url === url && 'focus' in c);
-      if (existing) return existing.focus();
-      return self.clients.openWindow(url);
-    })
-  );
-});
-
-// ── IndexedDB Queue ───────────────────────────────────────────────────────────
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open('datad-sync-queue', 1);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains('queue')) {
-        db.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
-      }
-    };
-    req.onsuccess = (e) => resolve(e.target.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
-
-function getAllItems(db) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('queue', 'readonly');
-    const req = tx.objectStore('queue').getAll();
-    req.onsuccess = (e) => resolve(e.target.result);
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
-
-function deleteItem(db, id) {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('queue', 'readwrite');
-    const req = tx.objectStore('queue').delete(id);
-    req.onsuccess = () => resolve();
-    req.onerror = (e) => reject(e.target.error);
-  });
-}
-
+// ── Cache size (Settings → App → Cache size) ─────────────────────────────────
 async function getCacheSize() {
   if ('storage' in navigator && 'estimate' in navigator.storage) {
     const { usage } = await navigator.storage.estimate();
