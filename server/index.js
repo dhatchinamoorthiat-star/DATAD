@@ -368,10 +368,27 @@ async function startServer() {
     });
   }
 
+  let stopPollLoop = null;
+
   if (dbConnected) {
     bootAll();
     require('./notifications/NotificationStream').init();
     registerSchedulers();
+
+    // BusEvent consumer, normally its own Render service (server/worker.js).
+    // Render has no free plan for background workers, so on a free deployment
+    // this flag is the only way the queue drains — unset, every talent flow,
+    // profile refresh and notification bridge writes rows that stay `pending`
+    // forever. Turn it OFF the moment the dedicated worker service is running:
+    // both polling the same collection is wasteful, though not incorrect
+    // (pollBatch claims each row with an atomic status transition).
+    if (process.env.RUN_WORKER_IN_PROCESS === 'true') {
+      logger.warn('Event worker running in-process — shares this instance CPU and memory');
+      stopPollLoop = require('./events/pollLoop').start({
+        label: 'worker:in-process',
+        log: (line) => logger.info(line),
+      });
+    }
   } else {
     logger.warn('Database-dependent services disabled');
   }
@@ -386,6 +403,8 @@ async function startServer() {
     server.close(() => {
       logger.info('HTTP server closed');
     });
+
+    if (stopPollLoop) stopPollLoop();
 
     if (dbConnected) {
       try {

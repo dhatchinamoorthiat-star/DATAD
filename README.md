@@ -28,7 +28,7 @@ and maintained by Dhatchinamoorthi.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — system design, data model, and the privacy/sharing model
 - [SECURITY.md](SECURITY.md) — security measures, pre-launch audit, and go-live checklist
-- [DEPLOYMENT.md](DEPLOYMENT.md) — step-by-step Render + Vercel runbook
+- [DEPLOYMENT.md](DEPLOYMENT.md) — step-by-step Render runbook
 - [ROADMAP.md](ROADMAP.md) — what's next (Placement Hub, Community Feed, AI tools…)
 
 ## Setup

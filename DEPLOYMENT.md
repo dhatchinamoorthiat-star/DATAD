@@ -1,7 +1,14 @@
 # DATAD — Deployment Runbook
 
-The app is two deployables: the **server** (Express API) and the **client** (static
-Vite build). Recommended free-tier hosts: **Render** (server) + **Vercel** (client).
+The app deploys as **one Render service**. The build compiles the client and installs
+the server; `server/index.js` then serves `client/dist` itself, with an SPA fallback for
+non-API GETs. Client and API share an origin, so there is no second host and no
+cross-origin hop. `render.yaml` is the source of truth for this — it is a Blueprint, and
+everything in it is applied on create.
+
+A second service, the **event worker**, is defined in the same blueprint but is not free;
+see § 2.
+
 Everything below can be prepared now; the only blocker is choosing a domain.
 
 ## 0. One-time production setup (do before first deploy)
@@ -50,7 +57,7 @@ choice, viable only with the two mitigations in the next section.
 ### Running on `free` safely
 
 1. **Keep it warm.** Point an external scheduler (cron-job.org, UptimeRobot —
-   both free) at `https://<api-host>/api/health` every 10 minutes. Without this
+   both free) at `https://<host>/api/health` every 10 minutes. Without this
    the instance sleeps after ~15 min idle and **no cron runs at all**, which
    among other things means `trialExpiryReminder` never downgrades an expired
    paid tier — a Pro subscriber whose month ended keeps Pro indefinitely. Free
@@ -109,14 +116,21 @@ at `numInstances: 1` and only there. If you ever need to scale out, the
 schedulers must move to a dedicated worker or a Render Cron Job first — that
 work is deliberately **not** part of this change.
 
-## 1. Deploy the server (Render)
+## 1. Deploy (Render)
 
-1. New → **Web Service** → connect the GitHub repo → root directory `server`.
-2. Build command: `npm install` · Start command: `npm start`.
-3. Environment variables:
+1. New → **Blueprint** → connect the GitHub repo. Render reads `render.yaml` and
+   proposes the services in it. Root directory is the repo root (`.`), not
+   `server` — the build has to reach both halves:
    ```
-   PORT=10000                 # Render sets this; the app reads process.env.PORT
-   NODE_ENV=production        # makes a failed DB connection fatal at boot
+   build: cd client && npm install && npm run build && cd ../server && npm install
+   start: cd server && npm start
+   ```
+   Creating the web service by hand works too, with those two commands and the
+   env vars below; the blueprint exists so the sizing decisions and the long
+   rationale behind them travel with the repo.
+2. **Secrets.** Everything marked `sync: false` in `render.yaml` is prompted for
+   on create and has no value in the file:
+   ```
    CLIENT_URL=https://<your-domain>      # comma-separate if www + apex
    MONGODB_URI=<prod atlas uri>
    JWT_SECRET=<fresh 64-char hex>
@@ -128,40 +142,92 @@ work is deliberately **not** part of this change.
    BREVO_FROM_NAME=DATAD
    ADMIN_EMAIL=digitaldoncodes@gmail.com
    NVIDIA_API_KEY=<nvidia nim key>
+   SENTRY_DSN=<server dsn>        # set at least one of these two — see § Error tracking
+   ERROR_WEBHOOK_URL=<slack/discord webhook or any JSON POST endpoint>
    ```
    `CLIENT_URL` is the CORS allow-list, not just a link — an origin missing
-   from it gets 403'd on every API call.
+   from it gets 403'd on every API call. On a single service that origin is the
+   service's own URL, since the browser loads the app from there.
 
-   Do **not** set `AI_FALLBACK_PROVIDER=ollama` here: Ollama is a localhost
-   service and does not exist on Render.
-4. Deploy. Confirm `GET https://<api-host>/api/health` returns
+   Leave `AI_FALLBACK_PROVIDER` and the `GMAIL_*` keys **empty**. Ollama is a
+   localhost service and does not exist on Render, so a fallback pointed at it
+   is guaranteed to fail; Gmail is a development transport (see § 0).
+3. **Set by the blueprint — do not re-enter.** `PORT`, `NODE_ENV`,
+   `AI_PRIMARY_PROVIDER`, `VITE_UPI_NAME`, the five `UPLOAD_MAX_*` caps (sized for 512 MB — see
+   § Production resources), and `BASE_URL`, which is resolved from the service's
+   own host rather than typed in: a hand-entered value is one typo away from
+   mailing the admin a dead approve-link, and nothing surfaces the mistake until
+   someone clicks it. Set `BASE_URL` manually only if a custom domain fronts the
+   API, in which case it must be that domain.
+4. **Client build-time vars** — also prompted for, since Vite inlines `VITE_*`
+   into the bundle during `npm run build`, which runs in this service's build
+   step. Read at build time only: changing one needs a redeploy, not a restart.
+   ```
+   VITE_UPI_VPA=<your-upi-vpa>    # the checkout QR payee — see below
+   VITE_SENTRY_DSN=<browser dsn>  # optional, and a different project from SENTRY_DSN
+   ```
+   `VITE_UPI_VPA` has no safe default. Unset, checkout falls back to `datad@upi`
+   — a placeholder nobody here controls — and a student scanning that QR pays a
+   stranger, with the payment looking successful from their side. Set it before
+   taking money. (`VITE_UPI_NAME` defaults to `DATAD` in the blueprint.)
+
+   Do **not** set `VITE_API_BASE_URL`. It defaults to the relative `/api`, which
+   is what same-origin serving needs; a full URL would point the browser off its
+   own origin and reintroduce the CORS problem this layout removes.
+5. Deploy. Confirm `GET https://<host>/api/health` returns
    `{"status":"ok","database":"connected"}`. A `503` with
    `"database":"disconnected"` means Atlas isn't reachable — check the
    `MONGODB_URI` and that Atlas network access allows Render.
-5. Check the boot logs for `Mailer NOT configured`. If it's there, signup is
+6. Open `https://<host>/` in a browser. It should serve the React app. JSON
+   `{"message":"Route not found"}` instead means `client/dist` is absent — the
+   client build did not run, so re-check the build command in step 1.
+7. Check the boot logs for `Mailer NOT configured`. If it's there, signup is
    broken (registration needs the verification email) — fix the Brevo vars
    before sharing the link. The log line on a successful send names the
    provider (`"provider":"brevo"`), so you can confirm which transport won.
 
-## 2. Deploy the client (Vercel)
+## 2. The event worker
 
-1. New Project → import the repo → root directory `client`.
-2. Framework preset: **Vite**. Build: `npm run build` · Output: `dist`.
-3. Environment variable:
-   ```
-   VITE_API_BASE_URL=https://<api-host>/api
-   VITE_SENTRY_DSN=<sentry dsn>   # optional: client-side crash reporting
-   ```
-   (`VITE_*` vars are baked in at build time and belong to the client only —
-   setting them on the server has no effect.)
-4. Deploy. Vercel gives a URL now; attach the custom domain once chosen.
+Something has to drain the `BusEvent` collection — polling every 5s in batches of
+20 and dispatching to the handlers in `server/events/handlers/index.js`. Without
+a consumer the talent flows (application, engagement, review, opportunity), the
+profile-refresh handler and the notification bridge still *write* rows; they just
+accumulate as `pending` forever, and nothing reports it.
+
+The loop itself lives in `server/events/pollLoop.js` and runs in one of two
+places. **Run one, not both** — both is wasteful rather than incorrect, since
+`pollBatch()` claims each row with an atomic `pending`→`processing` transition.
+
+**In-process (the current default).** `RUN_WORKER_IN_PROCESS=true` on the web
+service runs the loop inside the API process. **Render has no free plan for
+background workers** — they start at `starter` — so on a free deploy this is not
+a slower worker, it is the difference between the queue draining and not. The
+costs are real and worth naming: it shares the API's event loop and its 512 MB,
+and a spun-down free instance polls nothing, which is the same exposure the 23
+crons already have and the same mitigation (keep it warm, § Running on `free`
+safely).
+
+**Dedicated service (`datad-worker`, preferred once there is revenue).** Its own
+process, so async work cannot touch the request path and the two scale
+separately. Creating the blueprint with this block starts a `starter` service —
+that charge is the entire cost of the switch. Set `RUN_WORKER_IN_PROCESS=false`
+on the web service the moment it is running, or comment the `- type: worker`
+block out of `render.yaml` before creating the blueprint to defer it.
+
+Unlike the web service the dedicated worker is safe to scale out: it runs no
+cron, so there is nothing to duplicate. Verify the claim semantics in
+`events.pollBatch()` before raising `numInstances` above 1.
 
 ## 3. Wire the domain (when the client picks one)
 
-1. Point the domain's DNS at Vercel (client) per Vercel's instructions.
-2. Update Render's `CLIENT_URL` to the final domain(s) and redeploy the server
-   (CORS reads this).
+1. Add the domain to the Render service (Settings → Custom Domains) and point
+   the DNS at Render per its instructions.
+2. Update `CLIENT_URL` to the final domain(s) and redeploy — CORS reads this,
+   and it is now also the origin the app is served from.
 3. If using both apex and www, list both in `CLIENT_URL` comma-separated.
+4. Set `BASE_URL` to the custom domain explicitly. It otherwise resolves to the
+   `onrender.com` host, which still works but leaks the internal service name
+   into the admin's inbox.
 
 ## 4. First-run
 
@@ -180,14 +246,22 @@ cd server && npm install && cp .env.example .env   # fill values
 npm run dev            # http://localhost:5001
 
 # client
-cd client && npm install && cp .env.example .env    # VITE_API_BASE_URL=http://localhost:5001/api
+cd client && npm install && cp .env.example .env    # keep VITE_API_BASE_URL=/api
 npm run dev            # http://localhost:5173
 ```
 
+The relative `/api` is correct in both environments: in dev Vite proxies it to
+`localhost:5001` (`client/vite.config.js`), and in production the API is
+same-origin. To exercise the production serving path locally, run
+`npm run build` in `client/` and hit the server's port directly — `index.js`
+picks up `client/dist` if it exists.
+
 ## Rollback
 
-Both Render and Vercel keep previous deploys — use their dashboard "Rollback" to the
-last good build. Data is unaffected (it lives in Atlas/Cloudinary).
+Render keeps previous deploys — use the dashboard's "Rollback" to the last good
+build. Since one service carries both halves, a rollback reverts client and
+server together, which is usually what you want. Data is unaffected (it lives in
+Atlas/Cloudinary).
 
 ## Post-deploy smoke test
 
@@ -212,14 +286,28 @@ the honest one: with nothing configured the only sink is the structured log,
 which means no alert fires and the first you hear of an outage is a student
 telling you. **A production deploy must set at least one of the two below.**
 
-Server (Render):
+Server — both are declared in `render.yaml`, so Render prompts for them when the
+blueprint is created; leaving both blank is what produces the bare-`log` state:
 
 ```
 SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>   # @sentry/node is installed
 ERROR_WEBHOOK_URL=https://hooks.slack.com/services/...      # or a plain JSON POST
 ```
 
-Client (Vercel) — separate project, separate DSN:
+**Set the same two on `datad-worker`** — they are declared there too. Use the
+*same* values, not a second project: `worker.js` tags its events with a `source`
+(`crash` for boot failures and process-level crashes, `job` for failed poll
+cycles) and a `process: worker` context, which separates the two services
+without splitting one incident across two dashboards.
+
+The worker is where an alert matters most, because a stalled worker has no
+user-visible symptom — the queue stops draining, `BusEvent` rows accumulate as
+`pending`, and every page still loads. Three consecutive failed poll cycles
+(~15s) escalate from `error` to `fatal`, on the reasoning that one bad batch is
+a blip and a run of them means the queue has stopped moving.
+
+Client — a **separate DSN** from the server's, set on the same Render service
+(it is a build-time var; see § 1 step 4):
 
 ```
 VITE_SENTRY_DSN=<sentry dsn>

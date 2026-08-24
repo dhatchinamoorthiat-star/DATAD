@@ -98,6 +98,18 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      # Runs the BusEvent consumer inside this process instead of as its own
+      # service (server/events/pollLoop.js). Render has no free plan for
+      # background workers — they start at `starter` — so the alternative on a
+      # free deploy is not a slower worker, it is no worker: every talent flow,
+      # profile refresh and notification bridge writes rows that stay `pending`
+      # forever, silently.
+      #
+      # Set this to false the moment the datad-worker service below is enabled.
+      # Both polling is wasteful but not incorrect — pollBatch() claims each row
+      # with an atomic pending→processing transition, so nothing double-runs.
+      - key: RUN_WORKER_IN_PROCESS
+        value: true
       # Sized for a 512 MB free instance. multer buffers uploads in heap and
       # three call sites then build a base64 data-URI from the buffer, so peak
       # is ~2.4x the file size per concurrent upload. Raise these on `starter`
@@ -112,14 +124,95 @@ services:
         value: 3
       - key: UPLOAD_MAX_STUDIO_REQUEST_MB
         value: 25
+      # ── AI providers ────────────────────────────────────────────────────────
+      #
+      # _candidateOrder() in ai/providers/index.js prepends AI_PRIMARY_PROVIDER,
+      # so it overrides PROVIDER_ORDER. This was `nvidia`, which put NVIDIA ahead
+      # of Cloudflare in the chat failover path — and NVIDIA's balanced-class
+      # model measured 3.2-13.2s over three runs on 2026-08-18 against
+      # Cloudflare's 692ms for the same capability class. Groq is primary, with
+      # Cloudflare as the fast backup. See server/scripts/verifyProviders.js.
+      #
+      # Every provider in the chain needs its credential HERE. A chain naming a
+      # provider whose key never reached the deploy is not a chain — it is a
+      # single provider with extra steps, and the gap only shows when the
+      # primary is already failing.
+      - key: AI_PRIMARY_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      # Groq's default whenever it is called without an explicit model. The
+      # library default (llama-3.3-70b-versatile) 404s — a live catalogue probe
+      # on 2026-08-18 found this account serves no Llama models at all.
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: CLOUDFLARE_AI_TOKEN
+        sync: false
       - key: NVIDIA_API_KEY
         sync: false
-      - key: AI_PRIMARY_PROVIDER
-        value: nvidia
       # Ollama is a localhost service and does not exist on Render — pointing
       # the fallback at it guarantees the fallback fails. Leaving it unset
       # means a failed primary surfaces as an error instead of a hang.
       - key: AI_FALLBACK_PROVIDER
+        sync: false
+      # ── Payments (server/payments/razorpay.js) ──────────────────────────────
+      #
+      # All three are sync: false and deliberately have no value here. They must
+      # be LIVE keys (`rzp_live_…`): isTestMode() keys the UI off the `rzp_test`
+      # prefix, so test keys deploy as a working-looking checkout that moves no
+      # real money.
+      #
+      # Unset degrades cleanly rather than crashing — isConfigured() is false and
+      # checkout is simply not offered. That is the correct state until real keys
+      # exist; a half-configured gateway is worse than an absent one.
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      # A SEPARATE secret from KEY_SECRET, generated when the webhook endpoint is
+      # created in the Razorpay dashboard — not a copy of the API secret.
+      # Webhooks are configured independently, so checkout works without this;
+      # what breaks is every server-side confirmation that does not come back
+      # through the browser.
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      # Error tracking (web) (server/observability/errorTracker.js). With neither of
+      # these set the only sink is the structured log — no alert fires, and the
+      # first report of an outage is a student mentioning it. /api/health
+      # reports the live sinks as `errorTracking`; a bare `log` in production
+      # means a DSN never reached the deploy. Set at least one.
+      - key: SENTRY_DSN
+        sync: false
+      # A plain JSON POST — Slack/Discord webhooks work as-is.
+      - key: ERROR_WEBHOOK_URL
+        sync: false
+      # ── Client build-time values ────────────────────────────────────────────
+      #
+      # Vite inlines VITE_* into the bundle during `npm run build`, which runs
+      # in this service's build step. They are therefore read at build time
+      # only: changing one needs a redeploy, not a restart.
+      #
+      # VITE_API_BASE_URL is deliberately absent. It defaults to a relative
+      # `/api` (client/src/api/axios.js), which is what same-origin serving
+      # needs; an absolute URL would send the browser off its own origin and
+      # reintroduce the CORS surface this single-service layout removes.
+      #
+      # The UPI pair is the payee on the subscription checkout QR
+      # (components/subscription/CheckoutSummary.jsx). Unset, it falls back to
+      # `datad@upi` — a placeholder, not an account anyone here controls — so
+      # students would scan a QR that pays a stranger, and every payment would
+      # look successful from their side. Set both before taking money.
+      - key: VITE_UPI_VPA
+        sync: false
+      - key: VITE_UPI_NAME
+        value: DATAD
+      # A different DSN from SENTRY_DSN above: browser project, not server.
+      # Optional — reportError also POSTs to /api/telemetry/error, so frontend
+      # crashes reach the server pipeline regardless. The DSN adds grouping,
+      # breadcrumbs and session replay.
+      - key: VITE_SENTRY_DSN
         sync: false
 
   # ── Event worker ────────────────────────────────────────────────────────────
@@ -140,36 +233,67 @@ services:
   # numInstances above 1.
   #
   # `plan: free` does not exist for worker services on Render — background
-  # workers start at `starter`. That is the cost of turning this on, and it is
-  # the reason the service is defined here rather than already running.
-  - type: worker
-    name: datad-worker
-    runtime: node
-    plan: starter
-    numInstances: 1
-    rootDir: .
-    buildCommand: cd server && npm install
-    startCommand: cd server && node worker.js
-    envVars:
-      - key: MONGODB_URI
-        sync: false
-      - key: NODE_ENV
-        value: production
-      # Notification payloads embed deep links back into the app.
-      - key: CLIENT_URL
-        sync: false
-      # Same origin as the web service — see the BASE_URL note there.
-      - key: BASE_URL
-        fromService:
-          type: web
-          name: datad
-          property: host
-      # The profile handler rebuilds the intelligence profile, which calls the
-      # AI gateway — so the worker needs provider credentials of its own.
-      # Same rationale as the web service: no Ollama fallback on Render.
-      - key: NVIDIA_API_KEY
-        sync: false
-      - key: AI_PRIMARY_PROVIDER
-        value: nvidia
-      - key: AI_FALLBACK_PROVIDER
-        sync: false
+  # workers start at `starter`, $7/month. That is the entire cost of this
+  # blueprint, so the service is COMMENTED OUT and the loop runs inside the web
+  # service instead (RUN_WORKER_IN_PROCESS above). The whole deployment is $0.
+  #
+  # To turn it back on when there is revenue: uncomment the block below, then
+  # set RUN_WORKER_IN_PROCESS to false on the web service. Do it in that order —
+  # both running briefly is harmless (pollBatch claims rows atomically), neither
+  # running is not.
+  #
+  # - type: worker
+  #   name: datad-worker
+  #   runtime: node
+  #   plan: starter
+  #   numInstances: 1
+  #   rootDir: .
+  #   buildCommand: cd server && npm install
+  #   startCommand: cd server && node worker.js
+  #   envVars:
+  #     - key: MONGODB_URI
+  #       sync: false
+  #     - key: NODE_ENV
+  #       value: production
+  #     # Notification payloads embed deep links back into the app.
+  #     - key: CLIENT_URL
+  #       sync: false
+  #     # Same origin as the web service — see the BASE_URL note there.
+  #     - key: BASE_URL
+  #       fromService:
+  #         type: web
+  #         name: datad
+  #         property: host
+  #     # The profile handler rebuilds the intelligence profile, which calls the
+  #     # AI gateway — so the worker needs provider credentials of its own.
+  #     # Mirror the web service exactly, including the whole failover chain:
+  #     # a worker with only the primary's key silently loses its fallback.
+  #     - key: AI_PRIMARY_PROVIDER
+  #       value: groq
+  #     - key: GROQ_API_KEY
+  #       sync: false
+  #     - key: GROQ_MODEL
+  #       value: openai/gpt-oss-20b
+  #     - key: CLOUDFLARE_ACCOUNT_ID
+  #       sync: false
+  #     - key: CLOUDFLARE_AI_TOKEN
+  #       sync: false
+  #     - key: NVIDIA_API_KEY
+  #       sync: false
+  #     # No Ollama fallback on Render — see the web service note.
+  #     - key: AI_FALLBACK_PROVIDER
+  #       sync: false
+  #     # Error tracking (worker). worker.js routes boot failures, crashes and
+  #     # failed poll cycles through the same errorTracker seam as the API, so
+  #     # these do reach a sink here. Use the SAME values as the web service —
+  #     # the `source` field ("crash"/"job") and the `process: worker` context
+  #     # already separate the two, and a second DSN just splits one incident
+  #     # across two projects.
+  #     #
+  #     # This is the service where an alert matters most: a stalled worker has
+  #     # no user-visible symptom. The queue stops draining, BusEvent rows
+  #     # accumulate as `pending`, and everything looks healthy from outside.
+  #     - key: SENTRY_DSN
+  #       sync: false
+  #     - key: ERROR_WEBHOOK_URL
+  #       sync: false
