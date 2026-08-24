@@ -50,6 +50,7 @@ const AdminStudioPage = lazy(() => import('./pages/admin/AdminStudioPage'));
 const AdminStudioReviewPage = lazy(() => import('./pages/admin/AdminStudioReviewPage'));
 const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'));
 const AdminNewsletterPage = lazy(() => import('./pages/admin/AdminNewsletterPage'));
+const AdminProgramsPage = lazy(() => import('./pages/admin/AdminProgramsPage'));
 const AdminLogsPage = lazy(() => import('./pages/admin/AdminLogsPage'));
 const AdminReferralsPage = lazy(() => import('./pages/admin/AdminReferralsPage'));
 const AdminArchivePage = lazy(() => import('./pages/admin/AdminArchivePage'));
@@ -331,6 +332,7 @@ export default function App() {
                 <Route path="/admin/studio/:id" element={<AdminRoute><AdminStudioReviewPage /></AdminRoute>} />
                 <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncementsPage /></AdminRoute>} />
                 <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletterPage /></AdminRoute>} />
+                <Route path="/admin/programs" element={<AdminRoute><AdminProgramsPage /></AdminRoute>} />
                 <Route path="/admin/logs" element={<AdminRoute><AdminLogsPage /></AdminRoute>} />
                 <Route path="/admin/referrals" element={<AdminRoute><AdminReferralsPage /></AdminRoute>} />
                 <Route path="/admin/archive" element={<AdminRoute><AdminArchivePage /></AdminRoute>} />

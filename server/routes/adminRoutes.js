@@ -342,10 +342,24 @@ router.post('/programs/:approvalId/approve', async (req, res, next) => {
     approval.syncLog = [];
     await approval.save();
 
-    // Mark user as approved
+    // Mark the requester as approved, if they are still here.
+    //
+    // Guarded because the approval record outlives the account: a student can
+    // delete theirs, or an admin can remove it, between signing up and this
+    // decision. Unguarded, `user.status` threw on null *after* the approval had
+    // already been saved above — so the record flipped to approved, the admin
+    // got a 500, and the sync never started. Nothing could reach this path
+    // before there was a UI for it, which is why it stayed latent.
     const user = await User.findById(approval.requestedBy);
-    user.status = 'approved';
-    await user.save();
+    if (user) {
+      user.status = 'approved';
+      await user.save();
+    } else {
+      logger.warn('Program approved for a requester who no longer exists', {
+        approvalId: String(approval._id),
+        requestedBy: String(approval.requestedBy),
+      });
+    }
 
     res.json({ message: 'Program approved. Data sync in progress...' });
 

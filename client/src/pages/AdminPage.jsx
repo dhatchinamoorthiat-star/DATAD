@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Crown,
   CreditCard,
+  GraduationCap,
   Megaphone,
   Newspaper,
   Users,
@@ -166,6 +167,12 @@ export default function AdminPage() {
       icon: Megaphone,
       title: 'Announcements',
       description: 'Post to the dashboard, optionally email the batch',
+    },
+    {
+      to: '/admin/programs',
+      icon: GraduationCap,
+      title: 'Program approvals',
+      description: 'Decide whether a custom program gets its own curated feed',
     },
     {
       to: '/admin/newsletter',

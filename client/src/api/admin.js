@@ -38,3 +38,20 @@ export const getNewsletterDraft = (id) => api.get(`/admin/newsletter/${id}`);
 // at this moment rather than trusting the verdict shown at review time.
 export const sendNewsletterDraft = (id) => api.post(`/admin/newsletter/${id}/send`);
 export const discardNewsletterDraft = (id) => api.delete(`/admin/newsletter/${id}`);
+
+// --- Program approvals -----------------------------------------------------
+//
+// Registering with a non-preset program files a ProgramApproval and admits the
+// person immediately; whether their program gets its own curated feed is the
+// separate question these endpoints answer.
+
+// Only pending ones — the server has no history endpoint, so an approval
+// leaves this list the moment it is decided.
+export const listPendingPrograms = () => api.get('/admin/programs/pending-approval');
+// Returns { status, progress: syncLog, emailSent }. The approve call kicks off
+// a fire-and-forget sync, so this is the only way to see how it went.
+export const getProgramSyncStatus = (id) => api.get(`/admin/programs/${id}/sync-status`);
+// Approves the program, admits the requester, and starts the data sync. Returns
+// as soon as the sync is queued, not when it finishes.
+export const approveProgram = (id) => api.post(`/admin/programs/${id}/approve`);
+export const rejectProgram = (id, reason) => api.post(`/admin/programs/${id}/reject`, { reason });
