@@ -7,6 +7,7 @@ import toast from '../utils/toast';
 import { register as registerApi, checkEmail } from '../api/auth';
 import { useAuth } from '../context/AuthContext';
 import { isAvailableAccountType } from '../components/register/RoleSelector';
+import { CONSENT_CLAUSE_IDS, LEGAL_VERSIONS } from '../constants/legal';
 import {
   IdentityShell,
   RegisterForm,
@@ -16,6 +17,7 @@ import {
   ChallengesStep,
   ExperienceStep,
   SummaryStep,
+  ConsentStep,
 } from '../components/register';
 
 // The four phases the student is shown. They are a framing device over the
@@ -45,9 +47,13 @@ const STEPS = [
   { component: LearningStyleStep, phase: 2 },
   { component: ChallengesStep,    phase: 2 },
   { component: SummaryStep,       phase: 2 },
+  { component: ConsentStep,       phase: 2 },
 ];
 
 const ACCOUNT_STEP = 0;
+// Every account type ends here, students and non-students alike: the terms are
+// a condition of having an account at all, not part of student profiling.
+const CONSENT_STEP = STEPS.length - 1;
 
 const DEFAULT_VALUES = {
   name: '', email: '', password: '', confirmPassword: '',
@@ -64,6 +70,9 @@ const DEFAULT_VALUES = {
   studentType: 'fresher',
   workExYears: '',
   priorDomain: '',
+  // Unticked. Consent that was not given by an action is not consent.
+  consent: { terms: false, privacy: false, econtract: false },
+  consentAcceptedAt: '',
 };
 
 // Fraction completed within the active phase, so the rail's connector fills
@@ -95,7 +104,15 @@ export default function RegisterPage() {
   // memoising this whole component, and this page re-renders on every keystroke.
   const accountType = useWatch({ control: methods.control, name: 'accountType' }) || 'student';
   const isStudent = accountType === 'student';
-  const lastStep = isStudent ? STEPS.length - 1 : ACCOUNT_STEP;
+
+  // The submit button is dead until every required clause is ticked, so the
+  // final click and the act of agreeing are the same event rather than two
+  // things that happen to be near each other.
+  const consentValues = useWatch({ control: methods.control, name: 'consent' });
+  const consentGiven = CONSENT_CLAUSE_IDS.every((id) => consentValues?.[id] === true);
+  // Non-students skip the six profiling screens but not the acceptance gate,
+  // so their route through the form is account step -> consent step.
+  const lastStep = CONSENT_STEP;
   const isFinalStep = step === lastStep;
 
   const go = (nextStep) => {
@@ -106,7 +123,7 @@ export default function RegisterPage() {
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   };
 
-  const back = () => go(Math.max(step - 1, 0));
+  const back = () => go(step === CONSENT_STEP && !isStudent ? ACCOUNT_STEP : Math.max(step - 1, 0));
 
   // Validate the account fields and make sure the address is free before
   // letting anyone invest time in the profiling screens — discovering the
@@ -136,13 +153,21 @@ export default function RegisterPage() {
 
   const handleNext = async () => {
     if (step === ACCOUNT_STEP && !(await validateAccountStep())) return;
-    go(Math.min(step + 1, lastStep));
+    go(step === ACCOUNT_STEP && !isStudent ? CONSENT_STEP : Math.min(step + 1, lastStep));
   };
 
   const onSubmit = async (data) => {
-    // A non-student submits directly from the account step, so this is the
-    // only place their email uniqueness gets checked.
-    if (step === ACCOUNT_STEP && !(await validateAccountStep())) return;
+    // Belt and braces over the required-checkbox rules on the step itself. The
+    // submit handler is the last place in the client where a signup can be
+    // stopped, and "no account without acceptance" is the one rule that must
+    // hold even if a step is skipped, a draft is restored, or the button is
+    // driven from somewhere other than the form.
+    if (!CONSENT_CLAUSE_IDS.every((id) => data.consent?.[id] === true)) {
+      await trigger('consent');
+      go(CONSENT_STEP);
+      toast.error('Please read and accept the terms before creating your account.');
+      return;
+    }
 
     try {
       const isExp = data.studentType === 'experienced';
@@ -183,6 +208,17 @@ export default function RegisterPage() {
         experience: isExp
           ? { years: Number(data.workExYears) || 0, type: 'experienced', pastDomain: data.priorDomain || '' }
           : { years: 0, type: 'fresher', pastDomain: '' },
+        // The e-contract record. Which clauses were accepted, and against which
+        // published version of each document — the server re-checks both, and
+        // stamps its own time, before it will create an account or send mail.
+        consent: {
+          accepted: CONSENT_CLAUSE_IDS.reduce(
+            (acc, id) => ({ ...acc, [id]: data.consent?.[id] === true }),
+            {}
+          ),
+          versions: { ...LEGAL_VERSIONS },
+          acceptedAtClient: data.consentAcceptedAt || new Date().toISOString(),
+        },
       };
 
       const res = await registerApi(payload);
@@ -267,7 +303,7 @@ export default function RegisterPage() {
             <button
               type={isFinalStep ? 'submit' : 'button'}
               onClick={isFinalStep ? undefined : handleNext}
-              disabled={busy}
+              disabled={busy || (isFinalStep && !consentGiven)}
               // Explicit name rather than relying on name-from-content: the
               // first child is an aria-hidden sheen span, and this is the one
               // control on the page that must never announce as "button".
@@ -312,7 +348,9 @@ function ctaLabel({ busy, checkingEmail, isSubmitting, isFinalStep, step }) {
   if (checkingEmail) return 'Checking your email…';
   if (isSubmitting) return 'Building your profile…';
   if (busy) return 'Working…';
-  if (isFinalStep) return 'Create My Intelligence Profile';
+  // Says what the click is: on the consent screen it is the signature, so it
+  // must not be described as anything softer.
+  if (isFinalStep) return 'Accept & create my account';
   if (step === ACCOUNT_STEP) return 'Begin my intelligence profile';
   return 'Continue';
 }

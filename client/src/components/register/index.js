@@ -19,3 +19,7 @@ export { default as LearningStyleStep } from './LearningStyleStep';
 export { default as ChallengesStep } from './ChallengesStep';
 export { default as ExperienceStep } from './ExperienceStep';
 export { default as SummaryStep } from './SummaryStep';
+
+// The acceptance gate. Last screen for every account type — nothing is created
+// and no confirmation email is sent before it is satisfied.
+export { default as ConsentStep } from './ConsentStep';

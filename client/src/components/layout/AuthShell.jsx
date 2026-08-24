@@ -30,7 +30,13 @@ export default function AuthShell({
         </div>
         <div className={cardClassName}>{children}</div>
         <p className={footerClassName}>
-          By continuing you agree to our{' '}
+          {/* "Confirms you still accept", not "by continuing you agree". Nobody
+              reaches a signed-in session without an explicit, recorded
+              acceptance — taken at signup, or at the one-time gate on this very
+              screen for accounts that predate it. So this line is a reminder of
+              a decision already on file, which it can honestly claim, rather
+              than a click-wrap standing in for consent that was never given. */}
+          Signing in confirms you still accept our{' '}
           <Link to="/terms" className="hover:underline">Terms</Link>
           {' '}and{' '}
           <Link to="/privacy" className="hover:underline">Privacy Policy</Link>.

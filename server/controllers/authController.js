@@ -31,6 +31,7 @@ const { cleanupUserData } = require('../services/userCleanup');
 const cloudinary = require('../config/cloudinary');
 const logger = require('../utils/logger');
 const { emailLinkBase, serverLinkBase } = require('../utils/clientUrl');
+const { consentProblem, consentIsCurrent, CURRENT_VERSIONS } = require('../config/legal');
 const sessionVersion = require('../services/sessionVersion');
 const deviceSessions = require('../services/deviceSessions');
 const signToken = require('../utils/signToken');
@@ -110,6 +111,32 @@ const passwordProblem = (password) => {
   return null;
 };
 
+// How long the ticket handed out by a consent-blocked login stays usable. Short:
+// it exists only to carry one person from the login screen to the acceptance
+// screen and back, so a leaked one should expire before it is worth anything.
+const CONSENT_TOKEN_TTL = '15m';
+
+/**
+ * A ticket proving someone just passed a password check, issued when login is
+ * held back for re-consent.
+ *
+ * Not a session. It carries no `did`, and verifyToken refuses any token without
+ * one, so this cannot be presented to the API as a login — which is the whole
+ * point: the person has authenticated, but until they accept there is no basis
+ * to give them access to anything. `tv` is included so a password change or a
+ * revocation between the two requests invalidates the ticket too.
+ *
+ * The alternative — asking for the password again on the acceptance screen —
+ * would train people to retype credentials after an unexpected interstitial,
+ * which is the exact shape of a phishing flow.
+ */
+const mintConsentToken = (user) =>
+  jwt.sign(
+    { userId: String(user._id), purpose: 'consent', tv: user.tokenVersion || 0 },
+    process.env.JWT_SECRET,
+    { expiresIn: CONSENT_TOKEN_TTL }
+  );
+
 // Readable, non-guessable referral code: name prefix + random suffix, e.g. DHAT-7K2M.
 const makeReferralCode = (name) => {
   const prefix = (name || 'USER').replace(/[^a-zA-Z]/g, '').slice(0, 4).toUpperCase().padEnd(4, 'X');
@@ -180,6 +207,7 @@ exports.register = async (req, res, next) => {
       skills: regSkills,
       timeAvailable,
       challenges,
+      consent,
     } = req.body;
 
     // Honeypot: a field hidden from real users that form-filling bots populate.
@@ -202,6 +230,15 @@ exports.register = async (req, res, next) => {
     }
     const pwdProblem = passwordProblem(password);
     if (pwdProblem) return res.status(400).json({ message: pwdProblem });
+
+    // Acceptance is checked here, before anything is written — not on the
+    // client alone, and not after the account exists. The client gate is a
+    // courtesy to the person filling in the form; this is the rule. An account
+    // that was created and then found to be missing consent would already be a
+    // record we had no basis to hold, and the "delete it afterwards" version of
+    // that is not the same thing as never creating it.
+    const consentIssue = consentProblem(consent);
+    if (consentIssue) return res.status(400).json({ message: consentIssue });
 
     // The program is derived from the course/specialization the academic step
     // already collects, not asked for separately. An explicit `program` in the
@@ -288,6 +325,18 @@ exports.register = async (req, res, next) => {
         // We will set studentType and workExYears after we have experience data
         studentType: 'fresher', // temporary, will update below
         workExYears: null, // temporary
+        // Written in the same operation that creates the account, so no user
+        // document ever exists without its acceptance record. acceptedAt comes
+        // from the server clock; the client's own timestamp is not persisted.
+        consent: {
+          acceptedAt: new Date(),
+          terms: true,
+          privacy: true,
+          econtract: true,
+          versions: { ...CURRENT_VERSIONS },
+          ip: req.ip || '',
+          userAgent: String(req.get('user-agent') || '').slice(0, 300),
+        },
       });
 
       // Curation state for the program itself, independent of whether the
@@ -449,6 +498,34 @@ exports.register = async (req, res, next) => {
     // Nobody gets a session before proving they own the address — not even a
     // referred or auto-approved account. That single rule is what keeps bots
     // out of the admin queue, so it has no exceptions.
+    //
+    // And nobody is mailed before their acceptance is on the record. The write
+    // happened in User.create above; this re-reads what was actually stored
+    // rather than trusting that it was, because the confirmation email is the
+    // step that turns a form submission into a live account — sending it
+    // against an unrecorded consent is exactly the thing this flow exists to
+    // prevent. A failure here is a bug, not a user error, so it does not reach
+    // the student as advice they can act on.
+    if (!user.consent?.acceptedAt) {
+      logger.error('Consent record missing after registration — verification email withheld', {
+        userId: user._id, email: user.email,
+      });
+      // Unwind rather than leave a half-made account behind: a user row with no
+      // acceptance on it is a record there is no basis to keep, and it would
+      // also squat on the email address so the person could not simply retry.
+      await Promise.all([
+        User.deleteOne({ _id: user._id }),
+        UserProfile.deleteOne({ user: user._id }),
+        ProgramApproval.deleteOne({ _id: programApproval._id }),
+        referrer
+          ? User.updateOne({ _id: referrer._id, referralUsedBy: user._id }, { referralUsedBy: null })
+          : Promise.resolve(),
+      ].map((p) => Promise.resolve(p).catch(() => {})));
+      return res.status(500).json({
+        message: 'Your acceptance could not be recorded, so the account was not activated. Please try again.',
+      });
+    }
+
     const verifyToken = await issueVerificationToken(user);
 
     logActivity(
@@ -695,6 +772,28 @@ exports.login = async (req, res, next) => {
       // immediately rather than after the cache TTL.
       sessionVersion.invalidate(user._id);
     }
+    // Terms in force now, not terms in force whenever this account was made.
+    //
+    // Accounts predating the signup consent gate carry no acceptance at all,
+    // and accounts that accepted an earlier revision have not agreed to the
+    // current one — both are held here rather than being quietly treated as
+    // consenting. Unlike the two gates above there is no admin exemption: the
+    // point of the record is that it exists for everyone who uses the platform,
+    // and an admin can satisfy it the same way anyone else does.
+    //
+    // The response is a 403 with a ticket, not a session. Nothing about this
+    // account is readable until the acceptance is recorded by acceptConsent.
+    if (!consentIsCurrent(user.consent)) {
+      return res.status(403).json({
+        needsConsent: true,
+        consentToken: mintConsentToken(user),
+        versions: { ...CURRENT_VERSIONS },
+        message: user.consent?.acceptedAt
+          ? 'Our Terms of Use and Privacy Policy have changed — please read and accept them to continue.'
+          : 'Please read and accept our Terms of Use and Privacy Policy to continue.',
+      });
+    }
+
     const device = deviceFromRequest(req);
     const { evicted } = await deviceSessions.register(user._id, device);
 
@@ -702,6 +801,77 @@ exports.login = async (req, res, next) => {
       token: signToken(user, device.deviceId),
       // Lets the client tell the student why another device just dropped out,
       // rather than that device appearing to fail for no reason.
+      deviceEvicted: evicted,
+      maxDevices: deviceSessions.MAX_DEVICES,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * Record an existing account's acceptance and finish the sign-in it was holding.
+ *
+ * This is the second half of a login that stopped at the re-consent gate, which
+ * is why it ends by issuing the session that login withheld: making someone log
+ * in twice around an interstitial teaches them to retype a password whenever a
+ * page asks, and the password was already checked a moment ago.
+ *
+ * Validation is the same `consentProblem` the signup path uses. One rule, one
+ * implementation — a second, laxer copy for existing users would make the
+ * weaker of the two the real policy.
+ */
+exports.acceptConsent = async (req, res, next) => {
+  try {
+    const { consentToken, consent } = req.body;
+    if (!consentToken) {
+      return res.status(400).json({ message: 'Missing consent token — please sign in again.' });
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(consentToken, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ message: 'This took too long — please sign in again.' });
+    }
+    // A session token must not work here, and this ticket must not work as a
+    // session. verifyToken already refuses anything without a `did`; this is
+    // the other half of that pair.
+    if (payload.purpose !== 'consent') {
+      return res.status(401).json({ message: 'Invalid consent token' });
+    }
+
+    const consentIssue = consentProblem(consent);
+    if (consentIssue) return res.status(400).json({ message: consentIssue });
+
+    const user = await User.findById(payload.userId);
+    if (!user) return res.status(401).json({ message: 'Account not found — please sign in again.' });
+    // A password change or revocation between the two requests invalidates the
+    // ticket: the person holding it may no longer be the account holder.
+    if ((payload.tv || 0) !== (user.tokenVersion || 0)) {
+      return res.status(401).json({ message: 'Your session changed — please sign in again.' });
+    }
+
+    user.consent = {
+      acceptedAt: new Date(),
+      terms: true,
+      privacy: true,
+      econtract: true,
+      versions: { ...CURRENT_VERSIONS },
+      ip: req.ip || '',
+      userAgent: String(req.get('user-agent') || '').slice(0, 300),
+    };
+    await user.save();
+
+    logActivity('consent_accepted', `${user.name} accepted the current terms`, user, {
+      versions: CURRENT_VERSIONS,
+    });
+
+    const device = deviceFromRequest(req);
+    const { evicted } = await deviceSessions.register(user._id, device);
+
+    res.json({
+      token: signToken(user, device.deviceId),
       deviceEvicted: evicted,
       maxDevices: deviceSessions.MAX_DEVICES,
     });
@@ -825,6 +995,15 @@ exports.resetPassword = async (req, res, next) => {
     }
     const pwdProblem = passwordProblem(password);
     if (pwdProblem) return res.status(400).json({ message: pwdProblem });
+
+    // Acceptance is checked here, before anything is written — not on the
+    // client alone, and not after the account exists. The client gate is a
+    // courtesy to the person filling in the form; this is the rule. An account
+    // that was created and then found to be missing consent would already be a
+    // record we had no basis to hold, and the "delete it afterwards" version of
+    // that is not the same thing as never creating it.
+    const consentIssue = consentProblem(consent);
+    if (consentIssue) return res.status(400).json({ message: consentIssue });
 
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     const user = await User.findOne({

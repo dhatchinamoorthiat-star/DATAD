@@ -3,6 +3,9 @@ import api from './axios';
 export const register = (data) => api.post('/auth/register', data);
 export const checkEmail = (email) => api.get('/auth/check-email', { params: { email } });
 export const login = (data) => api.post('/auth/login', data);
+// Finishes a login that stopped at the re-consent gate, using the short-lived
+// ticket that gate returned rather than a session.
+export const acceptConsent = (data) => api.post('/auth/accept-consent', data);
 export const verifyEmail = (token) => api.post('/auth/verify-email', { token });
 export const resendVerification = (email) => api.post('/auth/resend-verification', { email });
 export const getMe = () => api.get('/auth/me');

@@ -2,6 +2,7 @@ const router = require('express').Router();
 const {
   register,
   login,
+  acceptConsent,
   getMe,
   updateProfile,
   uploadAvatar,
@@ -44,6 +45,11 @@ router.post('/register', registerLimiter, register);
 // loginAccountLimiter is the actual brute-force guard, keyed on the account so
 // a whole campus behind one NAT address is not throttled as a single client.
 router.post('/login', authLimiter, loginAccountLimiter, login);
+// The second half of a login that stopped at the re-consent gate. Reached with
+// the short-lived ticket that gate hands out, not with a session — see
+// acceptConsent. authLimiter because it is an unauthenticated entry point in
+// the same sense /login is.
+router.post('/accept-consent', authLimiter, acceptConsent);
 router.post('/verify-email', verifyEmailLimiter, verifyEmail);
 // Recovery for a lapsed confirmation link. Same limiter as the other
 // unauthenticated entry points, and the handler answers generically so it

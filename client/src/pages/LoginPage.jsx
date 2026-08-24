@@ -5,7 +5,9 @@ import toast from '../utils/toast';
 import Button from '../components/common/Button';
 import AuthShell from '../components/layout/AuthShell';
 import BinaryRainBackground from '../components/common/BinaryRainBackground';
-import { login as loginApi, resendVerification } from '../api/auth';
+import { login as loginApi, resendVerification, acceptConsent } from '../api/auth';
+import ReconsentGate from '../components/auth/ReconsentGate';
+import { CONSENT_CLAUSE_IDS, LEGAL_VERSIONS } from '../constants/legal';
 import { useAuth } from '../context/AuthContext';
 import { signalWelcome } from '../utils/welcome';
 
@@ -27,6 +29,48 @@ export default function LoginPage() {
   const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+
+  // Set when the API holds the sign-in back for consent. The ticket is the only
+  // thing kept from that response — it is not a session, and nothing about the
+  // account is readable until the acceptance is recorded.
+  const [consentHold, setConsentHold] = useState(null);
+  const [acceptingConsent, setAcceptingConsent] = useState(false);
+
+  // The session that login withheld, issued once the acceptance is on record.
+  // Deliberately the same landing as an ordinary sign-in: having just accepted
+  // the terms is not a reason to drop someone somewhere unexpected.
+  const finishLogin = (token) => {
+    const account = login(token);
+    signalWelcome({ name: account?.name?.split(' ')[0] || '', target: next });
+    navigate(next, { replace: true });
+  };
+
+  const onAcceptConsent = async (ticked) => {
+    if (acceptingConsent) return;
+    setAcceptingConsent(true);
+    try {
+      const res = await acceptConsent({
+        consentToken: consentHold.consentToken,
+        consent: {
+          accepted: CONSENT_CLAUSE_IDS.reduce((acc, id) => ({ ...acc, [id]: ticked[id] === true }), {}),
+          versions: { ...LEGAL_VERSIONS },
+        },
+      });
+      finishLogin(res.data.token);
+    } catch (err) {
+      // A 401 here means the ticket expired or the account changed underneath
+      // it. Send them back to the password field rather than leaving a dead
+      // Accept button on screen.
+      if (err.response?.status === 401) {
+        setConsentHold(null);
+        toast.error(err.response.data?.message || 'That took too long — please sign in again.');
+      } else {
+        toast.error(err.response?.data?.message || 'Could not record your acceptance. Try again.');
+      }
+    } finally {
+      setAcceptingConsent(false);
+    }
+  };
 
   const onResend = async () => {
     if (!unverifiedEmail || resending) return;
@@ -51,12 +95,22 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     try {
       const res = await loginApi(data);
-      const account = login(res.data.token);
       // Raised before the navigate so the curtain is already up when the
       // destination starts mounting — it holds until that page has loaded.
-      signalWelcome({ name: account?.name?.split(' ')[0] || '', target: next });
-      navigate(next, { replace: true });
+      finishLogin(res.data.token);
     } catch (err) {
+      if (err.response?.data?.needsConsent) {
+        setUnverifiedEmail(null);
+        setConsentHold({
+          consentToken: err.response.data.consentToken,
+          email: data.email,
+          // Whether they have accepted some earlier revision, which decides
+          // whether this reads as "these changed" or "your account predates
+          // these". The server distinguishes the two in its message.
+          returning: /changed/i.test(err.response.data.message || ''),
+        });
+        return;
+      }
       if (err.response?.data?.needsEmailVerification) {
         setUnverifiedEmail(data.email);
         setResent(false);
@@ -80,11 +134,22 @@ export default function LoginPage() {
       footerClassName="mt-5 text-center font-mono text-[11px] text-gray-500"
       subtitle={
         <span className="inline-flex items-center">
-          &gt; authenticate --user
+          &gt; {consentHold ? 'consent --review' : 'authenticate --user'}
           <span className="blink-cursor ml-0.5 inline-block h-3.5 w-[7px] bg-emerald-400 align-middle" />
         </span>
       }
     >
+      {/* The password form is replaced, not merely hidden behind the gate: the
+          credentials have already been checked, and leaving a live login form
+          on screen would invite retyping them into an unexpected interstitial. */}
+      {consentHold ? (
+        <ReconsentGate
+          email={consentHold.email}
+          returning={consentHold.returning}
+          submitting={acceptingConsent}
+          onAccept={onAcceptConsent}
+        />
+      ) : (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label htmlFor="email" className="mb-1 block font-mono text-xs text-emerald-400/80">
@@ -139,6 +204,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
+      )}
     </AuthShell>
   );
 }

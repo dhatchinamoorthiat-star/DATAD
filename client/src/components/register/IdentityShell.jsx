@@ -80,10 +80,16 @@ export default function IdentityShell({ phases, activePhase, phaseProgress, chil
 
         <div className="px-6 py-4 sm:px-8 lg:px-10">
           <p className="mx-auto w-full max-w-[430px] text-center text-[11px] leading-relaxed text-gray-400 dark:text-gray-600">
-            By continuing you agree to our{' '}
+            {/* Not "by continuing you agree". Nobody agrees by continuing: the
+                last screen of signup asks for the Terms and the Privacy Policy
+                to be read and accepted explicitly, and no account is created
+                without that. Leaving the old wording here would claim consent
+                had already been taken, which is the opposite of what happens. */}
+            You&rsquo;ll be asked to read and accept our{' '}
             <Link to="/terms" className="underline-offset-2 hover:underline">Terms</Link>
             {' '}and{' '}
-            <Link to="/privacy" className="underline-offset-2 hover:underline">Privacy Policy</Link>.
+            <Link to="/privacy" className="underline-offset-2 hover:underline">Privacy Policy</Link>
+            {' '}before your account is created.
           </p>
         </div>
       </div>

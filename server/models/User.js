@@ -111,6 +111,36 @@ const userSchema = new mongoose.Schema(
       approvedAt: Date,
     }],
     canChangeProgramAgain: { type: Boolean, default: false },
+
+    // The e-contract record: proof that this person accepted the Terms of Use
+    // and the Privacy Policy, and agreed to be bound electronically, before the
+    // account existed. Registration will not create an account without it and
+    // the confirmation email is not sent until it is stored, so on any account
+    // created after this shipped, `acceptedAt` is non-null.
+    //
+    // Versions are copied in rather than referenced, because the point of the
+    // record is to name the text that was agreed to. When /terms is reworded
+    // and its version bumped, this row keeps pointing at the older wording —
+    // which is the only thing that makes it evidence rather than a boolean.
+    //
+    // `acceptedAt` is stamped by the server. A timestamp the browser chose is
+    // not evidence of when anything happened.
+    consent: {
+      acceptedAt: { type: Date, default: null },
+      // Per-clause, not a single flag: "they agreed to everything" cannot show
+      // which document was agreed to if one of them is ever disputed.
+      terms: { type: Boolean, default: false },
+      privacy: { type: Boolean, default: false },
+      econtract: { type: Boolean, default: false },
+      versions: {
+        terms: { type: String, default: null },
+        privacy: { type: String, default: null },
+      },
+      // Where the acceptance came from. Not identifying on its own; it is the
+      // ordinary supporting detail an acceptance record carries.
+      ip: { type: String, default: '' },
+      userAgent: { type: String, default: '', maxlength: 300 },
+    },
   },
   { timestamps: true }
 );

@@ -99,7 +99,18 @@ d('who gets in at signup', () => {
     await disconnectTestDb();
   });
 
-  const base = { password: 'Passw0rd123', graduationYear: 2026 };
+  // Every signup carries a valid acceptance. Registration refuses to create an
+  // account without one, so this is now part of the minimum viable body rather
+  // than something only the consent tests care about — see consentGate.test.js.
+  const { CURRENT_VERSIONS } = require('../config/legal');
+  const base = {
+    password: 'Passw0rd123',
+    graduationYear: 2026,
+    consent: {
+      accepted: { terms: true, privacy: true, econtract: true },
+      versions: { ...CURRENT_VERSIONS },
+    },
+  };
 
   it('admits a referred student on a curated program', async () => {
     const code = await makeReferrer('CURATED1');
