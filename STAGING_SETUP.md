@@ -105,7 +105,14 @@ document only in the single-service deploy, where `server/index.js` serves
 
 **If Vercel serves the frontend, the Vercel-served HTML carries no CSP**, and
 the header on API responses does almost nothing for XSS. In that topology you
-must also add the header in `vercel.json`:
+must also add the header in `vercel.json`.
+
+There is deliberately no `vercel.json` in the repo: production is Cloudflare in
+front of Render, so `server/config/csp.js` is the only policy that is actually
+served, and a second copy that nothing enforced had already drifted out of sync
+with it. Create the file from the template below only if you put Vercel in
+front of the frontend, and mirror any change to `server/config/csp.js` into it —
+the template here is a starting point, not a current copy of the live policy:
 
 ```json
 {
