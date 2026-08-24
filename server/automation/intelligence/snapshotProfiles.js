@@ -13,6 +13,11 @@ const { runJob } = require('../jobRunner');
 const User = require('../../models/User');
 const StudentProfileSnapshot = require('../../models/StudentProfileSnapshot');
 const { buildStudentProfile } = require('../../ai/intelligence-layer');
+// Shared with the live profile build, which uses it to compare this student
+// against the cohort aggregates built from these same frozen rows. One
+// definition, or the comparison is between two different notions of
+// "consistency".
+const { buildSignals } = require('../../ai/intelligence-layer/profileFactory');
 
 // Nine collector queries × this many users is the peak load on Atlas.
 const CONCURRENCY = 5;
@@ -42,25 +47,6 @@ function todayKey() {
 function activeUserFilter(now = new Date()) {
   const cutoff = new Date(now.getTime() - ACTIVE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
   return { status: 'approved', 'sessions.lastSeenAt': { $gte: cutoff } };
-}
-
-function buildSignals(profile) {
-  const learning = profile.learning || {};
-  const tasks = profile.tasks || {};
-  const career = profile.career || {};
-  const stress = profile.stress || {};
-  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
-
-  return {
-    streak: num(learning.streak),
-    consistency: num(learning.consistency),
-    pendingTasks: num(tasks.pending),
-    overdueTasks: num(tasks.overdue),
-    applicationsCount: num(career.applications),
-    resumeCompletion: num(career.resumeCompletionPct),
-    stressLevel: num(stress.stressLevel),
-    studyMinutes: num(learning.studyMinutes),
-  };
 }
 
 /** Write one user's row. Returns 'saved' | 'skipped'. */

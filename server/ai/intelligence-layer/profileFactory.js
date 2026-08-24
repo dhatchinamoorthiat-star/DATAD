@@ -189,11 +189,6 @@ function buildDeliveryDirectives(scores) {
  * Both must read the same fields the same way or the comparison is between two
  * different definitions of "consistency".
  *
- * TODO: automation/intelligence/snapshotProfiles.js still carries an identical
- * private copy and should import this one instead. Until it does, a field added
- * to one and not the other silently skews every cohort comparison — the live
- * student would be measured on a definition their peers were not.
- *
  * Takes anything profile-shaped — the assembled profile or the raw `collected`
  * bag, which carry these keys at the same depth.
  *
