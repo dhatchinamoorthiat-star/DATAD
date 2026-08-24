@@ -27,6 +27,7 @@ odysseus/
 *.bak
 *.backup
 *.notifications-backup
+backups/
 *.zip
 
 # Credential bundle written by `node scripts/datad.mjs export`. Contains live

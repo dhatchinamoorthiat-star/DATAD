@@ -136,10 +136,11 @@ plan: free
 numInstances: 1
 ```
 
-On the free plan the instance sleeps after ~15 minutes idle. **All 14 cron jobs
+On the free plan the instance sleeps after ~15 minutes idle. **All 23 cron jobs
 run in-process**, so a sleeping instance runs none of them — including
-`trialExpiryReminder`, the only thing that downgrades lapsed paid tiers, and the
-weekly newsletter generation.
+`trialExpiryReminder`, the only thing that downgrades lapsed paid tiers, the
+weekly newsletter generation, and the 02:30 UTC profile snapshot, which is the
+one job whose missed runs cannot be recovered afterwards.
 
 For a staging environment that is exercised in bursts, sleeping also makes every
 smoke test start with a 30-second cold boot, which will read as "the app is

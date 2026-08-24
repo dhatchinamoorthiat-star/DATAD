@@ -66,12 +66,19 @@ removes mitigation 1 entirely.
 **Why `free` is a real constraint, not just a slower tier:**
 
 - **Spin-down breaks all scheduled work.** Free instances sleep after ~15 min
-  idle. Every cron lives in-process (`server/schedulers/index.js`): daily
+  idle. All 23 crons live in-process (`server/schedulers/index.js`): daily
   briefing, daily case, reflections, resume tips, company enrichment, interview
-  questions, moderation, the weekly newsletter, five reminder jobs — and
-  `trialExpiryReminder`, which is the only code path that downgrades an expired
-  paid tier. A sleeping instance runs none of them, so lapsed subscriptions
-  keep their entitlements indefinitely.
+  questions, moderation, the weekly newsletter, five reminder jobs, the four
+  intelligence jobs (profile snapshot, prediction resolution, cohort
+  aggregates, judgement nudge) — and `trialExpiryReminder`, which is the only
+  code path that downgrades an expired paid tier. A sleeping instance runs none
+  of them, so lapsed subscriptions keep their entitlements indefinitely.
+- **The snapshot job is the one that loses data permanently.** It runs at 02:30
+  UTC — the deadest part of the traffic day, so an unpinged instance is
+  reliably asleep for it. Every other cron catches up on its next run;
+  `StudentProfileSnapshot` cannot be backfilled, so a missed night is a day of
+  that student's trajectory gone for good, and every trend, prediction and
+  cohort figure computed downstream is thinner for it.
 - **Memory.** Uploads are buffered in memory by multer, and three call sites
   build a base64 data-URI from the buffer, so peak heap is roughly 2.4x the
   file size per concurrent upload. Baseline RSS for this process (Express,
