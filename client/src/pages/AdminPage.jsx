@@ -9,6 +9,7 @@ import {
   Crown,
   CreditCard,
   Megaphone,
+  Newspaper,
   Users,
   Clapperboard,
   ScrollText,
@@ -165,6 +166,12 @@ export default function AdminPage() {
       icon: Megaphone,
       title: 'Announcements',
       description: 'Post to the dashboard, optionally email the batch',
+    },
+    {
+      to: '/admin/newsletter',
+      icon: Newspaper,
+      title: 'Weekly newsletter',
+      description: 'Review the drafts written each week, then send or discard',
     },
     {
       to: '/admin/logs',

@@ -56,9 +56,15 @@ exports.getDraft = async (req, res, next) => {
     // Shown to the admin alongside the body: a reviewer should be able to see
     // what the automated check thinks before deciding, not just its verdict.
     const verdict = validateNewsletter(draft);
-    const recipientCount = await User.countDocuments({ status: 'approved', role: { $ne: 'admin' } });
 
-    res.json({ ...draft, verdict, recipientCount });
+    // How many this would reach if sent now. Deliberately NOT called
+    // recipientCount: the draft already carries that field, meaning how many it
+    // actually went to when it was sent. Spreading a live count over it made an
+    // already-sent newsletter report today's audience as its historical one, so
+    // the list and the detail view disagreed about the same send.
+    const audienceSize = await User.countDocuments({ status: 'approved', role: { $ne: 'admin' } });
+
+    res.json({ ...draft, verdict, audienceSize });
   } catch (err) {
     next(err);
   }

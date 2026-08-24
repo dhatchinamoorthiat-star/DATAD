@@ -22,3 +22,19 @@ export const listSubscriptionRequests = (status)        => api.get('/admin/subsc
 export const updateUserTier           = (id, data)      => api.patch(`/admin/subscriptions/users/${id}/tier`, data);
 export const reviewSubscriptionRequest= (id, data)      => api.patch(`/admin/subscriptions/${id}/review`, data);
 export const getSubscriptionAnalytics = ()              => api.get('/admin/subscriptions/analytics');
+
+// --- Weekly newsletter -----------------------------------------------------
+//
+// generateWeeklyNewsletter writes a NewsletterDraft every week; sendDraft is
+// the only path by which one reaches a student's inbox. The server treats an
+// admin as the human in that path — see controllers/newsletterController.js —
+// so these calls exist to give that human somewhere to stand.
+
+export const listNewsletterDrafts = () => api.get('/admin/newsletter');
+// Returns the draft plus a freshly computed `verdict` and `recipientCount`,
+// so a reviewer sees what the content check thinks before deciding.
+export const getNewsletterDraft = (id) => api.get(`/admin/newsletter/${id}`);
+// Irreversible: mails every approved non-admin member. The server re-validates
+// at this moment rather than trusting the verdict shown at review time.
+export const sendNewsletterDraft = (id) => api.post(`/admin/newsletter/${id}/send`);
+export const discardNewsletterDraft = (id) => api.delete(`/admin/newsletter/${id}`);
