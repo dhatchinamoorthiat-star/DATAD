@@ -39,7 +39,16 @@ services:
     plan: free
     numInstances: 1
     rootDir: .
-    buildCommand: cd client && npm install && npm run build && cd ../server && npm install
+    # `--include=dev` on the client is load-bearing. NODE_ENV=production is set
+    # on this service (below), and npm omits devDependencies whenever NODE_ENV
+    # is production — but vite is a devDependency, so `npm run build` dies with
+    # "vite: not found". The very first deploy of a blueprint builds before its
+    # env vars are applied, so this fails on the SECOND deploy and every one
+    # after, which is a confusing way to find out.
+    #
+    # The server install stays production-only on purpose: nothing it needs at
+    # runtime is a devDependency, and jest et al. have no business in the image.
+    buildCommand: cd client && npm install --include=dev && npm run build && cd ../server && npm install
     startCommand: cd server && npm start
     healthCheckPath: /api/health
     envVars:
