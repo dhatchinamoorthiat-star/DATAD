@@ -382,12 +382,32 @@ async function startServer() {
     // forever. Turn it OFF the moment the dedicated worker service is running:
     // both polling the same collection is wasteful, though not incorrect
     // (pollBatch claims each row with an atomic status transition).
-    if (process.env.RUN_WORKER_IN_PROCESS === 'true') {
+    //
+    // Parsed leniently and reported either way. A strict === 'true' fails
+    // silently against `True`, `1`, or a YAML boolean that the platform
+    // serialised differently than expected — and the symptom of that failure is
+    // nothing at all: no error, no log, just a queue that never drains. A flag
+    // whose only feedback is the absence of a symptom is not a flag.
+    const rawWorkerFlag = (process.env.RUN_WORKER_IN_PROCESS ?? '').trim();
+    const flag = rawWorkerFlag.toLowerCase();
+    const TRUTHY = ['true', '1', 'yes', 'on'];
+    const FALSY = ['', 'false', '0', 'no', 'off'];
+
+    if (TRUTHY.includes(flag)) {
       logger.warn('Event worker running in-process — shares this instance CPU and memory');
       stopPollLoop = require('./events/pollLoop').start({
         label: 'worker:in-process',
         log: (line) => logger.info(line),
       });
+    } else if (!FALSY.includes(flag)) {
+      // Set to something we do not recognise. Treated as off, but say so —
+      // this is the case that would otherwise look identical to "not set".
+      logger.error('RUN_WORKER_IN_PROCESS is set to an unrecognised value — event worker is OFF', {
+        value: rawWorkerFlag,
+        expected: TRUTHY.join('/'),
+      });
+    } else {
+      logger.info('Event worker not running in-process (RUN_WORKER_IN_PROCESS is off)');
     }
   } else {
     logger.warn('Database-dependent services disabled');

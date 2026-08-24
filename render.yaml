@@ -108,8 +108,11 @@ services:
       # Set this to false the moment the datad-worker service below is enabled.
       # Both polling is wasteful but not incorrect — pollBatch() claims each row
       # with an atomic pending→processing transition, so nothing double-runs.
+      # Quoted deliberately. Unquoted `true` is a YAML boolean, and how a
+      # platform serialises that into a process env var is its business, not
+      # something to bet a silent failure mode on. The string is unambiguous.
       - key: RUN_WORKER_IN_PROCESS
-        value: true
+        value: "true"
       # Sized for a 512 MB free instance. multer buffers uploads in heap and
       # three call sites then build a base64 data-URI from the buffer, so peak
       # is ~2.4x the file size per concurrent upload. Raise these on `starter`
