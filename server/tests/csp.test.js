@@ -72,8 +72,11 @@ describe('the CSP header is actually sent', () => {
 describe('the policy blocks script injection', () => {
   const d = () => directives();
 
-  it('restricts scripts to same-origin', () => {
-    expect(d().scriptSrc).toEqual(["'self'"]);
+  it('restricts scripts to same-origin and the payment gateway', () => {
+    // Razorpay Checkout is the only third-party script the app loads, and it
+    // is pinned to the exact checkout host — not a *.razorpay.com wildcard,
+    // which would widen the trusted set to every subdomain they ever run.
+    expect(d().scriptSrc).toEqual(["'self'", 'https://checkout.razorpay.com']);
   });
 
   it("does not allow 'unsafe-inline' or 'unsafe-eval' for scripts", () => {
@@ -92,17 +95,25 @@ describe('the policy blocks script injection', () => {
     expect(d().baseUri).toEqual(["'self'"]);
   });
 
-  it('blocks plugins and nested browsing contexts', () => {
+  it('blocks plugins, and frames anything but the payment window', () => {
     expect(d().objectSrc).toEqual(["'none'"]);
-    expect(d().frameSrc).toEqual(["'none'"]);
+    // Razorpay Checkout renders itself in an api.razorpay.com iframe. Nothing
+    // else in the app embeds a frame, so the list stays exactly this long.
+    expect(d().frameSrc).toEqual([
+      'https://api.razorpay.com',
+      'https://checkout.razorpay.com',
+    ]);
   });
 
   it('blocks framing, so the app cannot be clickjacked', () => {
     expect(d().frameAncestors).toEqual(["'none'"]);
   });
 
-  it('restricts form submission to this origin', () => {
-    expect(d().formAction).toEqual(["'self'"]);
+  it('restricts form submission to this origin and the gateway', () => {
+    // Card and netbanking payments POST to Razorpay, which redirects on to the
+    // bank. Everything else — anything that could carry a session or a profile
+    // off-origin — still has nowhere to go.
+    expect(d().formAction).toEqual(["'self'", 'https://api.razorpay.com']);
   });
 });
 

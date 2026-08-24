@@ -43,6 +43,19 @@
 function directives() {
   const connect = new Set(["'self'"]);
 
+  // Razorpay Checkout. The script is injected at checkout time by
+  // client/src/utils/razorpay.js, it renders itself inside an api.razorpay.com
+  // iframe, it beacons telemetry to lumberjack.razorpay.com, and a card or
+  // netbanking payment POSTs the user off to their bank. Each of those is a
+  // different directive, and missing any one of them fails the payment at a
+  // different, more confusing point than the last — so they are listed
+  // together here rather than scattered through the policy below.
+  const RAZORPAY_SCRIPT = 'https://checkout.razorpay.com';
+  const RAZORPAY_FRAME = ['https://api.razorpay.com', 'https://checkout.razorpay.com'];
+  connect.add('https://api.razorpay.com');
+  connect.add('https://lumberjack.razorpay.com');
+  connect.add('https://lumberjack-cx.razorpay.com');
+
   // The API origin, when the SPA is served from somewhere else (Vercel client,
   // Render server). Without this, every fetch is blocked in production and
   // nothing works — the single most likely way this policy breaks the app.
@@ -72,7 +85,7 @@ function directives() {
     // 'unsafe-eval': a production Vite build needs neither, and adding either
     // one back would defeat the purpose — 'unsafe-inline' in script-src makes
     // the policy approximately decorative against reflected XSS.
-    scriptSrc: ["'self'"],
+    scriptSrc: ["'self'", RAZORPAY_SCRIPT],
     scriptSrcAttr: ["'none'"], // no onclick="..." handlers, ever
 
     // 'unsafe-inline' here is a real concession and is worth naming. Tailwind
@@ -94,15 +107,17 @@ function directives() {
     // Nothing here embeds a plugin or a frame, and both are classic ways to
     // smuggle in an execution context.
     objectSrc: ["'none'"],
-    frameSrc: ["'none'"],
+    frameSrc: RAZORPAY_FRAME,
     // Clickjacking. Stronger than X-Frame-Options and understood more widely.
     frameAncestors: ["'none'"],
 
     // Stops an injected <base> tag repointing every relative script URL at an
     // attacker's host — a bypass that works against script-src 'self'.
     baseUri: ["'self'"],
-    // A form posting a student's session or profile data off-origin.
-    formAction: ["'self'"],
+    // A form posting a student's session or profile data off-origin. Razorpay
+    // is the one allowed destination: card and netbanking flows submit to the
+    // gateway, which then redirects to the bank's own 3-D Secure page.
+    formAction: ["'self'", 'https://api.razorpay.com'],
 
     workerSrc: ["'self'", 'blob:'], // the service worker in client/public/sw.js
     manifestSrc: ["'self'"],

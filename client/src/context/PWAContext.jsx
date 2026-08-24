@@ -1,8 +1,16 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { detectBrowser, detectAndroid } from '../utils/installInstructions';
 
 const PWAContext = createContext(null);
 
 const DISMISSED_KEY = 'datad-pwa-install-dismissed';
+
+// Long enough that the card never flashes during load.
+const PROMPT_DELAY_MS = 3000;
+// Chrome can fire `beforeinstallprompt` a beat late; wait past PROMPT_DELAY_MS
+// before falling back to manual instructions so we don't show the worse UI to
+// a browser that was about to give us the real one.
+const FALLBACK_DELAY_MS = 6000;
 
 function isStandalone() {
   return (
@@ -30,16 +38,23 @@ export function PWAProvider({ children }) {
   const swReg = useRef(null);
 
   const isIOS = detectIOS();
+  const isAndroid = detectAndroid();
+  const browser = detectBrowser();
+
+  // `deferredPrompt` read from inside a timeout would be stale, so mirror it.
+  const deferredRef = useRef(null);
 
   // Install prompt
   useEffect(() => {
+    if (installed || localStorage.getItem(DISMISSED_KEY)) return undefined;
+
+    const timers = [];
+
     const onBIP = (e) => {
       e.preventDefault();
+      deferredRef.current = e;
       setDeferredPrompt(e);
-      if (!installed && !localStorage.getItem(DISMISSED_KEY)) {
-        // Slight delay so it doesn't flash immediately on load
-        setTimeout(() => setShowInstallPrompt(true), 3000);
-      }
+      timers.push(setTimeout(() => setShowInstallPrompt(true), PROMPT_DELAY_MS));
     };
     const onInstalled = () => {
       setInstalled(true);
@@ -48,17 +63,23 @@ export function PWAProvider({ children }) {
     window.addEventListener('beforeinstallprompt', onBIP);
     window.addEventListener('appinstalled', onInstalled);
 
-    // iOS Safari never fires beforeinstallprompt — show the card with
-    // "Add to Home Screen" instructions instead.
-    let iosTimer;
-    if (isIOS && !installed && !localStorage.getItem(DISMISSED_KEY)) {
-      iosTimer = setTimeout(() => setShowInstallPrompt(true), 3000);
+    if (isIOS) {
+      // iOS Safari never fires beforeinstallprompt — go straight to the
+      // "Add to Home Screen" instructions.
+      timers.push(setTimeout(() => setShowInstallPrompt(true), PROMPT_DELAY_MS));
+    } else {
+      // Desktop Safari and Firefox never fire it either, and Chrome withholds
+      // it until its own engagement heuristic is met. If nothing arrived by
+      // now, show manual instructions rather than nothing at all.
+      timers.push(setTimeout(() => {
+        if (!deferredRef.current) setShowInstallPrompt(true);
+      }, FALLBACK_DELAY_MS));
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', onBIP);
       window.removeEventListener('appinstalled', onInstalled);
-      if (iosTimer) clearTimeout(iosTimer);
+      timers.forEach(clearTimeout);
     };
   }, [installed, isIOS]);
 
@@ -126,6 +147,7 @@ export function PWAProvider({ children }) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') setInstalled(true);
+    deferredRef.current = null;
     setDeferredPrompt(null);
     setShowInstallPrompt(false);
     localStorage.setItem(DISMISSED_KEY, '1');
@@ -160,6 +182,11 @@ export function PWAProvider({ children }) {
       showInstallPrompt,
       installed,
       isIOS,
+      isAndroid,
+      browser,
+      // 'prompt' = the browser gave us a real install prompt to fire;
+      // 'manual' = it never will, so show step-by-step instructions.
+      installMode: deferredPrompt ? 'prompt' : 'manual',
       isOnline,
       updateAvailable,
       cacheSize,

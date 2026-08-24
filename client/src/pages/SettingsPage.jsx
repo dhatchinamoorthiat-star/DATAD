@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from '../utils/toast';
 import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Laptop } from 'lucide-react';
 import { usePWA } from '../context/PWAContext';
+import { getInstallInstructions } from '../utils/installInstructions';
 import { changePassword, deleteAccount, getMe, listDevices, revokeDevice, updateProfile, uploadAvatar } from '../api/auth';
 import { whatsappInviteUrl } from '../components/common/InviteCard';
 import { useAuth } from '../context/AuthContext';
@@ -308,6 +309,9 @@ function AppSection() {
     cacheSize,
     updateAvailable,
     deferredPrompt,
+    isIOS,
+    isAndroid,
+    browser,
     installApp,
     applyUpdate,
     clearCache,
@@ -315,6 +319,7 @@ function AppSection() {
   } = usePWA();
 
   const [clearing, setClearing] = useState(false);
+  const installSteps = getInstallInstructions({ isIOS, browser, isAndroid });
 
   useEffect(() => {
     requestCacheSize();
@@ -396,10 +401,21 @@ function AppSection() {
           </Button>
         )}
 
+        {/* Without a captured prompt, installApp() is a no-op — so show a
+            disabled button plus the real steps instead of a dead control. */}
         {!installed && !deferredPrompt && (
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            To install on iPhone: tap the Share button in Safari, then &ldquo;Add to Home Screen&rdquo;.
-          </p>
+          <div className="w-full space-y-2">
+            <span title="This browser doesn't offer a one-click install">
+              <Button size="sm" icon={Download} disabled>
+                Install app
+              </Button>
+            </span>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {installSteps.supported
+                ? `To install here: ${installSteps.steps.join(', then ')}.`
+                : installSteps.steps.join('. ') + '.'}
+            </p>
+          </div>
         )}
       </div>
     </section>
