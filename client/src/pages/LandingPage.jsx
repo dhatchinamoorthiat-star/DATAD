@@ -183,7 +183,10 @@ export default function LandingPage() {
         <Link to="/" aria-label="DATAD — home" className="flex items-center">
           <DatadMark size="sm" />
         </Link>
-        <div className="flex items-center gap-2">
+        {/* Tighter gap below `sm`: at 360dp the logo, theme toggle, "Log in" and
+            the join button are competing for the row, and the loser was "Log
+            in", which broke across two lines as "Log" / "in". */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={toggle}
@@ -194,12 +197,12 @@ export default function LandingPage() {
           >
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          <Link to="/login" className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100">
+          <Link to="/login" className="whitespace-nowrap rounded-xl px-2.5 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 sm:px-4 dark:text-gray-400 dark:hover:text-gray-100">
             Log in
           </Link>
           <Link
             to="/register"
-            className="rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+            className="rounded-xl bg-gray-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 sm:px-4 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
           >
             Join your campus
           </Link>

@@ -129,19 +129,23 @@ export default function AssignmentsPage() {
         />
       )}
 
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+      {/* Stacks below `sm`. Side by side, a 3xl heading and a pill button plus a
+          Planner link do not fit a 360dp phone, and `justify-between` has no
+          way to say so — the row does not wrap, so the button lands on top of
+          the word "Assignments". Seen on the Play Store screenshots. */}
+      <div className="mb-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-3xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">Assignments</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Case studies, exams and self-planned tasks</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 hover:shadow-md transition-all"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-primary-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-700 hover:shadow-md transition-all"
           >
             <Plus className="h-4 w-4" /> New assignment
           </button>
-          <Link to="/me/planner" className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
+          <Link to="/me/planner" className="flex items-center gap-1 whitespace-nowrap text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
             Planner <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
