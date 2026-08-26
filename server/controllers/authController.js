@@ -22,6 +22,7 @@ const {
   sendPasswordResetEmail,
   sendVerificationEmail,
   sendAdminNewRegistrationEmail,
+  sendApplicationSubmittedEmail,
   esc,
 } = require('../config/mailer');
 const { approveAccount, adminUser } = require('../services/accountApproval');
@@ -557,6 +558,16 @@ exports.register = async (req, res, next) => {
       });
     }
 
+    // Fire-and-forget: the applicant's response must not wait on, or fail with,
+    // this. The verification mail above is the one the account actually depends
+    // on, and it has already been awaited. The admin is not alerted here — that
+    // happens on confirmation, see notifyAdminOfPendingRegistration.
+    sendApplicationSubmittedEmail(user).catch((err) =>
+      logger.error('Application submitted email failed', {
+        error: err.message, userId: String(user._id),
+      })
+    );
+
     return res.status(201).json({
       pending: true,
       needsEmailVerification: true,
@@ -578,7 +589,9 @@ exports.register = async (req, res, next) => {
  * login is gated on a confirmed address is that "a bot with a fake address
  * costs the admin nothing". Alerting at submit would hand that cost straight
  * back: an inbox full of approve buttons for accounts that do not exist. From
- * a real student's side the two moments are seconds apart.
+ * a real student's side the two moments are seconds apart — and the applicant
+ * already has their own "we received your application" mail from submit, so
+ * nobody is left wondering in the gap.
  *
  * Fire-and-forget by design — the student's confirmation response must not wait
  * on, or fail with, the admin's mail server.

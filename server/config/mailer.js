@@ -104,6 +104,36 @@ exports.sendAccountApprovedEmail = (user) =>
   }).catch((err) => logger.error('Approval email failed:', { error: err.message }));
 
 /**
+ * Confirmation that an application landed, sent to the applicant at submit.
+ *
+ * Distinct from the verification mail, which is an action item: this one says
+ * nothing needs doing beyond confirming the address, and sets the expectation
+ * that a human reviews the account next. Without it the only mail a pending
+ * applicant ever gets is "confirm your email", which reads as the end of the
+ * process rather than the start of a queue.
+ */
+exports.sendApplicationSubmittedEmail = (user) =>
+  send({
+    to: [{ email: user.email, name: user.name }],
+    subject: 'We received your DATAD application ✅',
+    html: wrap(
+      `Thanks, ${esc(user.name)} — your application is in`,
+      `<p>We've received your application to join DATAD.</p>
+       <p><strong>What happens next:</strong></p>
+       <ol>
+         <li>Confirm your email address using the link in our other message.</li>
+         <li>An admin reviews your application.</li>
+         <li>You'll get an email the moment your account is approved.</li>
+       </ol>
+       <p style="color:#6b7280">Reviews usually take a day or two. You don't need to do
+       anything else in the meantime.</p>`
+    ),
+  }).catch((err) => {
+    logger.error('Application submitted email failed:', { error: err.message });
+    return { delivered: false, error: err.message };
+  });
+
+/**
  * The registration alert an admin gets when someone new lands in the queue.
  *
  * Three things shape it:
