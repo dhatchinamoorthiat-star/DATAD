@@ -51,7 +51,11 @@ export default function PitchFrame({ scene, playing, reduced }) {
     return () => ro.disconnect();
   }, [ratio]);
 
-  const src = scene.shot ? `/pitch/${scene.shot}` : null;
+  // Served from Cloudinary (f_auto/q_auto) instead of the public/ bundle so
+  // the reel loads pre-optimized per browser rather than shipping raw PNGs.
+  const src = scene.shot
+    ? `https://res.cloudinary.com/dmtsr85ly/image/upload/f_auto,q_auto/pitch/${scene.shot.replace(/\.png$/, '')}`
+    : null;
   const animate = playing && !reduced;
 
   return (

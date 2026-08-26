@@ -5,10 +5,11 @@
 // under the 3-minute cap the Eureka pitch format allows, with the narration
 // lines matching the speaker notes in the deck.
 //
-// `shot` names a PNG in client/public/pitch/. Capture them with
-// `node scripts/capture-pitch-shots.mjs` — the file names there are the source
-// of truth for this list. A missing shot degrades to a labelled placeholder
-// frame rather than a broken image, so the reel always plays.
+// `shot` names an image in the Cloudinary `pitch/` folder (served via
+// f_auto,q_auto — see PitchFrame). Capture new ones with
+// `node scripts/capture-pitch-shots.mjs`, then upload to that folder. A
+// missing shot degrades to a labelled placeholder frame rather than a broken
+// image, so the reel always plays.
 
 export const PITCH_SITE = 'www.datad.online';
 
