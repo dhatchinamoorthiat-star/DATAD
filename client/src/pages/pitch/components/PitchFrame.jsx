@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Monitor } from 'lucide-react';
 
 // The fake title bar. Fixed height, and the shot has to be sized around it —
@@ -19,7 +19,15 @@ export default function PitchFrame({ scene, playing, reduced }) {
   const stageRef = useRef(null);
   const [box, setBox] = useState(null);
 
-  useEffect(() => { setFailed(false); setRatio(16 / 10); }, [scene.id]);
+  // Reset the per-scene state during render rather than in an effect, so the
+  // switch happens in the same commit as the scene change instead of a
+  // follow-up render (see https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevSceneId, setPrevSceneId] = useState(scene.id);
+  if (scene.id !== prevSceneId) {
+    setPrevSceneId(scene.id);
+    setFailed(false);
+    setRatio(16 / 10);
+  }
 
   // Fit the card to the stage in whichever direction runs out first.
   //
