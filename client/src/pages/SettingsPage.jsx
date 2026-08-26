@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import toast from '../utils/toast';
-import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Laptop } from 'lucide-react';
+import { Camera, KeyRound, Moon, ShieldAlert, Sun, Trash2, UserRound, Gift, Copy, MessageCircle, CreditCard, Crown, Zap, Star, CheckCircle2, ArrowRight, Smartphone, Wifi, WifiOff, RefreshCw, Download, HardDrive, Laptop, BellRing } from 'lucide-react';
 import { usePWA } from '../context/PWAContext';
 import { getInstallInstructions } from '../utils/installInstructions';
 import { changePassword, deleteAccount, getMe, listDevices, revokeDevice, updateProfile, uploadAvatar } from '../api/auth';
@@ -15,6 +15,7 @@ import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import DaxProfilePanel from '../components/common/DaxProfilePanel';
 import useDocumentTitle from '../hooks/useDocumentTitle';
+import usePushNotifications from '../hooks/usePushNotifications';
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -295,6 +296,67 @@ function Card({ title, icon: Icon, danger, children }) {
   );
 }
 
+/**
+ * Push notifications opt-in.
+ *
+ * The permission prompt fires from this button and nowhere else — see
+ * usePushNotifications for why an unprompted request is a permanent block
+ * waiting to happen. Every unavailable case explains itself rather than
+ * rendering a control that does nothing when tapped.
+ */
+function PushCard() {
+  const { supported, available, subscribed, blocked, busy, error, enable, disable } =
+    usePushNotifications();
+
+  const reason = !supported
+    ? "This browser doesn't support push notifications."
+    : !available
+      ? 'Push notifications are not switched on for this server yet.'
+      : blocked
+        ? 'Notifications are blocked for DATAD in your browser settings — you\'ll need to allow them there first.'
+        : null;
+
+  return (
+    <Card title="Notifications" icon={BellRing}>
+      <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+        Get alerts on this device for the things that can&apos;t wait — placement
+        deadlines, application updates and billing. Everything else stays in the
+        bell.
+      </p>
+
+      {reason ? (
+        <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500 dark:bg-gray-800/60 dark:text-gray-400">
+          {reason}
+        </p>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Button
+            variant={subscribed ? 'secondary' : 'primary'}
+            size="sm"
+            disabled={busy}
+            onClick={subscribed ? disable : enable}
+          >
+            {busy
+              ? 'Working…'
+              : subscribed
+                ? 'Turn off on this device'
+                : 'Turn on for this device'}
+          </Button>
+          {subscribed && (
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              ● On
+            </span>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>
+      )}
+    </Card>
+  );
+}
+
 function fmtBytes(bytes) {
   if (!bytes) return '—';
   if (bytes < 1024) return `${bytes} B`;
@@ -532,6 +594,8 @@ export default function SettingsPage() {
             Switch to {dark ? 'light' : 'dark'} mode
           </button>
         </Card>
+
+        <PushCard />
 
         <AppSection />
 

@@ -2,6 +2,7 @@ const Notification = require('../models/Notification');
 const logger = require('../utils/logger');
 const notificationService = require('../notifications/NotificationService');
 const registry = require('../notifications/NotificationRegistry');
+const push = require('../notifications/PushService');
 
 const OFFLINE_MODE = process.env.LOCAL_OFFLINE_MODE === 'true';
 
@@ -82,6 +83,51 @@ exports.remove = async (req, res, next) => {
     });
 
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── Web Push ────────────────────────────────────────────────────────────────
+
+/**
+ * The VAPID public key the browser needs to create a subscription.
+ *
+ * Public by definition — it is embedded in every subscription request the
+ * browser makes — but still behind auth, since only signed-in users subscribe.
+ * `enabled: false` rather than a 404 so the client can hide its toggle and say
+ * why instead of rendering a control that silently does nothing.
+ */
+exports.pushKey = (req, res) => {
+  res.json({ enabled: push.isEnabled(), publicKey: push.getPublicKey() });
+};
+
+exports.pushSubscribe = async (req, res, next) => {
+  if (!push.isEnabled()) {
+    return res.status(503).json({ message: 'Push notifications are not configured' });
+  }
+
+  try {
+    await push.saveSubscription(req.user.userId, req.body?.subscription, {
+      deviceId: req.headers['x-device-id'],
+      userAgent: req.headers['user-agent'],
+    });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    if (err.status === 400) {
+      return res.status(400).json({ message: err.message });
+    }
+    next(err);
+  }
+};
+
+exports.pushUnsubscribe = async (req, res, next) => {
+  try {
+    const removed = await push.removeSubscription(
+      req.user.userId,
+      req.body?.endpoint
+    );
+    res.json({ ok: true, removed });
   } catch (err) {
     next(err);
   }

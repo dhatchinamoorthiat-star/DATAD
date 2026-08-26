@@ -1,11 +1,11 @@
-// DATAD Service Worker — v4
+// DATAD Service Worker — v5
 // Cache strategy:
 //   • /assets/* + fonts → cache-first (content-hashed, so immutable)
 //   • Navigation        → network-first, cached page, then offline.html
 //   • API               → network-only (never cached)
 //   • Everything else   → stale-while-revalidate
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const STATIC_CACHE  = `datad-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `datad-dynamic-${CACHE_VERSION}`;
 
@@ -53,6 +53,60 @@ self.addEventListener('message', (e) => {
   if (e.data?.type === 'GET_CACHE_SIZE') {
     getCacheSize().then((size) => e.source.postMessage({ type: 'CACHE_SIZE', size }));
   }
+});
+
+// ── Push ─────────────────────────────────────────────────────────────────────
+// The only path that reaches the student when the app is closed. Everything
+// else in this file is a cache; this is a delivery channel.
+self.addEventListener('push', (e) => {
+  // Payload is JSON from PushService.sendToUser. Push services are also allowed
+  // to wake a worker with no data at all, so nothing here may assume a body.
+  let data = {};
+  try {
+    data = e.data ? e.data.json() : {};
+  } catch {
+    data = { title: 'DATAD', body: e.data?.text?.() || '' };
+  }
+
+  const title = data.title || 'DATAD';
+
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-96x96.png',
+      // Collapses repeat banners for one notification rather than stacking
+      // them — the same job groupCount does in the bell.
+      tag: data.id || data.type || 'datad',
+      renotify: false,
+      data: { link: data.link || '/', id: data.id },
+    })
+  );
+});
+
+// Tapping a banner should land on the thing it is about, and should reuse an
+// already-open DATAD window rather than opening a second copy of the PWA.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+
+  const link = e.notification.data?.link || '/';
+  const url = new URL(link, self.location.origin).href;
+
+  e.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((wins) => {
+        for (const win of wins) {
+          if (win.url.startsWith(self.location.origin) && 'focus' in win) {
+            // navigate() can reject (cross-origin, or a client that has since
+            // gone away); focusing is the part that matters.
+            win.navigate?.(url).catch(() => {});
+            return win.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      })
+  );
 });
 
 // ── Fetch ────────────────────────────────────────────────────────────────────

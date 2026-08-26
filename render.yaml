@@ -190,6 +190,28 @@ services:
       # through the browser.
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+      # ── Web Push (notifications/PushService.js) ─────────────────────────────
+      #
+      # The only channel that reaches a student whose PWA is closed. SSE
+      # (NotificationStream) needs an open, foregrounded tab; this puts a banner
+      # on a locked phone. Unset, the channel is inert — the Settings toggle
+      # says so, /notifications/push/subscribe answers 503, and nothing else
+      # changes — so a missing key here is a silent absence of notifications
+      # rather than a visible failure.
+      #
+      # `sync: false` on the pair because the private key is a credential.
+      # Generate ONCE with `npx web-push generate-vapid-keys` and paste both in
+      # the dashboard: every subscription a browser has granted is bound to the
+      # public key, so regenerating them silently mutes every device that has
+      # already opted in. There is no migration — only re-consent.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      # Contact the push service uses if our subscriptions misbehave. Not a
+      # secret, so it lives here rather than in the dashboard.
+      - key: VAPID_SUBJECT
+        value: mailto:support@datad.app
       # Error tracking (web) (server/observability/errorTracker.js). With neither of
       # these set the only sink is the structured log — no alert fires, and the
       # first report of an outage is a student mentioning it. /api/health

@@ -32,8 +32,10 @@ import {
   deleteNotification,
 } from '../api/notifications';
 import toast from '../utils/toast';
+import { useAuth } from './AuthContext';
 
 const SSE_RECONNECT_DELAY = 5000;
+const MAX_RECONNECT_DELAY = 60000;
 const POLL_INTERVAL = 60000;
 
 // Only priority <= 1 (server/notifications/NotificationRegistry.js) reaches
@@ -64,7 +66,32 @@ function getToken() {
   }
 }
 
+/**
+ * Where the SSE stream lives.
+ *
+ * EventSource takes an absolute-or-relative URL of its own; it does not go
+ * through the axios instance, so it does not inherit `VITE_API_BASE_URL`. A
+ * hardcoded `/api/...` is correct only when the API is same-origin (dev via the
+ * Vite proxy, or a tunnel). In the deployed split — static client on one host,
+ * Express on another — that path resolves against the *client* host, which
+ * answers with the SPA's index.html. EventSource sees `text/html`, errors, and
+ * the reconnect loop retries the same wrong URL forever: no live notification
+ * ever arrives and the app silently falls back to the 60s poll. That is exactly
+ * what an installed PWA looks like from the outside — "notifications work, but
+ * only eventually".
+ *
+ * Mirrors api/axios.js: the env var wins, `/api` is the same-origin default.
+ */
+function streamUrl(token) {
+  const base = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+  return `${base}/notifications/stream?token=${encodeURIComponent(token)}`;
+}
+
 export function NotificationProvider({ children }) {
+  // Read from auth rather than from localStorage so signing in and signing out
+  // are *events* here, not states this provider only notices on a page reload.
+  // Every effect below keys off it.
+  const { token: authToken } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [lastNotification, setLastNotification] = useState(null);
   const [notifications, setNotifications] = useState([]);
@@ -75,6 +102,7 @@ export function NotificationProvider({ children }) {
   const eventSourceRef = useRef(null);
   const reconnectTimerRef = useRef(null);
   const pollRef = useRef(null);
+  const attemptRef = useRef(0);
 
   // Prevent duplicate SSE events from being inserted twice.
   const notificationIdsRef = useRef(new Set());
@@ -89,7 +117,7 @@ export function NotificationProvider({ children }) {
     function connect() {
       if (disposed) return;
 
-      const token = getToken();
+      const token = authToken || getToken();
 
       if (!token) {
         setConnected(false);
@@ -107,28 +135,14 @@ export function NotificationProvider({ children }) {
         reconnectTimerRef.current = null;
       }
 
-      /*
-       * IMPORTANT:
-       *
-       * Use a relative URL.
-       *
-       * Browser
-       *   ↓
-       * ngrok
-       *   ↓
-       * Vite
-       *   ↓ /api
-       * Express :5001
-       *
-       * This avoids accidentally sending SSE to a different host.
-       */
-      const evtSource = new EventSource(
-        `/api/notifications/stream?token=${encodeURIComponent(token)}`
-      );
+      // See streamUrl() — same base the axios instance uses, so a split
+      // client/API deployment reaches the API rather than the static host.
+      const evtSource = new EventSource(streamUrl(token));
 
       evtSource.addEventListener('connected', () => {
         if (!disposed) {
           setConnected(true);
+          attemptRef.current = 0; // a good connection resets the backoff
         }
       });
 
@@ -185,11 +199,21 @@ export function NotificationProvider({ children }) {
           eventSourceRef.current = null;
         }
 
-        // Reconnect after 5 seconds.
+        // Backoff, not a fixed 5s retry. A stream that fails once is usually a
+        // dropped connection worth retrying immediately-ish; a stream that
+        // fails every time is a misconfigured URL or an API that is down, and
+        // hammering it every 5 seconds for as long as the app is open is how a
+        // phone in someone's pocket burns battery achieving nothing.
+        const delay = Math.min(
+          SSE_RECONNECT_DELAY * 2 ** attemptRef.current,
+          MAX_RECONNECT_DELAY
+        );
+        attemptRef.current += 1;
+
         reconnectTimerRef.current = setTimeout(() => {
           reconnectTimerRef.current = null;
           connect();
-        }, SSE_RECONNECT_DELAY);
+        }, delay);
       };
 
       eventSourceRef.current = evtSource;
@@ -212,7 +236,10 @@ export function NotificationProvider({ children }) {
 
       setConnected(false);
     };
-  }, []);
+    // Keyed on the token: signing in opens the stream without a reload, and
+    // signing out tears it down instead of leaving the previous account's
+    // stream open behind the login screen.
+  }, [authToken]);
 
   // ────────────────────────────────────────────────────────────────
   // Load notifications
@@ -252,15 +279,20 @@ export function NotificationProvider({ children }) {
   // ────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const token = getToken();
-
-    if (token) {
+    if (authToken || getToken()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       load();
     } else {
+      // Signed out: drop the previous account's list rather than leaving it
+      // rendered behind the login screen, and clear the bell's badge.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setNotifications([]);
+      setUnreadCount(0);
+      setLastNotification(null);
+      notificationIdsRef.current = new Set();
       setInitialized(true);
     }
-  }, [load]);
+  }, [load, authToken]);
 
   // ────────────────────────────────────────────────────────────────
   // Fallback polling
@@ -274,7 +306,12 @@ export function NotificationProvider({ children }) {
 
   useEffect(() => {
     pollRef.current = setInterval(() => {
-      if (!connectedRef.current) {
+      // Guarded on the token like the SSE connect and the initial load above.
+      // Without it this fired every 60s for signed-out visitors sitting on the
+      // public landing page — /notifications answered 401, and the axios
+      // interceptor read that as an expired session and toasted "Your session
+      // expired" at someone who had never signed in.
+      if (!connectedRef.current && (authToken || getToken())) {
         load();
       }
     }, POLL_INTERVAL);
@@ -285,7 +322,7 @@ export function NotificationProvider({ children }) {
         pollRef.current = null;
       }
     };
-  }, [load]);
+  }, [load, authToken]);
 
   // ────────────────────────────────────────────────────────────────
   // Keep notification ref synchronized

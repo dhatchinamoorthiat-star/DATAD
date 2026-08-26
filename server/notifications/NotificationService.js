@@ -18,8 +18,45 @@ const Notification = require('../models/Notification');
 const logger = require('../utils/logger');
 const registry = require('./NotificationRegistry');
 const stream = require('./NotificationStream');
+const push = require('./PushService');
 
 const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Deliver one already-persisted notification to every live channel.
+ *
+ * SSE reaches an open tab; Web Push reaches the operating system of a phone
+ * whose PWA is closed. Both are best-effort by design — the notification is
+ * already in Mongo and will show up in the bell on next load regardless, so
+ * neither channel is allowed to throw into the caller's request. That matters
+ * most for push, whose failure modes are other people's servers.
+ *
+ * Callers run this inside setImmediate so delivery never sits in front of the
+ * response.
+ */
+function fanout(userId, doc) {
+  const payload = {
+    _id: doc._id,
+    type: doc.type,
+    title: doc.title,
+    body: doc.body,
+    link: doc.link,
+    createdAt: doc.createdAt,
+    read: false,
+    groupCount: doc.groupCount || 1,
+    priority: registry.getPriority(doc.type),
+    icon: registry.getIcon(doc.type),
+    color: registry.getColor(doc.type),
+  };
+
+  try {
+    stream.broadcastToUser(userId, payload);
+  } catch { /* SSE broadcast is best-effort */ }
+
+  push.sendToUser(userId, payload).catch((err) => {
+    logger.warn('[NotificationService] Push fanout failed', { error: err.message });
+  });
+}
 
 /**
  * Send a notification to a single user.
@@ -78,23 +115,7 @@ async function send(userId, opts = {}) {
         logger.debug(`[NotificationService] Dedup'd ${type} for ${userId}`);
         // Broadcast the bump too — otherwise a live bell only reflects the
         // dedup'd notification's original content until the next full poll.
-        setImmediate(() => {
-          try {
-            stream.broadcastToUser(userId, {
-              _id: updated._id,
-              type: updated.type,
-              title: updated.title,
-              body: updated.body,
-              link: updated.link,
-              createdAt: updated.createdAt,
-              read: false,
-              groupCount: updated.groupCount || 1,
-              priority: registry.getPriority(updated.type),
-              icon: registry.getIcon(updated.type),
-              color: registry.getColor(updated.type),
-            });
-          } catch { /* SSE broadcast is best-effort */ }
-        });
+        setImmediate(() => fanout(userId, updated));
         return { ...updated, deduped: true };
       }
     } catch (err) {
@@ -113,24 +134,8 @@ async function send(userId, opts = {}) {
       actor: actor || undefined,
       groupCount: 1,
     });
-    // Broadcast via SSE for real-time delivery
-    setImmediate(() => {
-      try {
-        stream.broadcastToUser(userId, {
-          _id: doc._id,
-          type: doc.type,
-          title: doc.title,
-          body: doc.body,
-          link: doc.link,
-          createdAt: doc.createdAt,
-          read: false,
-          groupCount: doc.groupCount || 1,
-          priority: registry.getPriority(doc.type),
-          icon: registry.getIcon(doc.type),
-          color: registry.getColor(doc.type),
-        });
-      } catch { /* SSE broadcast is best-effort */ }
-    });
+    // Deliver live: SSE to an open tab, Web Push to a closed one.
+    setImmediate(() => fanout(userId, doc));
 
     logger.debug(`[NotificationService] Created ${type} for ${userId}`);
     return doc;
@@ -172,25 +177,10 @@ async function sendBulk(userIds, opts = {}) {
 
   try {
     const created = await Notification.insertMany(docs, { ordered: false });
-    // Broadcast via SSE for real-time delivery
+    // Deliver live, one recipient at a time. fanout() swallows per-user
+    // failures, so one unreachable device cannot cut the broadcast short.
     setImmediate(() => {
-      try {
-        for (const n of created) {
-          stream.broadcastToUser(n.user, {
-            _id: n._id,
-            type: n.type,
-            title: n.title,
-            body: n.body,
-            link: n.link,
-            createdAt: n.createdAt,
-            read: false,
-            groupCount: n.groupCount || 1,
-            priority: registry.getPriority(n.type),
-            icon: registry.getIcon(n.type),
-            color: registry.getColor(n.type),
-          });
-        }
-      } catch { /* SSE broadcast is best-effort */ }
+      for (const n of created) fanout(n.user, n);
     });
     logger.debug(`[NotificationService] Bulk created ${docs.length} ${type} notifications`);
     return docs.length;

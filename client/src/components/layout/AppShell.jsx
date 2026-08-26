@@ -92,6 +92,11 @@ function AvatarMenu() {
               <Crown className="h-4 w-4 text-warn-600" /> Admin hub
             </NavLink>
           )}
+          {/* Also in the menu, not just the header icon beside it: that icon
+              is in the `lg:` group, so on a phone this is the only way in. */}
+          <NavLink to="/me/settings" onClick={() => setOpen(false)} className={item}>
+            <Settings className="h-4 w-4 text-primary-500" /> Settings
+          </NavLink>
           <NavLink to="/me/journal" onClick={() => setOpen(false)} className={item}>
             <BookLock className="h-4 w-4 text-primary-500" /> Journal
           </NavLink>
@@ -183,7 +188,13 @@ export default function AppShell({ children }) {
               <AvatarMenu />
             </div>
 
-            {/* Mobile view - keep original search button that opens command palette */}
+            {/* Mobile actions.
+                AvatarMenu is here as well as in the desktop group, not only
+                there: it is the sole route to Log out, Admin hub, Settings,
+                theme and the subscription badge, and the desktop rail that
+                otherwise carries them is `lg:` only. Without it an installed
+                PWA — which is always below the lg breakpoint on a phone — had
+                no way to sign out or reach the admin hub at all. */}
             <div className="flex items-center gap-1 lg:hidden">
               <NotificationBell />
               <button
@@ -193,6 +204,7 @@ export default function AppShell({ children }) {
               >
                 <Search className="h-5 w-5" />
               </button>
+              <AvatarMenu />
             </div>
           </div>
         </header>

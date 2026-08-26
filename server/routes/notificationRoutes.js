@@ -13,6 +13,11 @@ router.get('/stream', sseAuth, sseHandler);
 // All other routes require standard auth
 router.use(verifyToken);
 router.get('/', c.list);
+// Web Push registration. Ahead of the `/:id` routes below only for clarity —
+// they are PATCH/DELETE on different paths, so there is no shadowing.
+router.get('/push/key', c.pushKey);
+router.post('/push/subscribe', c.pushSubscribe);
+router.delete('/push/subscribe', c.pushUnsubscribe);
 router.patch('/read-all', c.markAllRead);
 router.patch('/:id/read', c.markRead);
 router.delete('/:id', c.remove);
