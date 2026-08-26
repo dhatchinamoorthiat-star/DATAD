@@ -15,7 +15,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { generateId } from './lib/id';
 import { migrateLocalConversationsToServer } from './lib/migrateToServer';
 import { TEXT_LIKE_EXTENSIONS, TEXT_ATTACHMENT_MAX_BYTES } from './constants';
-import { DAX_MAINTENANCE_BANNER } from './maintenance';
+import { DAX_MAINTENANCE_BANNER, showMaintenanceBanner } from './maintenance';
 import toast from '../utils/toast';
 import {
   getAvailableModels, getModelPreference, setModelPreference,
@@ -410,7 +410,7 @@ export default function DaxApp({ adapter, config = {} }) {
             )}
           </>
         }
-        banner={maintenance ? (
+        banner={showMaintenanceBanner(maintenance) ? (
           <div
             role="status"
             className="mx-auto flex w-full max-w-3xl items-center gap-2.5 rounded-xl border border-[var(--dax-border)] bg-[var(--dax-accent-soft)] px-3.5 py-2.5 text-sm text-[var(--dax-text)]"

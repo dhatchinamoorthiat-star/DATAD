@@ -11,17 +11,28 @@
  * leads with a maintenance notice, neither of which is what the pitch is
  * claiming. Capture from an account on the plan you are selling.
  *
- * Two steps, so no password is ever passed to this script:
+ * No single account gives a good set. A paid-tier account is the only one that
+ * shows /career/resume and /career/questions as the product rather than as a
+ * paywall; the seeded demo account is the only one carrying notes and a term of
+ * spending. So the set is taken in two passes, and PITCH_ONLY picks the scenes
+ * each pass owns.
  *
- *   1. node scripts/capture-pitch-shots.mjs --login
- *      Opens a real browser window. Sign in yourself, and the session is
- *      written to .pitch-session.json (gitignored) once you land past /login.
+ * No password is ever passed to this script — --login opens a real browser and
+ * waits for a human to sign in:
  *
- *   2. PITCH_BASE_URL=http://localhost:5173 node scripts/capture-pitch-shots.mjs
- *      Reuses that session and takes the eight shots.
+ *   # paid-tier account
+ *   PITCH_SESSION=.pitch-session-placement.json node scripts/capture-pitch-shots.mjs --login
+ *   PITCH_SESSION=.pitch-session-placement.json PITCH_ONLY=career.png,interviews.png \
+ *     node scripts/capture-pitch-shots.mjs
  *
- * The saved session expires like any other, so step 1 comes round again
- * whenever step 2 reports that the shots bounced to /login.
+ *   # demo account
+ *   PITCH_SESSION=.pitch-session-demo.json node scripts/capture-pitch-shots.mjs --login
+ *   PITCH_SESSION=.pitch-session-demo.json \
+ *     PITCH_ONLY=briefing.png,study.png,dax.png,finance.png,community.png,mobile.png \
+ *     node scripts/capture-pitch-shots.mjs
+ *
+ * PITCH_BASE_URL defaults to http://localhost:5173. Sessions expire like any
+ * other, so --login comes round again whenever the shots bounce to /login.
  *
  * Output lands in client/public/pitch/ under the exact file names
  * client/src/pages/pitch/pitchScenes.js expects.
@@ -94,6 +105,12 @@ const PWA_DISMISSED_KEY = 'datad-pwa-install-dismissed';
 // colorScheme option does not reach this, it only sets prefers-color-scheme.
 const THEME = process.env.PITCH_THEME === 'light' ? 'light' : 'dark';
 
+// Read by client/src/dax/maintenance.js to drop the maintenance notice, which
+// otherwise sits directly under the walkthrough's narration and reads as a
+// caption to it. It hides the banner only; Dax still answers from the same
+// fixed local set, so the frame shows nothing a student could not get.
+const CAPTURE_MODE_KEY = 'datad-capture-mode';
+
 // Step one. A headed browser, and a human at the keyboard: the password goes
 // into the real login form and never into this script, its arguments or the
 // shell history. Playwright's storageState carries the session to step two.
@@ -126,10 +143,11 @@ async function main() {
   // The install card is dismissed by a localStorage flag, and localStorage is
   // per-origin, so one visit is enough to set it for every shot that follows.
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(([k, theme]) => {
-    localStorage.setItem(k, '1');
+  await page.evaluate(([pwaKey, captureKey, theme]) => {
+    localStorage.setItem(pwaKey, '1');
+    localStorage.setItem(captureKey, '1');
     localStorage.setItem('theme', theme);
-  }, [PWA_DISMISSED_KEY, THEME]);
+  }, [PWA_DISMISSED_KEY, CAPTURE_MODE_KEY, THEME]);
 
   for (const [file, route] of SHOTS.filter(([f]) => wanted(f))) {
     await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded' });

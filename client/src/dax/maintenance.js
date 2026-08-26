@@ -29,6 +29,25 @@ export const DAX_MAINTENANCE = true;
 export const DAX_MAINTENANCE_BANNER =
   'Dax is under maintenance and training — replies are limited to a few set answers for now.';
 
+// Screenshot escape hatch, and nothing more.
+//
+// scripts/capture-pitch-shots.mjs sets this key before it photographs /dax,
+// because the banner lands directly under the walkthrough's narration line and
+// reads as a caption to it. It hides the notice in that one automated pass; it
+// does not touch DAX_MAINTENANCE, so every reply in a captured frame is still
+// the same fixed local answer a student would get, and no surface a real
+// student can reach is affected — nothing in the app ever writes this key.
+export const CAPTURE_MODE_KEY = 'datad-capture-mode';
+
+export function showMaintenanceBanner(active = DAX_MAINTENANCE) {
+  if (!active) return false;
+  try {
+    return localStorage.getItem(CAPTURE_MODE_KEY) !== '1';
+  } catch {
+    return true; // Private mode, no storage — always disclose.
+  }
+}
+
 // The prompts that have a real answer right now. Surfaces offer these as
 // chips instead of their usual suggestions, so nobody is walked into the
 // "I can't answer that yet" reply.

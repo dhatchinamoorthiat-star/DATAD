@@ -18,6 +18,7 @@ import { daxChat, dashboardInsights } from '../../api/dax';
 import ChatMarkdown from '../chat/ChatMarkdown';
 import {
   DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReply,
+  showMaintenanceBanner,
 } from '../../dax/maintenance';
 import { getRoadmapProgress } from '../../api/pivot';
 import { daysUntil, formatDate } from '../../utils/dateUtils';
@@ -249,7 +250,7 @@ function AskDax() {
     <section>
       <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">Ask Dax</h2>
       <Card padding="md">
-        {DAX_MAINTENANCE && (
+        {showMaintenanceBanner() && (
           <p className="mb-3 rounded-lg bg-primary-50 px-3 py-2 text-xs text-gray-600 dark:bg-primary-950/20 dark:text-gray-300">
             {DAX_MAINTENANCE_BANNER}
           </p>

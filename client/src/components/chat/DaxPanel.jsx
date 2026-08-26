@@ -16,6 +16,7 @@ import { classifyDaxError } from '../../dax/lib/classifyDaxError';
 import ChatMarkdown from './ChatMarkdown';
 import {
   DAX_MAINTENANCE, DAX_MAINTENANCE_BANNER, DAX_MAINTENANCE_PROMPTS, maintenanceReply,
+  showMaintenanceBanner,
 } from '../../dax/maintenance';
 
 // Page context descriptors — sent as the first user message when a context
@@ -139,7 +140,7 @@ export default function DaxPanel({ context, position = 'right' }) {
         </button>
       </div>
 
-      {DAX_MAINTENANCE && (
+      {showMaintenanceBanner() && (
         <div className="flex items-start gap-2 border-b border-gray-100 bg-indigo-50/60 px-4 py-2 text-[11px] leading-snug text-indigo-800 dark:border-gray-800 dark:bg-indigo-900/20 dark:text-indigo-200">
           <Construction className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>{DAX_MAINTENANCE_BANNER}</span>

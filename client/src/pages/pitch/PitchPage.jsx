@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Pause, Play, RotateCcw, Sparkles } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
+import { DatadGlyph, DatadMark, DatadWordmark } from '../../components/common/Logo';
 import { PITCH_SCENES, PITCH_RUNTIME, PITCH_SITE } from './pitchScenes';
 import PitchFrame from './components/PitchFrame';
 
@@ -90,9 +91,45 @@ export default function PitchPage() {
         .pitch-kenburns { animation-name: pitchKenburns; animation-timing-function: linear; animation-fill-mode: forwards; }
         @keyframes pitchFade { from { opacity: 0; } to { opacity: 1; } }
         .pitch-fade { animation: pitchFade 700ms ease-out both; }
+
+        /* Cold open. Everything arrives once, in order, and then holds still —
+           the movement is the entrance, not an ambience that keeps going. */
+        @keyframes pitchRise {
+          from { opacity: 0; transform: translate3d(0, 14px, 0); }
+          to   { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+        .pitch-rise { animation: pitchRise 900ms cubic-bezier(.2,.7,.3,1) both; }
+
+        @keyframes pitchMarkIn {
+          from { opacity: 0; transform: scale(.82); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+        .pitch-mark-in { animation: pitchMarkIn 1100ms cubic-bezier(.2,.7,.3,1) both; }
+
+        /* One slow pass of light across the headline, then done. */
+        @keyframes pitchSheen { from { background-position: 200% 0; } to { background-position: -60% 0; } }
+        .pitch-sheen {
+          background-image: linear-gradient(100deg, #fff 32%, #a5b4fc 46%, #fff 60%);
+          background-size: 220% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          animation: pitchSheen 2600ms ease-out 500ms both;
+        }
+
+        /* The halo behind the mark: one expansion on entry, then it settles. */
+        @keyframes pitchHalo {
+          from { opacity: 0; transform: scale(.6); }
+          60%  { opacity: .55; }
+          to   { opacity: .32; transform: scale(1); }
+        }
+        .pitch-halo { animation: pitchHalo 1400ms cubic-bezier(.2,.7,.3,1) both; }
+
         @media (prefers-reduced-motion: reduce) {
           .pitch-kenburns { animation: none; }
           .pitch-fade { animation: none; }
+          .pitch-rise, .pitch-mark-in, .pitch-halo { animation: none; }
+          .pitch-sheen { animation: none; color: #fff; }
         }
       `}</style>
 
@@ -100,8 +137,9 @@ export default function PitchPage() {
 
       {/* Header */}
       <header className="relative z-10 flex items-center justify-between px-5 sm:px-8 py-4 shrink-0">
-        <Link to="/" className="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
-          <ArrowLeft className="w-4 h-4" /> DATAD
+        <Link to="/" className="flex items-center gap-2.5 text-slate-500 hover:text-white transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          <DatadMark size={20} tone="current" />
         </Link>
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-[11px] font-semibold">
           <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Product walkthrough · {fmt(PITCH_RUNTIME)}
@@ -111,7 +149,43 @@ export default function PitchPage() {
       {/* Stage */}
       <main className="relative z-10 flex-1 min-h-0 flex flex-col">
         <div className="relative flex-1 min-h-[42vh]">
-          {scene.kind === 'title' ? (
+          {scene.kind === 'title' && scene.id === 'cold-open' ? (
+            // The opening frame is the one people judge the reel by, and a
+            // headline alone on black reads as an unstyled slide. It carries
+            // the logo instead — the brand signature, at the one moment in the
+            // reel where the brand is the subject.
+            <div key={scene.id} className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+              <div className="relative flex items-center justify-center">
+                <span
+                  aria-hidden="true"
+                  className="pitch-halo absolute w-[260px] h-[260px] rounded-full bg-indigo-500/25 blur-[70px]"
+                />
+                <span className="pitch-mark-in relative flex flex-col items-center gap-3">
+                  <DatadGlyph size={76} tone="brand" />
+                  <DatadWordmark size={30} tracking="0.28em" className="text-white" />
+                </span>
+              </div>
+
+              <h1
+                className="pitch-sheen pitch-rise mt-8 text-3xl sm:text-5xl font-black tracking-tight max-w-3xl"
+                style={{ animationDelay: '350ms, 350ms' }}
+              >
+                {scene.title}
+              </h1>
+
+              <div className="mt-7 flex flex-wrap justify-center gap-2">
+                {scene.points.map((p, i) => (
+                  <span
+                    key={p}
+                    className="pitch-rise px-3 py-1.5 rounded-full bg-slate-900/80 border border-slate-800 text-xs text-slate-400"
+                    style={{ animationDelay: `${700 + i * 130}ms` }}
+                  >
+                    {p}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : scene.kind === 'title' ? (
             <div key={scene.id} className="pitch-fade absolute inset-0 flex flex-col items-center justify-center text-center px-6">
               <div className="text-xs font-semibold tracking-[0.3em] text-indigo-400 uppercase">{scene.chapter}</div>
               <h1 className="mt-4 text-3xl sm:text-5xl font-black tracking-tight text-white max-w-3xl">
