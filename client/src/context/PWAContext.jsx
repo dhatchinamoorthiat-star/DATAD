@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { detectBrowser, detectAndroid } from '../utils/installInstructions';
+import { isNative } from '../utils/native';
 
 const PWAContext = createContext(null);
 
@@ -12,7 +13,17 @@ const PROMPT_DELAY_MS = 3000;
 // a browser that was about to give us the real one.
 const FALLBACK_DELAY_MS = 6000;
 
+// In the Capacitor shell the app is, definitionally, already installed — it
+// came from the Play Store or the App Store. Without this the WebView takes the
+// desktop-fallback branch below (no `beforeinstallprompt`, not iOS Safari) and
+// after six seconds shows a student who just installed the app a card telling
+// them to "Open the browser menu" and "Add to Home screen" — inside the very
+// app it is asking them to install. There is no browser menu to open.
+//
+// Answered here rather than by the display-mode queries: a WebView is not
+// reliably `display-mode: standalone`, and `navigator.standalone` is Safari's.
 function isStandalone() {
+  if (isNative) return true;
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.matchMedia('(display-mode: fullscreen)').matches ||

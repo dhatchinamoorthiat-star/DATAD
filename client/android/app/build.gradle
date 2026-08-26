@@ -1,5 +1,24 @@
 apply plugin: 'com.android.application'
 
+// Release signing, kept out of the repo.
+//
+// Play identifies every update by the key it was signed with, so this one file
+// is what proves a build is ours. It cannot be rotated casually: losing or
+// leaking it means opening a Play support case for a key reset, not generating
+// a new one. So the key and its passwords live outside version control, and
+// this block reads them from a properties file that .gitignore covers.
+//
+// Absent on purpose in a fresh clone and on CI. When the file is missing the
+// release build stays *unsigned* rather than failing, which keeps
+// `assembleDebug` and any build-only check working for someone who has no
+// business holding the key.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasSigningConfig = keystorePropertiesFile.exists()
+if (hasSigningConfig) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "app.datad"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +35,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasSigningConfig) {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn("keystore.properties not found — release build will be UNSIGNED and cannot be uploaded to Play.")
+            }
         }
     }
 }

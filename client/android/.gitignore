@@ -60,6 +60,11 @@ captures/
 *.jks
 *.keystore
 
+# Passwords and the path to the key above, read by app/build.gradle. The key
+# itself is useless to an attacker without these, which is exactly why they must
+# not sit next to it in history.
+keystore.properties
+
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
 .cxx/

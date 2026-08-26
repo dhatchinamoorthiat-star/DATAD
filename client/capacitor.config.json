@@ -7,8 +7,7 @@
   },
   "plugins": {
     "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#080B14",
+      "style": "LIGHT",
       "overlaysWebView": true
     },
     "Keyboard": {
