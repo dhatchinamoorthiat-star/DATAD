@@ -45,6 +45,16 @@ const NATIVE_CSS = `
   html, body {
     overscroll-behavior: none;
   }
+
+  /* The other half of overlaying the status bar. Once the bar is transparent
+     the WebView owns those pixels, and without this every sticky header — the
+     app shell's and the landing page's alike — renders underneath the clock.
+     Applied to body rather than to each header so it cannot be forgotten by
+     the next one, and env() falls back to 0px on anything that reports no
+     inset. */
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 `;
 
 let styleApplied = false;
@@ -90,11 +100,19 @@ export async function syncStatusBar(dark) {
     // Style.Dark means *light* icons — it names the background it is meant for,
     // not the ink. Dark theme therefore wants Style.Dark.
     await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light });
-    // Matches the `theme-color` meta in index.html (dark) and the app's white
-    // surface (light), so the bar reads as part of the page rather than a strip
-    // borrowed from the OS.
-    await StatusBar.setBackgroundColor({ color: dark ? '#080B14' : '#FFFFFF' });
+
+    // Re-assert the overlay at runtime rather than trusting the value in
+    // capacitor.config.json, which was observed not to take: the bar kept a
+    // system-painted background, so dark mode rendered light icons on a light
+    // strip and the clock vanished.
+    //
+    // setBackgroundColor cannot rescue that on this build. It calls
+    // Window.setStatusBarColor, which Android deprecated and made a no-op from
+    // API 35 — and we target 36. Overlaying is the only lever that still works:
+    // the bar goes transparent and the page paints its own background behind
+    // it, which is what makes the colour follow the theme at all.
+    await StatusBar.setOverlaysWebView({ overlay: true });
   } catch {
-    /* Plugin missing, or iOS, where setBackgroundColor does not exist. */
+    /* Plugin missing, or iOS, where these calls differ. */
   }
 }

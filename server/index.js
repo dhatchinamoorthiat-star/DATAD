@@ -415,6 +415,9 @@ async function startServer() {
 
   const server = app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
+    // Announced at boot, not merely reportable via /api/health: an unmonitored
+    // production deploy looks exactly like a healthy one until something breaks.
+    require('./observability/errorTracker').warnIfUnmonitored();
   });
 
   const shutdown = async (signal) => {
