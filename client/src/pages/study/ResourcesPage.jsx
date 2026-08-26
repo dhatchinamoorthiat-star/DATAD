@@ -27,7 +27,7 @@ const TYPE_COLORS = {
 };
 const TYPES = ['pdf', 'word', 'excel', 'ppt', 'zip', 'video', 'link'];
 
-// Folder accents cycle the four Google-ecosystem colors, never more.
+// Folder accents cycle the four semantic accents, never more.
 const FOLDER_COLORS = [
   'text-primary-600 bg-primary-50 dark:bg-primary-950/40 border-primary-200/80 dark:border-primary-800/60',
   'text-success-600 bg-success-50 dark:bg-success-950/40 border-success-200/80 dark:border-success-800/60',

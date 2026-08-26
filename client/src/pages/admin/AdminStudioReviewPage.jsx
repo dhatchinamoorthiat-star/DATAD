@@ -144,7 +144,7 @@ export default function AdminStudioReviewPage() {
 
       {published && (
         <div className="animate-in mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-          <CheckCircle2 className="h-5 w-5" /> Published to {destination?.label || destKey}. 🎉
+          <CheckCircle2 className="h-5 w-5" /> Published to {destination?.label || destKey}.
           <button onClick={() => navigate('/admin/studio')} className="ml-auto text-xs underline">
             Back to Studio
           </button>

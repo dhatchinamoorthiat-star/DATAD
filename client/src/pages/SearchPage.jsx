@@ -5,25 +5,7 @@ import useSearch from '../hooks/useSearch';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import PageHeader from '../components/common/PageHeader';
 import { Page } from '../components/common/motion';
-
-const ICON_MAP = {
-  LayoutDashboard: '▦', CalendarDays: '📅', FileText: '📄', Wallet: '💰',
-  Briefcase: '💼', FileUser: '📋', Building2: '🏢', MessageSquare: '💬',
-  Users: '👥', Rss: '📡', Newspaper: '📰', BookOpen: '📖', Heart: '❤️',
-  Settings: '⚙️', GraduationCap: '🎓', ShoppingBag: '🛍️', AddressBook: '📇',
-  History: '⏱️', Megaphone: '📢', Target: '🎯', Handshake: '🤝',
-  Shield: '🛡️', Brain: '🧠', Activity: '📊', Palette: '🎨', Bot: '🤖',
-  Terminal: '⌨️', Navigation: '🧭', User: '👤', Tags: '🏷️', Zap: '⚡',
-  CheckSquare: '✅', Award: '🏆', TrendingUp: '📈', TrendingDown: '📉',
-  MessageCircle: '💭', CreditCard: '💳', FolderGit2: '📁',
-};
-
-function getIcon(item) {
-  if (item.icon?.startsWith('http') || item.icon?.startsWith('/')) {
-    return <img src={item.icon} alt="" className="h-5 w-5 rounded" />;
-  }
-  return <span className="text-lg">{ICON_MAP[item.icon] || '•'}</span>;
-}
+import NamedIcon from '../components/common/NamedIcon';
 
 function highlight(text, query) {
   if (!text || !query) return text;
@@ -292,7 +274,7 @@ function ResultItem({ item, onAction, query, pinned, onPin }) {
       className="group flex w-full cursor-pointer items-center gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3 text-left transition-all hover:border-indigo-100 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-indigo-900/50"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-        {getIcon(item)}
+        <NamedIcon name={item.icon} className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">

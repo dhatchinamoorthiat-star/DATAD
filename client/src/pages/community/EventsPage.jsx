@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
-import { CalendarRange, MapPin, Video, Users, Clock, Plus } from 'lucide-react';
+import { CalendarRange, MapPin, Video, Users, Clock, Plus, Check } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listEvents, createEvent, rsvpEvent, getMyRSVPs, getEventAttendees } from '../../api/events';
 import { FeedSkeleton } from '../../components/common/Skeleton';
@@ -19,7 +19,7 @@ const CAT_COLORS = {
   other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
 };
 
-const RSVP_LABELS = { going: 'Going ✓', maybe: 'Maybe', 'not-going': 'Not Going' };
+const RSVP_LABELS = { going: 'Going', maybe: 'Maybe', 'not-going': 'Not Going' };
 
 function EventCard({ event, myRsvp, onRsvp, onViewAttendees }) {
   const date = new Date(event.date);
@@ -64,9 +64,14 @@ function EventCard({ event, myRsvp, onRsvp, onViewAttendees }) {
         <div className="flex gap-1">
           {['going', 'maybe', 'not-going'].map((s) => (
             <button key={s} onClick={() => handleRsvp(s)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                rsvp === s ? 'bg-indigo-600 text-white' : 'border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800'
+              aria-pressed={rsvp === s}
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                rsvp === s ? 'bg-primary-600 text-white' : 'border border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800'
               }`}>
+              {/* The tick used to be baked into the "Going" label, so it showed
+                  whether or not that was the answer on file. It marks the
+                  chosen option now, whichever one that is. */}
+              {rsvp === s && <Check className="h-3 w-3 shrink-0" />}
               {RSVP_LABELS[s]}
             </button>
           ))}

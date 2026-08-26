@@ -64,7 +64,7 @@ export default function CourseNewsCard() {
                   <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-gray-300" />
                 </a>
                 <p className="mt-1 flex items-center gap-1.5 text-xs text-gray-400">
-                  <span>{cat.emoji} {cat.label}</span>
+                  <span className="inline-flex items-center gap-1"><cat.icon className="h-3 w-3 shrink-0" /> {cat.label}</span>
                   <span>·</span>
                   <span>{a.source}</span>
                   <span>·</span>

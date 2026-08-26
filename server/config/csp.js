@@ -94,8 +94,12 @@ function directives() {
     // reworking the styling approach. Inline *styles* cannot execute script;
     // the residual risk is CSS-based data exfiltration, which is exotic and far
     // below the risk of the app not rendering.
-    styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-    fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com'],
+    styleSrc: ["'self'", "'unsafe-inline'"],
+
+    // Fonts are self-hosted (see client/src/main.jsx), so the policy no longer
+    // needs to allow fonts.googleapis.com / fonts.gstatic.com. Leaving them in
+    // would keep a third-party font origin permitted for no benefit.
+    fontSrc: ["'self'", 'data:'],
 
     // The reason the policy was switched off. `data:` and `blob:` cover avatar
     // previews and generated canvases before upload.

@@ -51,8 +51,8 @@ export default function IntelligenceCard({ article, onToggleBookmark, isAdmin, o
   return (
     <article className="card-hover rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-gray-800/80 dark:bg-gray-900">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium dark:bg-gray-800">
-          {cat.emoji} {cat.label}
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium dark:bg-gray-800">
+          <cat.icon className="h-3.5 w-3.5 shrink-0" /> {cat.label}
         </span>
         <div className="flex items-center gap-1">
           {isAdmin && (

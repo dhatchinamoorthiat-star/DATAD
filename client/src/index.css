@@ -982,19 +982,19 @@ body {
    the app — long prose sitting straight on the background with no card in
    between it and the mesh.
 
-   Light  primary-600 #1A73E8 held very low, so what lands is the light blue
+   Light  primary-600 #3563E9 held very low, so what lands is the light blue
           the accent implies rather than the accent itself.
    Dark   the register/creator brand blue #4D7CFF, so the workspace and the
           auth surfaces stay recognisably one system. */
 :root {
-  --nt-wash-near: rgb(66 133 244 / 0.10);
+  --nt-wash-near: rgb(77 124 255 / 0.10);
   --nt-wash-mid: rgb(124 108 255 / 0.045);
-  --nt-edge: rgb(26 115 232 / 0.085);
-  --nt-node: rgb(26 115 232 / 0.22);
+  --nt-edge: rgb(53 99 233 / 0.085);
+  --nt-node: rgb(53 99 233 / 0.22);
   /* Well above the nodes it travels between — a signal at mesh contrast is not
      legible as a separate thing moving. Size does the other half of that job;
      see the radius note in NetworkTexture. */
-  --nt-pulse: rgb(26 115 232 / 0.72);
+  --nt-pulse: rgb(53 99 233 / 0.72);
 }
 
 :root.dark {

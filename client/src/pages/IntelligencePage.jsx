@@ -174,8 +174,8 @@ export default function IntelligencePage() {
         <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
           <button className={chip(!category)} onClick={() => setCategory('')}>All topics</button>
           {CATEGORIES.map((c) => (
-            <button key={c.value} className={chip(category === c.value)} onClick={() => setCategory(c.value)}>
-              {c.emoji} {c.label}
+            <button key={c.value} className={`${chip(category === c.value)} inline-flex items-center gap-1.5`} onClick={() => setCategory(c.value)}>
+              <c.icon className="h-3.5 w-3.5 shrink-0" /> {c.label}
             </button>
           ))}
         </div>

@@ -8,13 +8,14 @@
     <meta name="description" content="AI-powered personal operating system for students." />
 
     <!-- Typeface: Inter drives the entire type system. JetBrains Mono is used
-         sparingly (login page's terminal-style accents) — not a system-wide font. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap"
-      rel="stylesheet"
-    />
+         sparingly (login page's terminal skin) — not a system-wide font. Syne
+         sets the wordmark and nothing else.
+
+         All three are self-hosted from our own origin via @fontsource — see the
+         imports at the top of src/main.jsx. There is deliberately no
+         fonts.googleapis.com link here: a third-party font request on every
+         page load is both a render-blocking dependency and a contradiction of
+         the "No tracking" promise this product makes on its own homepage. -->
 
     <!-- PWA manifest -->
     <link rel="manifest" href="/manifest.json" />

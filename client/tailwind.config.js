@@ -7,12 +7,20 @@
 //   gray-200  #E4E7EC  soft borders (light)
 //   gray-900  #181C22  primary text (light) / raised surface (dark)
 //   gray-950  #0B0D10  app background (dark)
-// Accents are Google-ecosystem inspired and carry meaning only — used as
-// accents, never as large backgrounds:
+// Accents carry meaning only — used as accents, never as large backgrounds:
 //   primary = action / links / AI / progress   (blue)
 //   success = completed / goals / productivity (green)
-//   warn    = highlights / achievements        (yellow — text needs 700+ for contrast)
-//   danger  = deadlines / warnings / errors     (red)
+//   warn    = highlights / achievements        (amber — text needs 700+ for contrast)
+//   danger  = deadlines / warnings / errors    (red)
+//
+// `primary` is DATAD's own "intelligent blue" (#4D7CFF, the Terrace brand value
+// in components/common/Logo.jsx) with a ramp built around it, so the app, the
+// logo and the registration canvas are finally the same blue. The three
+// semantic ramps are the stock Tailwind green/amber/red (MIT). Both replace an
+// earlier set that reproduced Google's four brand hexes — #4285F4 / #34A853 /
+// #FBBC04 / #EA4335 — verbatim. Colour values are not themselves protectable,
+// but that specific four-colour signature is Google's trade dress, and a
+// student product has no reason to wear it.
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -33,57 +41,60 @@ export default {
           950: '#0B0D10',
         },
         surface: '#13161B',
+        // Brand blue. 500 is the Terrace value #4D7CFF exactly; 600 is the
+        // action tone (buttons, links) and is darkened to #3563E9 so white text
+        // on it clears AA, which #4D7CFF alone does not.
         primary: {
-          50: '#E8F0FE',
-          100: '#D2E3FC',
-          200: '#AECBFA',
-          300: '#8AB4F8',
-          400: '#669DF6',
-          500: '#4285F4',
-          600: '#1A73E8',
-          700: '#1967D2',
-          800: '#185ABC',
-          900: '#103D7A',
-          950: '#0B2A56',
+          50: '#EEF3FF',
+          100: '#DCE6FF',
+          200: '#BFD0FF',
+          300: '#9AB4FF',
+          400: '#7396FF',
+          500: '#4D7CFF',
+          600: '#3563E9',
+          700: '#2A4EC4',
+          800: '#23409C',
+          900: '#1E357B',
+          950: '#14224B',
         },
         success: {
-          50: '#E6F4EA',
-          100: '#CEEAD6',
-          200: '#A8DAB5',
-          300: '#81C995',
-          400: '#5BB974',
-          500: '#34A853',
-          600: '#1E8E3E',
-          700: '#188038',
-          800: '#137333',
-          900: '#0D652D',
-          950: '#073819',
+          50: '#ECFDF5',
+          100: '#D1FAE5',
+          200: '#A7F3D0',
+          300: '#6EE7B7',
+          400: '#34D399',
+          500: '#10B981',
+          600: '#059669',
+          700: '#047857',
+          800: '#065F46',
+          900: '#064E3B',
+          950: '#022C22',
         },
         warn: {
-          50: '#FEF7E0',
-          100: '#FEEFC3',
-          200: '#FDE293',
-          300: '#FDD663',
-          400: '#FCC934',
-          500: '#FBBC04',
-          600: '#F9AB00',
-          700: '#EA8600',
-          800: '#B06000',
-          900: '#7A4100',
-          950: '#4D2900',
+          50: '#FFFBEB',
+          100: '#FEF3C7',
+          200: '#FDE68A',
+          300: '#FCD34D',
+          400: '#FBBF24',
+          500: '#F59E0B',
+          600: '#D97706',
+          700: '#B45309',
+          800: '#92400E',
+          900: '#78350F',
+          950: '#451A03',
         },
         danger: {
-          50: '#FCE8E6',
-          100: '#FAD2CF',
-          200: '#F6AEA9',
-          300: '#F28B82',
-          400: '#EE675C',
-          500: '#EA4335',
-          600: '#D93025',
-          700: '#C5221F',
-          800: '#A50E0E',
-          900: '#7A0C0C',
-          950: '#4D0808',
+          50: '#FEF2F2',
+          100: '#FEE2E2',
+          200: '#FECACA',
+          300: '#FCA5A5',
+          400: '#F87171',
+          500: '#EF4444',
+          600: '#DC2626',
+          700: '#B91C1C',
+          800: '#991B1B',
+          900: '#7F1D1D',
+          950: '#450A0A',
         },
       },
       fontFamily: {

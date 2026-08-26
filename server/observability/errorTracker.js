@@ -238,10 +238,47 @@ function status() {
   };
 }
 
+/**
+ * Say so at boot when nothing but the log is listening.
+ *
+ * `status()` has always been able to report this, but only if something asks —
+ * and the one state worth noticing is the one where nobody is asking. With no
+ * sink configured the server starts perfectly quietly, every request succeeds,
+ * and the first report of an outage is a student's message. That is precisely
+ * the failure this module exists to prevent, and it was the only failure it
+ * did not announce.
+ *
+ * Warn rather than throw. A missing DSN is a misconfiguration, not a reason to
+ * refuse to serve students, and an error tracker that takes the site down when
+ * it cannot phone home has inverted its own purpose.
+ *
+ * Silent outside production on purpose: nobody wires Sentry to run tests, and
+ * a warning printed on every `npm run dev` is one people learn to skim past.
+ *
+ * @returns {boolean} true when the log is the only sink — the state to fix.
+ */
+function warnIfUnmonitored() {
+  const s = status();
+  if (s.environment !== 'production') return false;
+  if (s.sentry || s.webhook) {
+    logger.info('[observability] error tracking active', {
+      sentry: s.sentry,
+      webhook: s.webhook,
+    });
+    return false;
+  }
+  logger.warn(
+    '[observability] NO ERROR SINK CONFIGURED — 500s, crashes and frontend '
+    + 'errors reach the log and nothing else, so no alert will fire for any of them.',
+    { hint: 'Set SENTRY_DSN or ERROR_WEBHOOK_URL on this service, then run `npm run verify:errors`.' }
+  );
+  return true;
+}
+
 /** Reset memoised transport state. Tests only. */
 function _reset() {
   sentryClient = undefined;
   sentryTried = false;
 }
 
-module.exports = { capture, status, scrubContext, _reset, SENSITIVE_KEYS };
+module.exports = { capture, status, warnIfUnmonitored, scrubContext, _reset, SENSITIVE_KEYS };

@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
+import {
+  Landmark, Cog, Microscope, BarChart3, Briefcase, BookOpen, FlaskConical,
+  Scale, Stethoscope, GraduationCap,
+} from 'lucide-react';
 
 const PROGRAM_OPTIONS = [
-  { value: 'MBA',     label: 'MBA',     emoji: '🏛️' },
-  { value: 'B.Tech',  label: 'B.Tech',  emoji: '⚙️' },
-  { value: 'B.Sc',    label: 'B.Sc',    emoji: '🔬' },
-  { value: 'B.Com',   label: 'B.Com',   emoji: '📊' },
-  { value: 'BBA',     label: 'BBA',     emoji: '💼' },
-  { value: 'BA',      label: 'BA',      emoji: '📖' },
-  { value: 'M.Sc',    label: 'M.Sc',    emoji: '🧪' },
-  { value: 'Law',     label: 'Law',     emoji: '⚖️' },
-  { value: 'Medical', label: 'Medical', emoji: '🏥' },
+  { value: 'MBA',     label: 'MBA',     icon: Landmark },
+  { value: 'B.Tech',  label: 'B.Tech',  icon: Cog },
+  { value: 'B.Sc',    label: 'B.Sc',    icon: Microscope },
+  { value: 'B.Com',   label: 'B.Com',   icon: BarChart3 },
+  { value: 'BBA',     label: 'BBA',     icon: Briefcase },
+  { value: 'BA',      label: 'BA',      icon: BookOpen },
+  { value: 'M.Sc',    label: 'M.Sc',    icon: FlaskConical },
+  { value: 'Law',     label: 'Law',     icon: Scale },
+  { value: 'Medical', label: 'Medical', icon: Stethoscope },
 ];
 
 const SPEC_MAP = {
@@ -129,7 +133,7 @@ export default function AcademicStep() {
                   : 'border-gray-200 bg-white hover:border-indigo-300 dark:border-gray-700 dark:bg-gray-900'
               }`}
             >
-              <span className="text-base">{p.emoji}</span>
+              <p.icon className="h-4 w-4" />
               <span className="text-[10px] font-semibold">{p.label}</span>
             </button>
           ))}
@@ -142,7 +146,7 @@ export default function AcademicStep() {
                 : 'border-gray-200 bg-white hover:border-indigo-300 dark:border-gray-700 dark:bg-gray-900'
             }`}
           >
-            <span className="text-base">🎓</span>
+            <GraduationCap className="h-4 w-4" />
             <span className="text-[10px] font-semibold">Other…</span>
           </button>
         </div>

@@ -105,7 +105,6 @@ function SubscriptionCard() {
               <span className="text-gray-500 dark:text-gray-400">Days remaining</span>
               <span className={`font-semibold ${urgentExpiry ? 'text-amber-600 dark:text-amber-400' : 'text-gray-800 dark:text-gray-200'}`}>
                 {daysLeft} day{daysLeft === 1 ? '' : 's'}
-                {urgentExpiry && ' ⚠'}
               </span>
             </div>
           </>
@@ -695,7 +694,7 @@ export default function SettingsPage() {
                   {me.referralCode}
                 </code>
                 <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                  Used — your invite brought someone in 🎉
+                  Used — your invite brought someone in
                 </span>
               </div>
             ) : (

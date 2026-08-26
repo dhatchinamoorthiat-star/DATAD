@@ -19,9 +19,9 @@ function StarRating({ value, max = 5, onChange }) {
           key={i}
           type={onChange ? 'button' : 'button'}
           onClick={() => onChange?.(i + 1)}
-          className={`text-lg ${i < Math.round(value || 0) ? 'text-amber-400' : 'text-gray-300 dark:text-gray-600'}`}
+          className={i < Math.round(value || 0) ? 'text-warn-400' : 'text-gray-300 dark:text-gray-600'}
         >
-          ★
+          <Star className="h-4 w-4" fill="currentColor" />
         </button>
       ))}
     </div>

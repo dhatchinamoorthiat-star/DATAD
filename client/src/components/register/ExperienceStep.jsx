@@ -1,6 +1,8 @@
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { GraduationCap, Briefcase } from 'lucide-react';
+import {
+  GraduationCap, Briefcase, Video, BookOpen, FlaskConical, Users, Bot, Target,
+} from 'lucide-react';
 import SmartSelect from '../common/SmartSelect';
 
 const DOMAINS = [
@@ -9,12 +11,12 @@ const DOMAINS = [
 ];
 
 const STYLES = [
-  { value: 'Videos',     emoji: '🎥', label: 'Videos' },
-  { value: 'Reading',    emoji: '📖', label: 'Reading' },
-  { value: 'Practice',   emoji: '🧪', label: 'Practice' },
-  { value: 'Discussion', emoji: '👥', label: 'Discussion' },
-  { value: 'AI',         emoji: '🤖', label: 'AI-guided' },
-  { value: 'Mixed',      emoji: '🎯', label: 'Mixed' },
+  { value: 'Videos',     icon: Video,        label: 'Videos' },
+  { value: 'Reading',    icon: BookOpen,     label: 'Reading' },
+  { value: 'Practice',   icon: FlaskConical, label: 'Practice' },
+  { value: 'Discussion', icon: Users,        label: 'Discussion' },
+  { value: 'AI',         icon: Bot,          label: 'AI-guided' },
+  { value: 'Mixed',      icon: Target,       label: 'Mixed' },
 ];
 
 const TIME_OPTIONS = [
@@ -112,7 +114,7 @@ export default function ExperienceStep() {
           How do you learn best?
         </p>
         <div className="grid grid-cols-3 gap-2" role="group" aria-labelledby="learning-style-group-label">
-          {STYLES.map(({ value, emoji, label }) => (
+          {STYLES.map(({ value, icon: Icon, label }) => (
             <button
               key={value}
               type="button"
@@ -123,7 +125,7 @@ export default function ExperienceStep() {
                   : 'border-gray-200 bg-white hover:border-indigo-300 dark:border-gray-700 dark:bg-gray-900'
               }`}
             >
-              <span className="text-xl">{emoji}</span>
+              <Icon className="h-5 w-5" />
               <span className="text-[10px] font-semibold">{label}</span>
             </button>
           ))}

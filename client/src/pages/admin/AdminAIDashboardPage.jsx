@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Activity, Cpu, Zap, DollarSign, Clock, BarChart2, Server,
   CheckCircle2, XCircle, AlertTriangle, RefreshCw, ChevronDown, ChevronUp,
-  Layers, Thermometer, Coins,
+  Layers, Thermometer, Coins, Check,
 } from 'lucide-react';
 import { AdminShell } from './shared';
 import { apiUrl } from '../../api/base';
@@ -148,10 +148,10 @@ function ModelRow({ m }) {
       <td className="py-2 pr-3 text-xs text-gray-600 dark:text-gray-300">{m.cost}</td>
       <td className="py-2 pr-3 text-xs text-gray-500">{(m.contextWindow / 1000).toFixed(0)}K</td>
       <td className="py-2 pr-3 text-xs">
-        {m.visionSupport ? <span className="text-emerald-600">✓</span> : <span className="text-gray-300">—</span>}
+        {m.visionSupport ? <Check className="h-3.5 w-3.5 text-success-600" aria-label="yes" /> : <span className="text-gray-300" aria-label="no">—</span>}
       </td>
       <td className="py-2 pr-3 text-xs">
-        {m.embeddingSupport ? <span className="text-emerald-600">✓</span> : <span className="text-gray-300">—</span>}
+        {m.embeddingSupport ? <Check className="h-3.5 w-3.5 text-success-600" aria-label="yes" /> : <span className="text-gray-300" aria-label="no">—</span>}
       </td>
       <td className="py-2 pr-4 text-xs text-gray-500">{m.availability}</td>
     </tr>

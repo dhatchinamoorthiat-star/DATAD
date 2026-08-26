@@ -2,7 +2,13 @@
  * NotificationRegistry — single source of truth for all notification types.
  *
  * Every notification type in DATAD is defined here with:
- *   • Display metadata (label, icon, color, priority)
+ *   • Display metadata (label, icon, color, priority). `icon` is a lucide
+ *     icon NAME, not a glyph — the client resolves it through
+ *     components/common/NamedIcon.jsx. These used to be emoji, which the
+ *     reader's OS drew in its own font: the same alert looked different on a
+ *     Mac, a Windows laptop and an Android phone, and matched nothing else in
+ *     the UI. A name that NamedIcon does not know falls back to a neutral dot,
+ *     so adding a type here can never blank out a row in the bell.
  *   • Channel defaults (inApp, email, push)
  *   • Grouping rules (dedup window, max group size)
  *
@@ -15,7 +21,7 @@ const REGISTRY = {
   // ── Social / Community ─────────────────────────────────────────────
   reaction: {
     label: 'Reaction',
-    icon: '👍',
+    icon: 'ThumbsUp',
     color: '#f43f5e',
     priority: 3,
     channels: { inApp: true, email: false, push: false },
@@ -24,7 +30,7 @@ const REGISTRY = {
   },
   rsvp: {
     label: 'Event RSVP',
-    icon: '📅',
+    icon: 'CalendarDays',
     color: '#8b5cf6',
     priority: 2,
     channels: { inApp: true, email: false, push: false },
@@ -33,7 +39,7 @@ const REGISTRY = {
   },
   mention: {
     label: 'Mention',
-    icon: '@',
+    icon: 'AtSign',
     color: '#f59e0b',
     priority: 1,
     channels: { inApp: true, email: true, push: false },
@@ -42,7 +48,7 @@ const REGISTRY = {
   },
   announcement: {
     label: 'Announcement',
-    icon: '📢',
+    icon: 'Megaphone',
     color: '#06b6d4',
     priority: 1,
     channels: { inApp: true, email: true, push: false },
@@ -53,7 +59,7 @@ const REGISTRY = {
   // ── Tasks & Planning ───────────────────────────────────────────────
   task: {
     label: 'Task',
-    icon: '✓',
+    icon: 'CheckSquare',
     color: '#10b981',
     priority: 2,
     channels: { inApp: true, email: true, push: true },
@@ -64,7 +70,7 @@ const REGISTRY = {
   // ── Career / Placements ────────────────────────────────────────────
   career_alert: {
     label: 'Career Alert',
-    icon: '💼',
+    icon: 'Briefcase',
     color: '#3b82f6',
     priority: 1,
     channels: { inApp: true, email: true, push: true },
@@ -73,7 +79,7 @@ const REGISTRY = {
   },
   placement_apply: {
     label: 'Placement',
-    icon: '💼',
+    icon: 'Building2',
     color: '#3b82f6',
     priority: 1,
     channels: { inApp: true, email: true, push: true },
@@ -84,7 +90,7 @@ const REGISTRY = {
   // ── Achievements & Milestones ──────────────────────────────────────
   milestone: {
     label: 'Milestone',
-    icon: '🏆',
+    icon: 'Award',
     color: '#f59e0b',
     priority: 1,
     channels: { inApp: true, email: true, push: false },
@@ -95,7 +101,7 @@ const REGISTRY = {
   // ── Subscription / Billing ─────────────────────────────────────────
   subscription: {
     label: 'Subscription',
-    icon: '⭐',
+    icon: 'Star',
     color: '#8b5cf6',
     priority: 1,
     channels: { inApp: true, email: true, push: false },
@@ -104,7 +110,7 @@ const REGISTRY = {
   },
   billing: {
     label: 'Billing',
-    icon: '💰',
+    icon: 'CreditCard',
     color: '#10b981',
     priority: 1,
     channels: { inApp: true, email: true, push: true },
@@ -113,7 +119,7 @@ const REGISTRY = {
   },
   credit_alert: {
     label: 'Credit Alert',
-    icon: '📊',
+    icon: 'Activity',
     color: '#f59e0b',
     priority: 1,
     channels: { inApp: true, email: false, push: false },
@@ -124,7 +130,7 @@ const REGISTRY = {
   // ── AI / Dax / Intelligence ────────────────────────────────────────
   ai_complete: {
     label: 'AI Complete',
-    icon: '🤖',
+    icon: 'Bot',
     color: '#8b5cf6',
     priority: 2,
     channels: { inApp: true, email: false, push: false },
@@ -133,7 +139,7 @@ const REGISTRY = {
   },
   ai_error: {
     label: 'AI Error',
-    icon: '⚠️',
+    icon: 'AlertTriangle',
     color: '#f43f5e',
     priority: 1,
     channels: { inApp: true, email: false, push: false },
@@ -142,7 +148,7 @@ const REGISTRY = {
   },
   suggestion: {
     label: 'Suggestion',
-    icon: '💡',
+    icon: 'Lightbulb',
     color: '#3b82f6',
     priority: 3,
     channels: { inApp: true, email: false, push: false },
@@ -153,7 +159,7 @@ const REGISTRY = {
   // ── System ─────────────────────────────────────────────────────────
   general: {
     label: 'General',
-    icon: '💬',
+    icon: 'MessageCircle',
     color: '#6b7280',
     priority: 3,
     channels: { inApp: true, email: false, push: false },
@@ -162,7 +168,7 @@ const REGISTRY = {
   },
   system: {
     label: 'System',
-    icon: '🔧',
+    icon: 'Wrench',
     color: '#6b7280',
     priority: 2,
     channels: { inApp: true, email: false, push: false },
@@ -171,7 +177,7 @@ const REGISTRY = {
   },
   session: {
     label: 'Session',
-    icon: '🔒',
+    icon: 'Lock',
     color: '#f43f5e',
     priority: 1,
     channels: { inApp: true, email: false, push: true },

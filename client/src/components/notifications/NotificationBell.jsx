@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bell, Check, Inbox, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNotifications } from '../../context/NotificationContext';
+import NamedIcon from '../common/NamedIcon';
 
 function groupByRecency(notifications) {
   const startOfToday = new Date();
@@ -41,12 +42,16 @@ function NotificationRow({ notification, onOpen, onDismiss }) {
       }}
       className="group flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2.5 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 dark:hover:bg-gray-800/70 cursor-pointer"
     >
+      {/* The registry already gives every type a colour, which until now only
+          tinted the disc behind an emoji that ignored it. A real icon can carry
+          that colour itself, so the type reads at a glance instead of resting
+          on a 10%-alpha wash. */}
       <span
-        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm"
-        style={{ backgroundColor: `${notification.color || '#6b7280'}1a` }}
+        className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+        style={{ backgroundColor: `${notification.color || '#6b7280'}1a`, color: notification.color || '#6b7280' }}
         aria-hidden="true"
       >
-        {notification.icon || '🔔'}
+        <NamedIcon name={notification.icon || 'Bell'} className="h-4 w-4" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
@@ -142,7 +147,19 @@ export default function NotificationBell() {
         <div
           role="menu"
           aria-label="Notifications"
-          className="absolute right-0 top-full z-50 mt-2 max-h-[28rem] w-80 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900 sm:w-96"
+          /* Viewport-anchored below `sm`, bell-anchored above it.
+             `absolute right-0` alone pins the panel's right edge to the BELL,
+             which on a phone is not near the screen edge: the mobile header
+             puts search and the avatar menu (plus its tier badge) to its
+             right, about 149px of them. A 20rem panel hung off that lands at
+             roughly -94px on a 375px screen — a third of it off the left of
+             the display, which is the "notifications look cut" report.
+             Anchoring to the viewport instead is also just the right mobile
+             pattern: a near-full-width sheet rather than a dropdown.
+             top is measured from the viewport, so it has to add the status-bar
+             inset itself — the body padding that normally covers that does not
+             apply to a fixed element. 3.5rem is the header's height. */
+          className="fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.5rem)] z-50 max-h-[28rem] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg dark:border-gray-800 dark:bg-gray-900 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96"
         >
           <div className="flex items-center justify-between border-b border-gray-100 px-3.5 py-2.5 dark:border-gray-800">
             <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Notifications</p>

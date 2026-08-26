@@ -300,8 +300,8 @@ export default function FinanceStocksPage() {
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         <button className={chip(!sector)} onClick={() => setSector('')}>All sectors</button>
         {SECTORS.map((s) => (
-          <button key={s.value} className={chip(sector === s.value)} onClick={() => setSector(s.value)}>
-            {s.emoji} {s.label}
+          <button key={s.value} className={`${chip(sector === s.value)} inline-flex items-center gap-1.5`} onClick={() => setSector(s.value)}>
+            <s.icon className="h-3.5 w-3.5 shrink-0" /> {s.label}
           </button>
         ))}
       </div>

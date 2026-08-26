@@ -1,21 +1,31 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Terminal, Sparkles } from 'lucide-react';
 import toast from '../utils/toast';
 import Button from '../components/common/Button';
 import AuthShell from '../components/layout/AuthShell';
-import BinaryRainBackground from '../components/common/BinaryRainBackground';
 import { login as loginApi, resendVerification, acceptConsent } from '../api/auth';
 import ReconsentGate from '../components/auth/ReconsentGate';
 import { CONSENT_CLAUSE_IDS, LEGAL_VERSIONS } from '../constants/legal';
 import { useAuth } from '../context/AuthContext';
 import { signalWelcome } from '../utils/welcome';
-
-const inputClass =
-  'w-full rounded-lg border border-gray-700 bg-black/40 px-3 py-2.5 font-mono text-sm text-emerald-300 placeholder:text-gray-600 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20';
+import { SKINS, readSkin, writeSkin } from './loginSkins';
 
 export default function LoginPage() {
   const { register, handleSubmit, formState } = useForm();
+  // Which dressing the screen wears. Read once on mount rather than on every
+  // render so a toggle is a state change, not a storage round-trip.
+  const [skinId, setSkinId] = useState(readSkin);
+  const skin = SKINS[skinId];
+  const copy = skin.copy;
+
+  const toggleSkin = () => {
+    const nextSkin = skinId === 'terminal' ? 'standard' : 'terminal';
+    setSkinId(nextSkin);
+    writeSkin(nextSkin);
+  };
+
   const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -114,29 +124,55 @@ export default function LoginPage() {
       if (err.response?.data?.needsEmailVerification) {
         setUnverifiedEmail(data.email);
         setResent(false);
-        toast.info(err.response.data.message, { icon: '📧', duration: 6000 });
+        toast.info(err.response.data.message, { duration: 6000 });
         return;
       }
       setUnverifiedEmail(null);
       if (err.response?.data?.pending) {
-        toast.info(err.response.data.message, { icon: '⏳', duration: 6000 });
+        toast.info(err.response.data.message, { duration: 6000 });
         return;
       }
       toast.error(err.response?.data?.message || 'Login failed');
     }
   };
 
+  const subtitle = consentHold ? copy.consentSubtitle : skin.subtitle;
+
   return (
+    <>
+      {/* Skin switch. Deliberately quiet and in the corner: the terminal look is
+          an easter egg for people who like it, not a decision the screen asks
+          every visitor to make. */}
+      <button
+        type="button"
+        onClick={toggleSkin}
+        aria-pressed={skinId === 'terminal'}
+        title={skinId === 'terminal' ? 'Switch to the standard theme' : 'Switch to the 01 terminal theme'}
+        className={`fixed right-4 top-4 z-20 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+          skinId === 'terminal'
+            ? 'border-emerald-500/30 font-mono text-emerald-400/80 hover:border-emerald-500/60 hover:text-emerald-300'
+            : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900 dark:border-gray-800 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-100'
+        }`}
+      >
+        {skinId === 'terminal' ? (
+          <><Sparkles className="h-3.5 w-3.5" /> Standard</>
+        ) : (
+          <><Terminal className="h-3.5 w-3.5" /> 01 theme</>
+        )}
+      </button>
+
     <AuthShell
-      background={<BinaryRainBackground />}
-      cardClassName="rounded-2xl border border-emerald-500/20 bg-gray-950/90 p-6 shadow-[0_0_40px_-12px_rgba(16,185,129,0.3)] backdrop-blur-sm"
-      subtitleClassName="mt-2 font-mono text-sm text-emerald-400/80"
-      footerClassName="mt-5 text-center font-mono text-[11px] text-gray-500"
+      background={skin.background}
+      {...skin.shell}
       subtitle={
-        <span className="inline-flex items-center">
-          &gt; {consentHold ? 'consent --review' : 'authenticate --user'}
-          <span className="blink-cursor ml-0.5 inline-block h-3.5 w-[7px] bg-emerald-400 align-middle" />
-        </span>
+        skinId === 'terminal' ? (
+          <span className="inline-flex items-center">
+            &gt; {subtitle}
+            <span className="blink-cursor ml-0.5 inline-block h-3.5 w-[7px] bg-emerald-400 align-middle" />
+          </span>
+        ) : (
+          subtitle
+        )
       }
     >
       {/* The password form is replaced, not merely hidden behind the gate: the
@@ -148,63 +184,70 @@ export default function LoginPage() {
           returning={consentHold.returning}
           submitting={acceptingConsent}
           onAccept={onAcceptConsent}
+          tone={skin.consent}
         />
       ) : (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label htmlFor="email" className="mb-1 block font-mono text-xs text-emerald-400/80">
-            $ email
+          <label htmlFor="email" className={skin.label}>
+            {copy.email}
           </label>
-          <input id="email" type="email" {...register('email', { required: true })} className={inputClass} />
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            {...register('email', { required: true })}
+            className={skin.input}
+          />
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="password" className="block font-mono text-xs text-emerald-400/80">
-              $ password
+            <label htmlFor="password" className={skin.label}>
+              {copy.password}
             </label>
-            <Link to="/forgot-password" className="font-mono text-xs text-emerald-400/70 hover:text-emerald-300 hover:underline">
-              forgot?
+            <Link to="/forgot-password" className={skin.link}>
+              {copy.forgot}
             </Link>
           </div>
-          <input id="password" type="password" {...register('password', { required: true })} className={inputClass} />
+          <input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            {...register('password', { required: true })}
+            className={skin.input}
+          />
         </div>
         <Button
           type="submit"
           fullWidth
           disabled={formState.isSubmitting}
           loading={formState.isSubmitting}
-          className="!bg-emerald-600 !font-mono hover:!bg-emerald-500"
+          className={skin.submitClass}
         >
-          {formState.isSubmitting ? 'authenticating…' : 'run login()'}
+          {formState.isSubmitting ? copy.submitting : copy.submit}
         </Button>
         {unverifiedEmail && (
-          <div
-            role="status"
-            className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-center"
-          >
-            <p className="font-mono text-xs text-amber-300/90">
-              {resent
-                ? '> confirmation link sent — check inbox and spam'
-                : '> this account is not confirmed yet'}
-            </p>
+          <div role="status" className={skin.notice}>
+            <p className={skin.noticeText}>{resent ? copy.linkSent : copy.unconfirmed}</p>
             <button
               type="button"
               onClick={onResend}
               disabled={resending}
-              className="mt-2 font-mono text-xs font-medium text-emerald-400 underline underline-offset-2 hover:text-emerald-300 disabled:cursor-not-allowed disabled:text-gray-600 disabled:no-underline"
+              className={skin.noticeAction}
             >
-              {resending ? 'sending…' : resent ? 'send another link' : 'resend confirmation email'}
+              {resending ? copy.resending : resent ? copy.resendAgain : copy.resend}
             </button>
           </div>
         )}
-        <p className="text-center font-mono text-sm text-gray-500">
-          new here?{' '}
-          <Link to="/register" className="font-medium text-emerald-400 hover:underline">
-            create_account()
+        <p className={skin.footerText}>
+          {copy.newHere}{' '}
+          <Link to="/register" className={skin.footerLink}>
+            {copy.create}
           </Link>
         </p>
       </form>
       )}
     </AuthShell>
+    </>
   );
 }

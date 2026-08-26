@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../utils/toast';
-import { BookLock, Lock, PenLine, Pencil, Trash2 } from 'lucide-react';
+import { BookLock, Lock, PenLine, Pencil, Trash2, Laugh, Smile, Meh, Frown, Annoyed } from 'lucide-react';
 import {
   listJournal,
   createJournalEntry,
@@ -21,15 +21,25 @@ import { Page } from '../components/common/motion';
 import { JOURNAL_PROMPTS } from '../utils/prompts';
 import { pickDaily } from '../utils/rotation';
 
+// Faces, but drawn by us rather than by the reader's operating system. An
+// emoji here was a 😄 on one laptop and a visibly different 😄 on the next, and
+// the mood is the one thing on an entry that has to read the same every time
+// for the list to be scannable. `tone` is the colour the face carries in the
+// list — the scale runs warm-to-cool, so a month of entries has a shape.
 const MOODS = [
-  { value: 'great', label: '😄 Great' },
-  { value: 'good', label: '🙂 Good' },
-  { value: 'okay', label: '😐 Okay' },
-  { value: 'low', label: '😔 Low' },
-  { value: 'rough', label: '😣 Rough' },
+  { value: 'great', label: 'Great', icon: Laugh,   tone: 'text-success-600 dark:text-success-400' },
+  { value: 'good',  label: 'Good',  icon: Smile,   tone: 'text-success-600 dark:text-success-400' },
+  { value: 'okay',  label: 'Okay',  icon: Meh,     tone: 'text-gray-400' },
+  { value: 'low',   label: 'Low',   icon: Frown,   tone: 'text-warn-600 dark:text-warn-400' },
+  { value: 'rough', label: 'Rough', icon: Annoyed, tone: 'text-danger-600 dark:text-danger-400' },
 ];
 
-const moodEmoji = (mood) => MOODS.find((m) => m.value === mood)?.label.split(' ')[0] || '🙂';
+const DEFAULT_MOOD = MOODS[1];
+
+function MoodFace({ mood, className = 'h-3.5 w-3.5' }) {
+  const m = MOODS.find((x) => x.value === mood) || DEFAULT_MOOD;
+  return <m.icon className={`${className} shrink-0 ${m.tone}`} aria-label={m.label} />;
+}
 
 export default function JournalPage() {
   // A blank box is the main reason an entry never gets written, so the empty
@@ -126,8 +136,8 @@ export default function JournalPage() {
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-xs text-gray-400">
-                    {moodEmoji(entry.mood)} {formatDate(entry.entryDate)}
+                  <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <MoodFace mood={entry.mood} /> {formatDate(entry.entryDate)}
                   </p>
                   {entry.title && <h2 className="mt-0.5 font-semibold">{entry.title}</h2>}
                 </div>

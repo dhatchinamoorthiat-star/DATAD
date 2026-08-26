@@ -1,22 +1,26 @@
 import { useFormContext } from 'react-hook-form';
 import { motion } from 'framer-motion';
+import {
+  TrendingUp, Megaphone, Search, Code2, Bot, Settings2, Handshake, Rocket,
+  Microscope, Stethoscope, Landmark, Clapperboard, ShoppingCart, Building2, Scale,
+} from 'lucide-react';
 
 const INTERESTS = [
-  { label: 'Finance',        emoji: '📈' },
-  { label: 'Marketing',      emoji: '📣' },
-  { label: 'Consulting',     emoji: '🔍' },
-  { label: 'Software / IT',  emoji: '💻' },
-  { label: 'AI & Data',      emoji: '🤖' },
-  { label: 'Operations',     emoji: '⚙️' },
-  { label: 'HR & People',    emoji: '🤝' },
-  { label: 'Entrepreneurship', emoji: '🚀' },
-  { label: 'Research',       emoji: '🔬' },
-  { label: 'Healthcare',     emoji: '🏥' },
-  { label: 'Government',     emoji: '🏛️' },
-  { label: 'Media & Content', emoji: '🎬' },
-  { label: 'FMCG / Retail',  emoji: '🛒' },
-  { label: 'Banking',        emoji: '🏦' },
-  { label: 'Law',            emoji: '⚖️' },
+  { label: 'Finance',          icon: TrendingUp },
+  { label: 'Marketing',        icon: Megaphone },
+  { label: 'Consulting',       icon: Search },
+  { label: 'Software / IT',    icon: Code2 },
+  { label: 'AI & Data',        icon: Bot },
+  { label: 'Operations',       icon: Settings2 },
+  { label: 'HR & People',      icon: Handshake },
+  { label: 'Entrepreneurship', icon: Rocket },
+  { label: 'Research',         icon: Microscope },
+  { label: 'Healthcare',       icon: Stethoscope },
+  { label: 'Government',       icon: Landmark },
+  { label: 'Media & Content',  icon: Clapperboard },
+  { label: 'FMCG / Retail',    icon: ShoppingCart },
+  { label: 'Banking',          icon: Building2 },
+  { label: 'Law',              icon: Scale },
 ];
 
 export default function GoalsStep() {
@@ -47,7 +51,7 @@ export default function GoalsStep() {
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {INTERESTS.map(({ label, emoji }) => {
+        {INTERESTS.map(({ label, icon: Icon }) => {
           const on = (selected || []).includes(label);
           return (
             <button
@@ -56,11 +60,11 @@ export default function GoalsStep() {
               onClick={() => toggle(label)}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-all ${
                 on
-                  ? 'border-indigo-500 bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
+                  ? 'border-primary-500 bg-primary-600 text-white shadow-md shadow-primary-500/20'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-primary-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'
               }`}
             >
-              <span>{emoji}</span>
+              <Icon className="h-3.5 w-3.5 shrink-0" />
               <span>{label}</span>
             </button>
           );
@@ -68,7 +72,7 @@ export default function GoalsStep() {
       </div>
 
       {selected?.length > 0 && (
-        <p className="text-xs text-indigo-600 dark:text-indigo-400">
+        <p className="text-xs text-primary-600 dark:text-primary-400">
           {selected.length} selected — {selected.length < 5 ? `you can pick ${5 - selected.length} more` : 'limit reached'}
         </p>
       )}
