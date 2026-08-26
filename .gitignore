@@ -50,3 +50,6 @@ datad-secrets.bundle.json
 # Throwaway one-off scripts (e.g. server/verify_user.tmp.js) — some of these
 # connect to a real database, so they must never be committed by accident.
 *.tmp.js
+
+# Playwright session for the /pitch screenshot capture — a live login.
+.pitch-session*.json

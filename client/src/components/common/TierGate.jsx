@@ -70,7 +70,7 @@ export default function TierGate({ feature, required = 'pro', description, inlin
           <Crown className="h-3 w-3" /> DATAD {label}
         </div>
         <p className="font-semibold text-gray-800 dark:text-gray-200">
-          ✨ Unlock with DATAD {label}
+          Unlock with DATAD {label}
         </p>
         <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">{desc}</p>
       </div>

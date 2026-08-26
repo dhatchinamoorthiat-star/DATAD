@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import toast from '../../utils/toast';
-import { KanbanSquare, Plus, Users, Calendar, ChevronRight, X } from 'lucide-react';
+import { KanbanSquare, Plus, User, Users, Calendar, ChevronRight, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import { listProjects, createProject, getProject, createProjectTask, updateProjectTask, deleteProjectTask } from '../../api/projects';
 import { FeedSkeleton } from '../../components/common/Skeleton';
@@ -25,8 +25,8 @@ function TaskCard({ task, onUpdate, onDelete }) {
         <p className="text-sm font-medium">{task.title}</p>
         <button onClick={() => onDelete(task._id)} className="text-gray-300 hover:text-danger-400"><X className="h-3.5 w-3.5" /></button>
       </div>
-      {task.assignee && <p className="mt-1 text-xs text-gray-400">👤 {task.assignee.name}</p>}
-      {task.dueDate && <p className="mt-1 text-xs text-gray-400">📅 {new Date(task.dueDate).toLocaleDateString()}</p>}
+      {task.assignee && <p className="mt-1 flex items-center gap-1 text-xs text-gray-400"><User className="h-3 w-3" /> {task.assignee.name}</p>}
+      {task.dueDate && <p className="mt-1 flex items-center gap-1 text-xs text-gray-400"><Calendar className="h-3 w-3" /> {new Date(task.dueDate).toLocaleDateString()}</p>}
       <select
         value={task.status}
         onChange={(e) => onUpdate(task._id, { status: e.target.value })}
@@ -91,7 +91,7 @@ function KanbanView({ project }) {
                   <input {...register('title', { required: true })} placeholder="Task title" autoFocus className="w-full rounded-lg border border-primary-400 bg-white px-3 py-1.5 text-sm focus:outline-none dark:bg-gray-800" />
                   <div className="flex gap-1">
                     <button type="submit" className="flex-1 rounded-full bg-primary-600 py-1 text-xs font-medium text-white">Add</button>
-                    <button type="button" onClick={() => setAddingCol(null)} className="rounded-full border border-gray-300 px-2 py-1 text-xs dark:border-gray-700">✕</button>
+                    <button type="button" onClick={() => setAddingCol(null)} className="rounded-full border border-gray-300 px-2 py-1 text-xs dark:border-gray-700"><X className="h-3 w-3" /></button>
                   </div>
                 </form>
               )}

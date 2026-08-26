@@ -57,7 +57,7 @@ export const makerHandle = () => `${MAKER.shortName}, who builds as ${MAKER.hand
 // self-conferred status, no reverence — Dax works with the student, not for a
 // boss. See DAX_NAMING.md for the voice rules this has to satisfy.
 export const MAKER_ORIGIN_ANSWER = [
-  `I was built by **${MAKER.legalName}**, who builds as **${MAKER.handle}** — an engineer from ${MAKER.place}.`,
+  `I was built by **${MAKER.legalName}**, who builds as **${MAKER.handle}** — a Management student from ${MAKER.place}.`,
   '',
   `He built DATAD as a student, for his own batch, because the tools that existed treated studying, career prep, and money as three unrelated problems. I'm the part that ties them together.`,
   '',

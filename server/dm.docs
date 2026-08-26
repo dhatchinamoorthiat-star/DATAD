@@ -257,3 +257,65 @@ I ask). After each phase: run `cd server && npm test`, report what passed and
 what failed with real output, and pause for my go-ahead before the next phase.
 If a phase turns out to be blocked or a premise is wrong, finish the others and
 tell me explicitly what you left out and why.
+
+
+
+
+
+
+
+
+
+
+
+# Continue: DATAD Capacitor mobile app work
+
+## Repo
+`/Users/Shared/DATAD` — React (Vite) client + Express server, single-origin deploy on Render.
+Branch: **`feat/capacitor-mobile-apps`** (pushed). PR: https://github.com/dhatchinamoorthiat-star/DATAD/pull/1
+Two commits: `3b8e54d` (Capacitor shell) and `b4366ca` (icons + Play listing draft).
+
+Read `DEPLOYMENT.md` §5 first — it's the runbook for all of this.
+Note `CLAUDE.md` requires running `graphify query "<question>"` before grepping/reading source, and `graphify update .` after code changes.
+
+## What's done and verified
+- Capacitor 8 wired; `client/android/` and `client/ios/` scaffolded. Bundle ID **`app.datad`** (permanent).
+- `client/.env.native` supplies `VITE_API_BASE_URL=https://datad.online/api` for `--mode native` only; web keeps relative `/api`. It's committed via a narrow `!client/.env.native` negation in root `.gitignore`.
+- Native origins (`capacitor://localhost`, `https://localhost`) allowed through CORS as `NATIVE_APP_ORIGINS` in `server/utils/clientUrl.js` — deliberately NOT in `CLIENT_URL`, which also sources emailed-link hostnames. 13 tests pass in `server/tests/corsOrigin.test.js`.
+- Service worker + Web Push disabled natively via `client/src/utils/native.js` (`isNative`).
+- Android back button: `client/src/utils/backButton.js` — dismiss-callback stack; overlays innermost-first → route back → confirm-to-exit. Registered in `Modal.jsx`, `ConfirmModal.jsx`, `CommandPalette.jsx`; installed in `App.jsx`.
+- Icons/splashes generated from `public/brand/` via `client/scripts/generate-app-assets.js` + `@capacitor/assets`. Adaptive-icon layers are **full-bleed** because `@capacitor/assets` applies its own 16.7% inset — don't re-add a safe zone.
+- Play listing draft: `docs/PLAY_STORE_LISTING.md` (copy + Data safety table drafted from `server/models/`).
+- **Android builds successfully.** `./gradlew assembleDebug` → `BUILD SUCCESSFUL`, `app-debug.apk` 5.8 MB, `package=app.datad`, `versionCode 1`, `targetSdk 36`.
+
+## Toolchain (already installed on this Mac)
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21
+export PATH="$JAVA_HOME/bin:$PATH"
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+```
+- OpenJDK 21 (Homebrew formula, not the temurin cask — the cask needs an admin password)
+- Android cmdline-tools + `platform-tools`, `platforms;android-36`, `build-tools;36.0.0`; all 7 SDK licences accepted
+- `client/android/local.properties` points Gradle at the SDK (gitignored)
+- `gh` 2.98.0, authenticated
+- **No Xcode** — iOS has never been built. `xcode-select` points at CommandLineTools.
+- **No emulator system image installed yet.**
+
+## NOT verified — this is the remaining gap
+The APK has **never been installed or run**. Nothing has been confirmed at runtime.
+
+## Next steps, in order
+1. **Finish APK inspection** (was interrupted): confirm `https://datad.online/api` is actually baked into `assets/public/` inside the APK and that no relative `/api` fallback survives.
+2. **Emulator**: `sdkmanager "system-images;android-36;google_apis;arm64-v8a"`, create an AVD, install the APK, and walk the device smoke test in `DEPLOYMENT.md` §5 — especially the four back-button rungs and that login works (proves CORS from the shell origin).
+3. **Screenshots**: 6 phone screenshots from a seeded demo account (never real student data) for the Play listing.
+4. **Signing**: generate the upload keystore (`keytool`, see §5), keep it outside the repo. `*.jks`/`*.keystore` are already gitignored.
+5. **Play Console**: $25 account. ⚠️ Individual accounts need **12 testers opted in for 14 continuous days** before production access — start this early, it's the long pole.
+
+## Gotchas
+- **Another session is actively editing this repo.** Uncommitted work in the tree touches `main.jsx`, `package.json`, `SettingsPage.jsx`, `CommandPalette.jsx`, `index.css`, `tailwind.config.js`, landing/login files, plus new `loginSkins.jsx` / `NamedIcon.jsx`. My commits contain only Capacitor work. **Stage files explicitly — never `git add -A`.**
+- A dev server from that other session runs on port 5175; you can't manage it, only browse it.
+- `npm run build:native` must be re-run after ANY client change, or the IDE builds the previous bundle silently.
+- `@capacitor/assets` reformats `AndroidManifest.xml` cosmetically on every run — revert that noise.
+- Minor cleanup available: `res/drawable-v24/ic_launcher_foreground.xml` and `res/drawable/ic_launcher_background.xml` are unused leftovers from Capacitor's default template (the real icon uses the mipmap layers).
+- Apple guideline 4.2 will likely reject this as a thin wrapper. Ship Android first; add real native capability (FCM/APNs push, biometrics) before submitting to Apple.

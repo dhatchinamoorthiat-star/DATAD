@@ -113,6 +113,7 @@ const FinanceROIPage    = lazy(() => import('./pages/me/FinanceROIPage'));
 const ReflectionPage    = lazy(() => import('./pages/ReflectionPage'));
 const DaxPage           = lazy(() => import('./pages/DaxPage'));
 const PSWPage           = lazy(() => import('./pages/psw/PSWPage'));
+const PitchPage         = lazy(() => import('./pages/pitch/PitchPage'));
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -213,6 +214,7 @@ export default function App() {
               <Route path="/creator" element={<CreatorPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/psw" element={<PSWPage />} />
+              <Route path="/pitch" element={<PitchPage />} />
               <Route path="/brand" element={<BrandPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />

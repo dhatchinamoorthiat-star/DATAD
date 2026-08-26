@@ -3,28 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, Pin, Sparkles, ArrowRight, Clock, TrendingUp, Command } from 'lucide-react';
 import useSearch from '../../hooks/useSearch';
 import { pushDismissable } from '../../utils/backButton';
-
-const ICON_MAP = {
-  LayoutDashboard: '▦', CalendarDays: '📅', FileText: '📄', Wallet: '💰',
-  Briefcase: '💼', FileUser: '📋', Building2: '🏢', MessageSquare: '💬',
-  Users: '👥', Rss: '📡', Newspaper: '📰', BookOpen: '📖', Heart: '❤️',
-  Settings: '⚙️', GraduationCap: '🎓', ShoppingBag: '🛍️', AddressBook: '📇',
-  History: '⏱️', Megaphone: '📢', Target: '🎯', Handshake: '🤝',
-  Shield: '🛡️', Brain: '🧠', Activity: '📊', Palette: '🎨', Bot: '🤖',
-  ScrollText: '📜', Archive: '🗂️', GitFork: '🔀', CreditCard: '💳',
-  CheckSquare: '✅', Award: '🏆', Certificate: '📜', TrendingUp: '📈',
-  TrendingDown: '📉', Tags: '🏷️', MessageCircle: '💭', Calendar: '📅',
-  User: '👤', FolderGit2: '📁', Zap: '⚡', Key: '🔑', Trash2: '🗑️',
-  Download: '⬇️', AlertTriangle: '⚠️', Terminal: '⌨️', Navigation: '🧭',
-  Sparkles: '✨', Bell: '🔔', Clock: '🕐', Pin: '📌', Command: '⌘',
-};
-
-function getIcon(item) {
-  if (item.icon?.startsWith('http') || item.icon?.startsWith('/')) {
-    return <img src={item.icon} alt="" className="h-4 w-4 rounded" />;
-  }
-  return <span className="text-[15px]">{ICON_MAP[item.icon] || '•'}</span>;
-}
+import NamedIcon from './NamedIcon';
 
 function highlight(text, query) {
   if (!text || !query) return text;
@@ -387,7 +366,7 @@ export default function CommandPalette({ open, onClose }) {
                   <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                     isSelected ? 'bg-primary-100 dark:bg-primary-900/40' : 'bg-gray-100 dark:bg-gray-800'
                   }`}>
-                    {getIcon(entry)}
+                    <NamedIcon name={entry.icon} className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className={`text-sm font-medium truncate ${

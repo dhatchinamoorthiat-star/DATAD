@@ -30,5 +30,16 @@
     "react": {
       "version": "detect"
     }
-  }
+  },
+  "overrides": [
+    {
+      // Build-time files: they run in Node, not in the browser, so `process`,
+      // `Buffer` and `__dirname` are legitimately in scope. Without this the
+      // top-level `env: browser` reports every one of them as no-undef, which
+      // is a false positive that trains you to ignore lint errors — the real
+      // cost, since these are the same "5 errors" you then stop reading.
+      "files": ["scripts/**/*.js", "*.config.js", "*.config.*.js"],
+      "env": { "node": true, "browser": false }
+    }
+  ]
 }

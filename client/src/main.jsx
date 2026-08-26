@@ -1,6 +1,29 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
+
+// Fonts, self-hosted.
+//
+// These used to come from fonts.googleapis.com, which meant every visitor's
+// browser announced itself to Google before the first paint — on a page whose
+// own hero badge promises "No tracking". Serving them from our own origin
+// makes that claim true, and removes a third-party render-blocking request
+// from the critical path.
+//
+// Latin subsets only: the product is in English, and the Cyrillic/Greek/
+// Vietnamese cuts would only ever sit unused in the bundle. Weights match
+// tailwind.config.js — Inter 400-700 for body, JetBrains Mono 400-600 for the
+// terminal skin and code, Syne 700/800 for the wordmark alone.
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
+import '@fontsource/jetbrains-mono/latin-400.css';
+import '@fontsource/jetbrains-mono/latin-500.css';
+import '@fontsource/jetbrains-mono/latin-600.css';
+import '@fontsource/syne/latin-700.css';
+import '@fontsource/syne/latin-800.css';
+
 import './index.css';
 import App from './App.jsx';
 import { installGlobalErrorReporting } from './utils/reportError';

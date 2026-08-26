@@ -14,7 +14,7 @@ const EXPANDED_W = '17rem';
 // of distinct marks when collapsed to icons only. Keys match WORKSPACES;
 // anything unmapped falls back to the neutral blue.
 const ICON_ACCENT = {
-  dashboard: '#1A73E8',
+  dashboard: '#3563E9',
   dax: '#8B5CF6',
   study: '#06B6D4',
   career: '#F97316',
@@ -24,7 +24,7 @@ const ICON_ACCENT = {
   finance: '#10B981',
   wellbeing: '#DB2777',
 };
-const FALLBACK_ACCENT = '#1A73E8';
+const FALLBACK_ACCENT = '#3563E9';
 
 // Bare glyph — no tile, no outline. The accent colour is carried by the icon
 // stroke itself, the way the footer marks read.

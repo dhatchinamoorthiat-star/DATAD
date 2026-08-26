@@ -1,3 +1,4 @@
+import { useLocation } from 'react-router-dom';
 import { X, Download, Zap, WifiOff, Bell } from 'lucide-react';
 import { usePWA } from '../../context/PWAContext';
 import { getInstallInstructions } from '../../utils/installInstructions';
@@ -8,6 +9,11 @@ export default function InstallPrompt() {
     installApp, dismissInstall,
   } = usePWA();
 
+  const { pathname } = useLocation();
+
+  // The walkthrough reel is shown to an audience; an install card sliding over
+  // it mid-pitch is the one place this prompt is unwelcome.
+  if (pathname === '/pitch') return null;
   if (!showInstallPrompt || installed) return null;
 
   const manual = installMode === 'manual';

@@ -64,7 +64,7 @@ export default function ProgramSettingsPage() {
             <div>
               <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">Type</p>
               <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                {program.isPreset ? '✓ Preset Program' : '✨ Custom Program'}
+                {program.isPreset ? 'Preset Program' : 'Custom Program'}
               </p>
             </div>
 

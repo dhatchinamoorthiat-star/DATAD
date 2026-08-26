@@ -9,10 +9,18 @@ import { Stagger } from '../components/common/motion';
 import { DatadMark } from '../components/common/Logo';
 import { useTheme } from '../context/ThemeContext';
 
-// Google's four brand colours — used sparingly, as accents on hover only.
-// The page itself stays white/neutral; colour is a reward for interaction,
-// not a backdrop.
-const ACCENTS = ['#4285F4', '#EA4335', '#FBBC05', '#34A853']; // blue, red, yellow, green
+// DATAD's own accents — used sparingly, on hover only. The page itself stays
+// white/neutral; colour is a reward for interaction, not a backdrop.
+//
+// Blue and violet are the Terrace brand values (see components/common/Logo.jsx
+// and components/register/identityTokens.js); teal and amber extend them and
+// are picked to clear 3:1 on white, the WCAG floor for a graphical object,
+// since these only ever paint a 24px icon and a hairline glow.
+//
+// This replaces a set that was Google's four brand hexes verbatim. That
+// four-colour signature is Google's trade dress and had no business on a
+// homepage that is meant to establish DATAD's own identity.
+const ACCENTS = ['#4D7CFF', '#7C6CFF', '#0E9384', '#B45309']; // blue, violet, teal, amber
 
 // Every box deep-links: login first, then land exactly on the feature clicked.
 const FEATURES = [
@@ -155,9 +163,8 @@ function FeatureCard({ feature, color, onOpen, dark }) {
   );
 }
 
-// Google-style wordmark: each letter takes one of the four brand colours.
 export default function LandingPage() {
-  useDocumentTitle('DATAD — Your student OS');
+  useDocumentTitle('Your student OS');
   const navigate = useNavigate();
   const { dark, toggle } = useTheme();
 
@@ -219,7 +226,7 @@ export default function LandingPage() {
           <br />
           <span
             style={{
-              backgroundImage: `linear-gradient(90deg, ${ACCENTS[0]}, ${ACCENTS[3]})`,
+              backgroundImage: `linear-gradient(90deg, ${ACCENTS[0]}, ${ACCENTS[1]})`,
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
               color: 'transparent',
@@ -268,8 +275,8 @@ export default function LandingPage() {
           className="animate-in rounded-3xl border border-gray-200 p-10 dark:border-gray-800"
           style={{
             background: dark
-              ? 'linear-gradient(135deg, rgba(66,133,244,0.14), rgba(52,168,83,0.14))'
-              : 'linear-gradient(135deg, rgba(66,133,244,0.06), rgba(52,168,83,0.06))',
+              ? 'linear-gradient(135deg, rgba(77,124,255,0.14), rgba(124,108,255,0.14))'
+              : 'linear-gradient(135deg, rgba(77,124,255,0.06), rgba(124,108,255,0.06))',
           }}
         >
           <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl dark:text-white">

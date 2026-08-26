@@ -19,16 +19,35 @@
 
 import { createElement as h } from 'react';
 import hotToast from 'react-hot-toast';
+import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 
 // ── Variant configs ─────────────────────────────────────────────────────
 // Durations are tuned so errors linger long enough to read and act on.
+//
+// `glyph` is a lucide component, not an emoji. Toasts are the most-seen
+// chrome in the product — every save, every error — and an emoji here was
+// drawn by the reader's own OS font, so the same confirmation looked like a
+// different product on a Mac, a Windows laptop and an Android phone. It is
+// rendered in the variant's border colour, which is already tuned to sit on
+// that variant's background.
 const VARIANTS = {
-  success: { icon: '✅', duration: 3000, bg: '#065f46', border: '#10b981' },
-  error:   { icon: '❌', duration: 5000, bg: '#881337', border: '#f43f5e' },
-  warning: { icon: '⚠️', duration: 6000, bg: '#78350f', border: '#f59e0b' },
-  info:    { icon: 'ℹ️', duration: 4000, bg: '#1e3a5f', border: '#3b82f6' },
-  loading: { icon: null, duration: Infinity, bg: '#1f2937', border: '#6b7280' },
+  success: { glyph: CheckCircle2,  duration: 3000,      bg: '#065f46', border: '#10b981' },
+  error:   { glyph: XCircle,       duration: 5000,      bg: '#881337', border: '#f43f5e' },
+  warning: { glyph: AlertTriangle, duration: 6000,      bg: '#78350f', border: '#f59e0b' },
+  info:    { glyph: Info,          duration: 4000,      bg: '#1e3a5f', border: '#3b82f6' },
+  loading: { glyph: null,          duration: Infinity,  bg: '#1f2937', border: '#6b7280' },
 };
+
+/** The variant's icon as a renderable node, or null for `loading`. */
+function variantIcon(variant) {
+  if (!variant.glyph) return null;
+  return h(variant.glyph, {
+    size: 18,
+    color: variant.border,
+    'aria-hidden': true,
+    style: { flexShrink: 0 },
+  });
+}
 
 const DEFAULT_VARIANT = 'info';
 
@@ -76,8 +95,9 @@ function show(type, message, opts = {}) {
     style: buildStyle(variant),
   };
 
-  // `loading` supplies its own spinner; don't override it with an emoji.
-  const resolvedIcon = icon ?? variant.icon;
+  // `loading` supplies its own spinner; don't override it. An explicit `icon`
+  // from the caller still wins, and may be any node react-hot-toast accepts.
+  const resolvedIcon = icon ?? variantIcon(variant);
   if (resolvedIcon) config.icon = resolvedIcon;
 
   if (type === 'loading') return hotToast.loading(message, config);

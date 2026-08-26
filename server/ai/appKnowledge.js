@@ -131,6 +131,7 @@ const APP_PAGES = [
   { label: 'Creator', route: '/creator', info: true, blurb: 'who built DATAD, and how to reach him' },
   { label: 'Brand', route: '/brand', info: true, blurb: 'the story of the DATAD mark' },
   { label: 'PSW', route: '/psw', info: true, blurb: 'Pitch. Sell. Win. — DATAD told as one page for an audience' },
+  { label: 'Walkthrough', route: '/pitch', info: true, blurb: 'a timed, section-by-section walkthrough reel of the product' },
   { label: 'Developer', route: '/developer', info: true, blurb: 'API keys for programmatic access' },
   { label: 'Privacy', route: '/privacy', info: true, blurb: 'what is collected, and how to have it removed' },
   { label: 'Terms', route: '/terms', info: true, blurb: 'the terms of use' },

@@ -206,7 +206,7 @@ export default function StudyToolsPage() {
 
   const onPomodoroComplete = async (isFocus) => {
     if (isFocus) {
-      toast.success('Focus session complete! Take your break 🎉');
+      toast.success('Focus session complete — take your break.');
       try {
         const newCount = (log?.pomodoroCount || 0) + 1;
         const newMins = (log?.studyMinutes || 0) + 25;
@@ -214,7 +214,7 @@ export default function StudyToolsPage() {
         setLog(res.data);
       } catch { /* non-critical */ }
     } else {
-      toast('Break over — back to focus!', { icon: '⚡' });
+      toast('Break over — back to focus.');
     }
   };
 
@@ -246,7 +246,7 @@ export default function StudyToolsPage() {
         <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(60,64,67,0.06),0_1px_3px_rgba(60,64,67,0.08)] dark:border-gray-800/80 dark:bg-gray-900 dark:shadow-none">
           <div className="flex items-center gap-2 mb-1"><Flame className="h-4 w-4 text-warn-600" /><p className="text-xs font-semibold text-gray-500">Study Streak</p></div>
           <p className="text-3xl font-bold text-warn-600">{streak ?? 0}<span className="ml-1 text-sm font-normal text-gray-400">days</span></p>
-          <p className="mt-1 text-[11px] text-gray-400">{(streak ?? 0) >= 5 ? '🔥 You\'re on fire!' : 'Study daily to grow'}</p>
+          <p className="mt-1 text-[11px] text-gray-400">{(streak ?? 0) >= 5 ? 'Going strong — keep it up' : 'Study daily to grow'}</p>
         </div>
         <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-[0_1px_2px_rgba(60,64,67,0.06),0_1px_3px_rgba(60,64,67,0.08)] dark:border-gray-800/80 dark:bg-gray-900 dark:shadow-none">
           <div className="flex items-center gap-2 mb-1"><Timer className="h-4 w-4 text-primary-500" /><p className="text-xs font-semibold text-gray-500">Today&rsquo;s Pomodoros</p></div>
