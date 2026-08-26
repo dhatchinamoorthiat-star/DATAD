@@ -4,6 +4,7 @@ import useDocumentTitle from '../hooks/useDocumentTitle';
 import Button from '../components/common/Button';
 import { Skeleton } from '../components/common/Skeleton';
 import toast from '../utils/toast';
+import { apiUrl } from '../api/base';
 
 export default function DeveloperPage() {
   useDocumentTitle('Developer');
@@ -14,7 +15,7 @@ export default function DeveloperPage() {
   const [copied, setCopied] = useState(false);
 
   const fetchKeys = () =>
-    fetch('/api/keys', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    fetch(apiUrl('/keys'), { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then((r) => r.json())
       .then((d) => setKeys(d.keys || []))
       .catch(() => {})
@@ -24,7 +25,7 @@ export default function DeveloperPage() {
 
   const generate = async () => {
     if (!newKeyName.trim()) return;
-    const res = await fetch('/api/keys', {
+    const res = await fetch(apiUrl('/keys'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
       body: JSON.stringify({ name: newKeyName }),
@@ -38,7 +39,7 @@ export default function DeveloperPage() {
   };
 
   const remove = async (id) => {
-    const res = await fetch(`/api/keys/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+    const res = await fetch(apiUrl(`/keys/${id}`), { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
     // Revoking a key is the one action here with a security consequence, so a
     // failure must not be reported as success — the user would walk away
     // believing a leaked key was dead.

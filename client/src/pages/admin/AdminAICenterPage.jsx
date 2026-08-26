@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import { AdminShell } from './shared';
 import { RowSkeleton } from '../../components/common/Skeleton';
+import { apiUrl } from '../../api/base';
 
 // Surface the status code rather than letting .json() choke on an HTML error page.
 const API = (path) =>
-  fetch(`/api/automation${path}`, {
+  fetch(apiUrl(`/automation${path}`), {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
   }).then((r) => {
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);

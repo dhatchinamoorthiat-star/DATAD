@@ -6,11 +6,12 @@ import {
 } from 'lucide-react';
 import { AdminShell } from './shared';
 import { RowSkeleton } from '../../components/common/Skeleton';
+import { apiUrl } from '../../api/base';
 
 // A non-2xx response is usually HTML (a proxy error page), and calling .json()
 // on it throws something unreadable. Turn it into a real error up front.
 const API = (path, opts) =>
-  fetch(`/api/automation${path}`, {
+  fetch(apiUrl(`/automation${path}`), {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}`, 'Content-Type': 'application/json' },
     ...opts,
   }).then((r) => {

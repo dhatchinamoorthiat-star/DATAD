@@ -33,6 +33,7 @@ import {
 } from '../api/notifications';
 import toast from '../utils/toast';
 import { useAuth } from './AuthContext';
+import { apiUrl } from '../api/base';
 
 const SSE_RECONNECT_DELAY = 5000;
 const MAX_RECONNECT_DELAY = 60000;
@@ -80,11 +81,11 @@ function getToken() {
  * what an installed PWA looks like from the outside — "notifications work, but
  * only eventually".
  *
- * Mirrors api/axios.js: the env var wins, `/api` is the same-origin default.
+ * Mirrors api/axios.js via the shared base in api/base.js: the env var wins,
+ * `/api` is the same-origin default.
  */
 function streamUrl(token) {
-  const base = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-  return `${base}/notifications/stream?token=${encodeURIComponent(token)}`;
+  return apiUrl(`/notifications/stream?token=${encodeURIComponent(token)}`);
 }
 
 export function NotificationProvider({ children }) {

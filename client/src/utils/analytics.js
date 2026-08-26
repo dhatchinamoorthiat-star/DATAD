@@ -10,6 +10,8 @@
  *
  * Events are non-blocking (fetch + keepalive) and never reject.
  */
+import { apiUrl } from '../api/base';
+
 const SESSION_KEY = 'datad_session_id';
 
 function getSessionId() {
@@ -53,11 +55,11 @@ export function track(event, properties = {}) {
     // and the failure was total: zero events reached the database.
     if (navigator.sendBeacon) {
       navigator.sendBeacon(
-        '/api/beta/events',
+        apiUrl('/beta/events'),
         new Blob([body], { type: 'application/json' })
       );
     } else {
-      fetch('/api/beta/events', {
+      fetch(apiUrl('/beta/events'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body,

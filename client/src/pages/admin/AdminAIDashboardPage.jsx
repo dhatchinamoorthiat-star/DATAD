@@ -5,10 +5,11 @@ import {
   Layers, Thermometer, Coins,
 } from 'lucide-react';
 import { AdminShell } from './shared';
+import { apiUrl } from '../../api/base';
 
 // Surface the status code rather than letting .json() choke on an HTML error page.
 const API = (path) =>
-  fetch(`/api/admin/ai${path}`, {
+  fetch(apiUrl(`/admin/ai${path}`), {
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
   }).then((r) => {
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);

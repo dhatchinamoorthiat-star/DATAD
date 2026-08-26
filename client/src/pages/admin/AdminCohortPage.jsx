@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Brain, Target, Activity, Sparkles } from 'lucide-react';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import { Skeleton } from '../../components/common/Skeleton';
+import { apiUrl } from '../../api/base';
 
 export default function AdminCohortPage() {
   useDocumentTitle('Cohort Intelligence');
@@ -9,7 +10,7 @@ export default function AdminCohortPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/admin/insights/cohort', { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
+    fetch(apiUrl('/admin/insights/cohort'), { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } })
       .then((r) => r.json())
       .then(setData)
       .catch(() => {})

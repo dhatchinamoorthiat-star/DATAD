@@ -20,8 +20,9 @@
  */
 
 import * as Sentry from '@sentry/react';
+import { apiUrl } from '../api/base';
 
-const ENDPOINT = `${import.meta.env.VITE_API_URL || ''}/api/telemetry/error`;
+const ENDPOINT = apiUrl('/telemetry/error');
 
 /**
  * A broken page can throw the same error on every render. Reporting each one
