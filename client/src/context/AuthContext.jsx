@@ -5,6 +5,21 @@ import toast from '../utils/toast';
 
 const AuthContext = createContext(null);
 
+// What to say when the server ends a session, keyed on the `code` it sends
+// (server/middleware/verifyToken.js). These are genuinely different events and
+// a student can act on the difference: an evicted device means someone is
+// using the account elsewhere, which is worth knowing. Codes without an entry
+// — and plain expiry, which sends none — fall back to DEFAULT.
+// Each entry takes the 401 body, so a message can quote server-supplied
+// numbers (the device cap) rather than restating them from memory.
+const SIGN_OUT_MESSAGE = {
+  DEVICE_REVOKED: ({ maxDevices }) =>
+    'Signed out because this account was signed in on another device'
+    + (maxDevices ? ` — you can be signed in on ${maxDevices} at once` : ''),
+  SESSION_UPGRADE_REQUIRED: () => 'Please sign in again to continue',
+  DEFAULT: () => 'Your session expired — please sign in again',
+};
+
 const decodeUser = (token) => {
   if (!token) return null;
   try {
@@ -43,8 +58,9 @@ export function AuthProvider({ children }) {
 
   // `reason: 'expired'` marks a forced logout (401 from an expired/revoked
   // JWT) so it can tell the user why they landed back on /login, as opposed
-  // to a deliberate click on "Log out", which stays silent.
-  const logout = (reason) => {
+  // to a deliberate click on "Log out", which stays silent. `detail` is the
+  // server's 401 body, when there was one.
+  const logout = (reason, detail) => {
     localStorage.removeItem('token');
     localStorage.removeItem('activeProgram');
     const toRemove = [];
@@ -56,7 +72,11 @@ export function AuthProvider({ children }) {
     setToken(null);
 
     if (reason === 'expired') {
-      toast.warning('Your session expired — please sign in again', { id: 'session:expired' });
+      // Keyed on the code so two different sign-out reasons can't collapse
+      // into one another's toast if they land close together.
+      const code = detail?.code;
+      const build = SIGN_OUT_MESSAGE[code] || SIGN_OUT_MESSAGE.DEFAULT;
+      toast.warning(build(detail || {}), { id: `session:${code || 'expired'}` });
     }
   };
 
@@ -64,7 +84,7 @@ export function AuthProvider({ children }) {
   // revoked) — drop the session so the app falls back to the login route
   // instead of rendering logged-in against an API that rejects every call.
   useEffect(() => {
-    registerUnauthorizedHandler(() => logout('expired'));
+    registerUnauthorizedHandler((detail) => logout('expired', detail));
     return () => registerUnauthorizedHandler(null);
   });
 

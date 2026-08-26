@@ -129,6 +129,10 @@ describe('verifyToken device check', () => {
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(401);
     expect(res.body.code).toBe('DEVICE_REVOKED');
+    // The client names the limit in the toast it shows; it has to come from
+    // here, because MAX_DEVICES_PER_USER is configurable and only the server
+    // reads it.
+    expect(res.body.maxDevices).toBe(deviceSessions.MAX_DEVICES);
   });
 
   it('rejects a token whose device the user explicitly signed out', async () => {

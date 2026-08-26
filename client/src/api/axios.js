@@ -58,9 +58,18 @@ api.interceptors.response.use(
     // answering the question it was asked, not an expired session.
     const isAuthRequest = url.includes('/auth/');
     const isLoginPage = window.location.pathname === '/login';
+    // A 401 on a request that carried no token is "you were never signed in",
+    // not "your session ended". Announcing an expiry to a signed-out visitor
+    // is both wrong and alarming, so only sent-token 401s count as expiry.
+    const sentToken = !!err.config?.headers?.Authorization;
 
-    if (status === 401 && !isAuthRequest && !isLoginPage) {
-      onUnauthorized?.();
+    if (status === 401 && sentToken && !isAuthRequest && !isLoginPage) {
+      // Hand over the whole 401 body — its `code` says which of the several
+      // things that end a session actually happened (an evicted device is not
+      // an expiry, and telling the student otherwise sends them to support
+      // asking why they keep getting logged out), and the rest carries the
+      // details that message needs, such as the device cap.
+      onUnauthorized?.(err.response?.data);
     }
 
     return Promise.reject(err);

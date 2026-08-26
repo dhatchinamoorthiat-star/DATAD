@@ -66,9 +66,14 @@ const verifyToken = async (req, res, next) => {
       !deviceSessions.isExempt(session.email) &&
       !deviceSessions.isActive(session.sessions, payload.did)
     ) {
+      // `maxDevices` rides along so the client can name the limit without
+      // hardcoding a number that only this module actually knows — it is
+      // configurable via MAX_DEVICES_PER_USER, and a client-side copy of it
+      // would quietly start lying the moment that env var is set.
       return res.status(401).json({
         message: 'Signed out because this account was used on another device.',
         code: 'DEVICE_REVOKED',
+        maxDevices: deviceSessions.MAX_DEVICES,
       });
     }
 
