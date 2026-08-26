@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import Button from './Button';
+import { pushDismissable } from '../../utils/backButton';
 
 /**
  * Reusable confirmation dialog built on the same design language as Modal.
@@ -36,9 +37,18 @@ export default function ConfirmModal({
     document.addEventListener('keydown', onKey);
     // Focus the confirm button so Enter works immediately
     const t = setTimeout(() => confirmRef.current?.focus(), 50);
+
+    // Android back cancels, exactly as Escape does. This is the dialog where
+    // getting it wrong matters most: without it, back navigates the page out
+    // from under an open destructive confirm, leaving the alertdialog on
+    // screen over a route the student did not choose — with its Confirm button
+    // still live and now attached to nothing they can see the context for.
+    const unregisterBack = pushDismissable(onClose);
+
     return () => {
       document.removeEventListener('keydown', onKey);
       clearTimeout(t);
+      unregisterBack();
     };
   }, [open, onClose]);
 

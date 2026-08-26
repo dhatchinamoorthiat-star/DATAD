@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Loader2, Pin, Sparkles, ArrowRight, Clock, TrendingUp, Command } from 'lucide-react';
 import useSearch from '../../hooks/useSearch';
+import { pushDismissable } from '../../utils/backButton';
 
 const ICON_MAP = {
   LayoutDashboard: '▦', CalendarDays: '📅', FileText: '📄', Wallet: '💰',
@@ -131,6 +132,20 @@ export default function CommandPalette({ open, onClose }) {
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
+  }, [open]);
+
+  // Android back closes the palette instead of navigating behind it. Routed
+  // through a ref and keyed on `open` alone: `onClose` arrives as an inline
+  // arrow from AppShell, and this component re-renders on every keystroke, so
+  // depending on it directly would unregister and re-register the handler on
+  // each character typed.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  useEffect(() => {
+    if (!open) return undefined;
+    return pushDismissable(() => onCloseRef.current?.());
   }, [open]);
 
   // Adjusting state during render rather than in an effect: React re-runs this

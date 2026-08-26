@@ -16,6 +16,7 @@ import Modal from '../components/common/Modal';
 import DaxProfilePanel from '../components/common/DaxProfilePanel';
 import useDocumentTitle from '../hooks/useDocumentTitle';
 import usePushNotifications from '../hooks/usePushNotifications';
+import { isNative } from '../utils/native';
 
 const fmtDate = (d) =>
   new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -308,8 +309,14 @@ function PushCard() {
   const { supported, available, subscribed, blocked, busy, error, enable, disable } =
     usePushNotifications();
 
+  // "This browser" is the wrong noun inside the installed app — there is no
+  // browser on screen to go and change, and it reads as a bug report rather
+  // than an explanation. Native push is a planned build, not a missing feature
+  // of the device, so say that instead.
   const reason = !supported
-    ? "This browser doesn't support push notifications."
+    ? isNative
+      ? 'Push notifications are coming to the app in a future update. In the meantime they work on the web version.'
+      : "This browser doesn't support push notifications."
     : !available
       ? 'Push notifications are not switched on for this server yet.'
       : blocked

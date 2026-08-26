@@ -24,6 +24,29 @@
 const DEV_TUNNEL_RE =
   /^https:\/\/[a-z0-9-]+\.(ngrok-free\.app|ngrok-free\.dev|ngrok\.app|ngrok\.io)$/;
 
+/**
+ * The origins the Capacitor shell serves the bundle from. Fixed constants of
+ * the platform, not deployment config: `https://localhost` on Android (from
+ * `androidScheme: "https"` in client/capacitor.config.json — the plain-http
+ * default would make the WebView a non-secure context and cost us crypto.subtle
+ * and durable storage) and `capacitor://localhost` on iOS.
+ *
+ * Deliberately NOT appended to CLIENT_URL. That variable is doing two jobs at
+ * once — CORS allow-list, and the source of the hostname in every emailed reset
+ * and verification link — and only the first is wanted here. Putting
+ * `capacitor://localhost` in the list risks it becoming entry [0] on some
+ * future edit, at which point primaryClientUrl() starts mailing students a
+ * password-reset link that only resolves inside an iOS app. Separate constant,
+ * consulted only by the CORS rule.
+ *
+ * `http://localhost` is not in the list even though it is Capacitor's default
+ * Android origin, precisely because we changed that default: bare
+ * `http://localhost` with no port is an origin any process on a developer's or
+ * a user's machine can claim by binding port 80, and it buys nothing once
+ * androidScheme is https.
+ */
+const NATIVE_APP_ORIGINS = ['capacitor://localhost', 'https://localhost'];
+
 const isProduction = () => process.env.NODE_ENV === 'production';
 
 /**
@@ -111,12 +134,19 @@ function serverLinkBase() {
 function isAllowedCorsOrigin(origin) {
   // Same normalisation as the emailed links — that shared parsing is the whole
   // point of keeping both rules in this file.
-  if (clientOrigins().includes(String(origin || '').replace(/\/+$/, ''))) return true;
+  const normalised = String(origin || '').replace(/\/+$/, '');
+  if (clientOrigins().includes(normalised)) return true;
+  // The store builds, which are a first-party client with no configurable
+  // origin. Allowed in production too, unlike the tunnel exception below —
+  // that one is a wildcard over hosts anybody can register, this is two fixed
+  // strings, and it is the shipped app.
+  if (NATIVE_APP_ORIGINS.includes(normalised)) return true;
   return !isProduction() && isDevTunnelOrigin(origin);
 }
 
 module.exports = {
   DEV_TUNNEL_RE,
+  NATIVE_APP_ORIGINS,
   isProduction,
   clientOrigins,
   primaryClientUrl,

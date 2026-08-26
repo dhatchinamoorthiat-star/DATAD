@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { pushDismissable } from '../../utils/backButton';
 
 // `blur` controls the backdrop treatment. It defaults to blurring the page
 // behind the dialog, which suits modals that interrupt you — a confirm, a
@@ -37,6 +38,13 @@ export default function Modal({ open, onClose, title, children, blur = true }) {
     document.addEventListener('keydown', onKey);
     const t = setTimeout(() => closeRef.current?.focus(), 50);
 
+    // Android's back button is this dialog's Escape — registered on the same
+    // `open` effect so the two can never disagree about whether the dialog is
+    // up. No-op on the web. Goes through onCloseRef for the same reason
+    // Escape does: `onClose` is a fresh inline function on every render, and
+    // depending on it here would re-register on each keystroke.
+    const unregisterBack = pushDismissable(() => onCloseRef.current());
+
     // Freeze the page behind the dialog. Without this a scroll gesture over the
     // backdrop scrolls the page instead of the dialog, so a tall modal drifts
     // off the top of the viewport with its content unreachable — you appear to
@@ -48,6 +56,7 @@ export default function Modal({ open, onClose, title, children, blur = true }) {
       document.removeEventListener('keydown', onKey);
       clearTimeout(t);
       document.body.style.overflow = prevOverflow;
+      unregisterBack();
     };
   }, [open]);
 

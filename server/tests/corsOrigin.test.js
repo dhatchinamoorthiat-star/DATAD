@@ -70,6 +70,34 @@ describe('isAllowedCorsOrigin', () => {
   });
 });
 
+describe('native app origins', () => {
+  it('allows the Capacitor shell origins in production', () => {
+    // Unlike the tunnel exception, these survive NODE_ENV=production: they are
+    // the shipped store builds, and production is the only place they run.
+    process.env.NODE_ENV = 'production';
+    process.env.CLIENT_URL = 'https://datad.online';
+    expect(clientUrl.isAllowedCorsOrigin('capacitor://localhost')).toBe(true);
+    expect(clientUrl.isAllowedCorsOrigin('https://localhost')).toBe(true);
+  });
+
+  it('does not allow bare http://localhost', () => {
+    // Capacitor's default Android origin, which capacitor.config.json overrides
+    // to https precisely so this stays closed — any process that can bind port
+    // 80 on a machine can otherwise claim it.
+    process.env.NODE_ENV = 'production';
+    process.env.CLIENT_URL = 'https://datad.online';
+    expect(clientUrl.isAllowedCorsOrigin('http://localhost')).toBe(false);
+  });
+
+  it('keeps the native origins out of the emailed-link hostname', () => {
+    // The reason NATIVE_APP_ORIGINS is its own constant. A reset link pointing
+    // at capacitor://localhost resolves for nobody, and the damage is silent.
+    process.env.CLIENT_URL = 'https://datad.online';
+    expect(clientUrl.primaryClientUrl()).toBe('https://datad.online');
+    expect(clientUrl.clientOrigins()).not.toContain('capacitor://localhost');
+  });
+});
+
 describe('primaryClientUrl', () => {
   it('is the first entry, normalised', () => {
     process.env.CLIENT_URL = 'https://datad.app/,https://www.datad.app';

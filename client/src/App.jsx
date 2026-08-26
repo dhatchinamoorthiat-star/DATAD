@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -20,6 +20,7 @@ import WelcomeCurtain from './components/common/WelcomeCurtain';
 import NetworkTexture from './components/common/NetworkTexture';
 import RouteBeacon from './components/common/RouteBeacon';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { installBackButtonHandler } from './utils/backButton';
 
 
 // Route-level code splitting: each page loads on demand, keeping the initial
@@ -153,6 +154,12 @@ function LegacyRedirect({ from, to }) {
 }
 
 export default function App() {
+  // Android's hardware back button. One listener for the lifetime of the app,
+  // above BrowserRouter because it drives history through `window.history`
+  // rather than the router's hooks and so needs nothing from that context.
+  // No-op on the web — see utils/backButton.js.
+  useEffect(installBackButtonHandler, []);
+
   return (
     <PWAProvider>
       <ThemeProvider>

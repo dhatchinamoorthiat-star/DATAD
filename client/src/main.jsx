@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/react';
 import './index.css';
 import App from './App.jsx';
 import { installGlobalErrorReporting } from './utils/reportError';
+import { isNative } from './utils/native';
 
 // Sentry is gated on the DSN env var — no DSN = no crash reporting overhead.
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
@@ -74,7 +75,13 @@ createRoot(document.getElementById('root')).render(
 
 // Register service worker — PWAContext handles update prompts & lifecycle
 // Only in production: in dev it intercepts Vite's module/HMR requests and breaks the app.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+//
+// And never inside the Capacitor shell. There the bundle is served from the
+// app's own local origin, so a worker would cache assets the store already
+// versions — and PWAContext would then offer "a new version is available,
+// reload" for a build that can only actually change through an App Store
+// update. See utils/native.js.
+if (!isNative && import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js', { scope: '/' })

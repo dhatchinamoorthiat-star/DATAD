@@ -6,6 +6,14 @@ dist/
 .env
 .env.*
 !.env.example
+# client/.env.native is build config, not credentials: one public API origin,
+# inlined into the bundle by `npm run build:native` and therefore shipped inside
+# every store binary anyway. It has to be committed — untracked, a fresh clone
+# or a CI runner builds an app whose API base falls back to the same-origin
+# `/api`, which in the native shell points at the WebView itself. Every request
+# 404s, and only on device. Narrow negation on purpose; the blanket rule above
+# still catches .env.local and friends.
+!client/.env.native
 .DS_Store
 audit/
 .claude/worktrees/

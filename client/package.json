@@ -7,9 +7,18 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
+    "build:native": "vite build --mode native && cap sync",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios",
     "lint": "eslint . --ext .js,.jsx --max-warnings 50"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/status-bar": "^8.0.3",
     "@sentry/browser": "^10.67.0",
     "@sentry/react": "^10.67.0",
     "@tanstack/react-virtual": "^3.14.6",
@@ -29,6 +38,7 @@
     "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "@vitejs/plugin-react": "^6.0.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",

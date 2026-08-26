@@ -238,6 +238,162 @@ cron, so there is nothing to duplicate. Verify the claim semantics in
 3. Post a test announcement with "Email everyone" to confirm Brevo works.
 4. Share the link with the batch.
 
+## 5. Mobile apps (Capacitor)
+
+The Android and iOS apps are the **same React bundle** in a native shell —
+`client/dist` copied into `client/android/` and `client/ios/` by `cap sync`.
+There is no second codebase and no second API. What differs is the origin the
+bundle is served from, and everything below follows from that one fact.
+
+Nothing here affects the web deploy. `npm run build` is untouched; the native
+path is a separate mode.
+
+### What is different inside the shell
+
+| | Web | Native shell |
+|---|---|---|
+| Origin | `https://datad.online` | `https://localhost` (Android), `capacitor://localhost` (iOS) |
+| API base | relative `/api`, same-origin | `https://datad.online/api`, absolute — cross-origin |
+| Service worker | registered | **not** registered |
+| Web Push | offered if VAPID keys are set | off; the Settings toggle says why |
+
+The absolute API base lives in `client/.env.native` and is inlined at build time
+by `--mode native`. **That file is committed on purpose** — the root
+`.gitignore` blanket-ignores `.env.*`, with a narrow `!client/.env.native`
+negation. It holds one public origin, which ships inside every store binary
+anyway. Untracked, a fresh clone or a CI runner builds an app whose API base
+falls back to the same-origin `/api`, which in the shell points at the WebView's
+own asset server. Every request 404s, and only on a device.
+
+The two shell origins are allowed through CORS by `NATIVE_APP_ORIGINS` in
+`server/utils/clientUrl.js`. They are deliberately **not** in `CLIENT_URL`: that
+variable does double duty as the CORS allow-list *and* the source of the
+hostname in every emailed reset and verification link, and only the first is
+wanted here. A `capacitor://localhost` that drifted to entry `[0]` would mail
+students a password-reset link that resolves for nobody. `corsOrigin.test.js`
+holds that line.
+
+Web Push is forced off natively rather than left to feature detection, because
+detection gets it wrong in the dangerous direction: Android's WebView has both
+`serviceWorker` and `Notification`, so the checks pass, the opt-in completes,
+and the toggle settles into "on" for a channel with no push service behind it.
+iOS fails honestly (no `PushManager` in WKWebView). Native FCM/APNs push is a
+separate build — see the Apple note below for why it is worth doing.
+
+### One-time setup
+
+Toolchain (none of it is needed for the web deploy):
+
+```bash
+brew install --cask android-studio temurin   # Android SDK + JDK
+```
+
+Xcode comes from the App Store, and after installing it point the toolchain at
+it — a fresh Mac has `xcode-select` aimed at CommandLineTools, and `cap open
+ios` fails confusingly until this is done:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+Store accounts, which are the only part of this that costs money:
+
+- **Google Play Console** — $25, one time.
+- **Apple Developer Program** — $99/year, and the apps stop being downloadable
+  if it lapses.
+
+The bundle ID is **`app.datad`** (`client/capacitor.config.json`, mirrored into
+`android/app/build.gradle` as `applicationId`). It is permanent: neither store
+lets you change it after the first submission, so a typo here means a new
+listing and a new app.
+
+### Build
+
+```bash
+cd client
+npm run build:native     # vite build --mode native && cap sync
+npm run open:android     # or: npm run open:ios
+```
+
+`build:native` must be re-run after *any* client change. `cap sync` copies the
+bundle into both platforms; opening Android Studio or Xcode without it builds
+the previous bundle, silently, and the symptom is a fix that "didn't apply".
+
+Release artefacts are produced from the IDE, not the CLI:
+
+- **Android** — Android Studio → Build → Generate Signed App Bundle → `.aab`.
+  Play requires an App Bundle, not an APK.
+- **iOS** — Xcode → Product → Archive → Distribute App.
+
+### Signing
+
+Generate the Android upload key **once** and never regenerate it:
+
+```bash
+keytool -genkey -v -keystore datad-upload.jks -keyalg RSA \
+  -keysize 2048 -validity 10000 -alias datad
+```
+
+Keep it outside the repo and back it up somewhere that is not this laptop.
+`client/android/.gitignore` ignores `*.jks` and `*.keystore` — that is a local
+change from Capacitor's template, which commits them by default. This key is
+what proves to Play that a build is ours; whoever holds it plus the account can
+ship an update to every installed device, and it cannot be rotated casually —
+losing or leaking it means a Play-support key reset, not a `keytool` re-run.
+
+iOS signing is handled by Xcode against the Apple Developer account; there is no
+local key file to protect.
+
+### Releasing an update
+
+Both stores reject a re-upload at the same version, and the error arrives after
+the upload rather than before it. Bump before building:
+
+- **Android** — `versionCode` (integer, must increase) and `versionName` in
+  `client/android/app/build.gradle`.
+- **iOS** — `CFBundleVersion` and `CFBundleShortVersionString`, via Xcode's
+  target settings.
+
+Because the shell only wraps the bundle, a client-only change still needs a
+store release to reach installed apps — unlike the web, where a Render deploy is
+live immediately. Budget for review: Play is usually hours to a few days, Apple
+typically 24–48h. Plan server changes to stay backward-compatible with the
+shipped binary for as long as an old version is in the wild.
+
+### Two things that will bite
+
+**Apple guideline 4.2, "minimum functionality."** A thin wrapper around a
+website gets rejected, and this is currently a thin wrapper around a website —
+with Web Push switched off, it has no native capability at all. Ship Android
+first, where the equivalent rule is far more permissive, and add genuine native
+integration (FCM/APNs push, biometric unlock, offline documents) before
+submitting to Apple. Expect the first attempt to be rejected otherwise.
+
+**Anything CORS or cookie-shaped now has a third origin.** The web app is
+same-origin with the API and has never exercised the cross-origin path; the
+shell always does. Auth here is a bearer token in `localStorage`, not a cookie,
+which is why this works at all — a `SameSite` cookie session would not survive
+`capacitor://localhost`. Keep it that way, or the apps break the day it changes.
+
+### Smoke test on a device
+
+Everything above is verified at the bundle layer by `npm run build:native`. None
+of it proves the app runs. On a real device or emulator, at minimum:
+
+- [ ] App launches to the landing page, not a white screen (a white screen is
+      almost always the API base — check the request URLs first)
+- [ ] Register and log in — proves CORS from the shell origin
+- [ ] Upload a photo — proves Cloudinary and the multipart path cross-origin
+- [ ] Settings → Notifications shows the toggle **off with the app-specific
+      reason**, not "this browser doesn't support push notifications"
+- [ ] Kill and reopen the app — the session survives (`localStorage` persisted;
+      this is what `androidScheme: "https"` buys)
+- [ ] Android back button, all four rungs (`client/src/utils/backButton.js`):
+      closes an open dialog rather than navigating behind it; closes the
+      command palette; navigates back a route when nothing is open; and on the
+      last screen shows "Press back again to exit" instead of quitting on the
+      first tap
+
 ## Local development
 
 ```bash

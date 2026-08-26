@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { getPushKey, subscribePush, unsubscribePush } from '../api/notifications';
+import { isNative } from '../utils/native';
 
 // A VAPID key travels as base64url in JSON but PushManager wants raw bytes.
 function urlBase64ToUint8Array(base64String) {
@@ -26,7 +27,15 @@ function urlBase64ToUint8Array(base64String) {
   return output;
 }
 
+// Excluded explicitly rather than left to feature detection, because on Android
+// the detection gets it wrong: that WebView has both `serviceWorker` and
+// `Notification`, so the checks below pass, `enable()` runs to completion, and
+// the toggle settles into "on" — for a channel that will never deliver, since
+// the shell has no push service behind it. iOS fails honestly (no PushManager
+// in WKWebView), which is the less dangerous half. A toggle that says off and
+// explains why beats one that says on and lies.
 const isSupported =
+  !isNative &&
   typeof window !== 'undefined' &&
   'serviceWorker' in navigator &&
   'PushManager' in window &&
