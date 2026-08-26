@@ -105,6 +105,12 @@ const PWA_DISMISSED_KEY = 'datad-pwa-install-dismissed';
 // colorScheme option does not reach this, it only sets prefers-color-scheme.
 const THEME = process.env.PITCH_THEME === 'light' ? 'light' : 'dark';
 
+// Read by client/src/dax/maintenance.js to drop the maintenance notice, which
+// otherwise sits directly under the walkthrough's narration and reads as a
+// caption to it. It hides the banner only; Dax still answers from the same
+// fixed local set, so the frame shows nothing a student could not get.
+const CAPTURE_MODE_KEY = 'datad-capture-mode';
+
 // Step one. A headed browser, and a human at the keyboard: the password goes
 // into the real login form and never into this script, its arguments or the
 // shell history. Playwright's storageState carries the session to step two.
@@ -137,10 +143,11 @@ async function main() {
   // The install card is dismissed by a localStorage flag, and localStorage is
   // per-origin, so one visit is enough to set it for every shot that follows.
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
-  await page.evaluate(([k, theme]) => {
-    localStorage.setItem(k, '1');
+  await page.evaluate(([pwaKey, captureKey, theme]) => {
+    localStorage.setItem(pwaKey, '1');
+    localStorage.setItem(captureKey, '1');
     localStorage.setItem('theme', theme);
-  }, [PWA_DISMISSED_KEY, THEME]);
+  }, [PWA_DISMISSED_KEY, CAPTURE_MODE_KEY, THEME]);
 
   for (const [file, route] of SHOTS.filter(([f]) => wanted(f))) {
     await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded' });
