@@ -26,12 +26,6 @@ module.exports = {
       maxTokens: 2048,
       temperature: 0.7,
     },
-    anthropic: {
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
-      maxTokens: 2048,
-      temperature: 0.7,
-    },
     gemini: {
       apiKey: process.env.GEMINI_API_KEY,
       baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',

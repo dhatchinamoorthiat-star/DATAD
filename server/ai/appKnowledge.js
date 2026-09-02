@@ -48,7 +48,7 @@ const APP_SECTIONS = [
     ],
   },
   {
-    label: 'Career', route: '/placement',
+    label: 'Placement', route: '/placement',
     blurb: 'the placement core — the work that leads to an offer',
     subs: [
       { label: 'Companies', route: '/placement/companies' },

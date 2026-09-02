@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { ChevronDown, Sparkles, Check } from 'lucide-react';
 
-const GROUP_ORDER = ['NVIDIA NIM', 'Groq', 'OpenAI', 'Anthropic', 'Gemini', 'OpenRouter', 'Ollama (Local)'];
+const GROUP_ORDER = ['NVIDIA NIM', 'Groq', 'OpenAI', 'Gemini', 'OpenRouter', 'Ollama (Local)'];
 
 function groupModels(models) {
   const grouped = {};

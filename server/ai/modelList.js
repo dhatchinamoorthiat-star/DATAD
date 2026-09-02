@@ -43,7 +43,6 @@ const NVIDIA_MODELS_DISPLAY = [
 const HUMAN_LABELS = {
   groq: 'Groq',
   openai: 'OpenAI',
-  anthropic: 'Anthropic',
   gemini: 'Gemini',
   openrouter: 'OpenRouter',
   ollama: 'Ollama (Local)',

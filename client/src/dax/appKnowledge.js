@@ -63,7 +63,7 @@ export const SECTIONS = [
   },
   {
     key: 'career',
-    label: 'Career',
+    label: 'Placement',
     route: '/placement',
     aliases: ['career', 'careers', 'placement', 'placements', 'job', 'jobs', 'recruitment', 'hiring', 'career hub'],
     blurb:

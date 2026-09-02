@@ -61,7 +61,7 @@ async function refreshNews() {
   console.log(`News refresh: ${ok.length}/${FEEDS.length} feeds ok, ${total} items cached`);
 
   // Fire-and-forget AI enhancement of the newest un-enhanced articles.
-  // No-op until ANTHROPIC_API_KEY is configured. Lazy require avoids cycles.
+  // No-op until an AI provider is configured. Lazy require avoids cycles.
   const { enhancePending } = require('./newsEnhancer');
   enhancePending().catch((err) => console.error('News enhancement failed:', err.message));
 

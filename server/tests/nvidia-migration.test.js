@@ -185,11 +185,6 @@ describe('NVIDIA NIM Migration', () => {
       expect(provider.name).toBe('nvidia');
     });
 
-    test('buildProvider creates AnthropicProvider for anthropic', () => {
-      const provider = factory.buildProvider('anthropic');
-      expect(provider.constructor.name).toBe('AnthropicProvider');
-    });
-
     test('getProvider returns nvidia when NVIDIA_API_KEY is set', () => {
       factory.clearCache();
       const provider = factory.getProvider();
@@ -199,9 +194,8 @@ describe('NVIDIA NIM Migration', () => {
     test('getProvider falls back to ollama only when no cloud key is set', () => {
       // Ollama is the last resort in PROVIDER_ORDER, not the immediate fallback,
       // so every cloud provider has to be unavailable for this to be
-      // deterministic — otherwise the result depends on which keys happen to be
-      // in the dev .env (with ANTHROPIC_API_KEY present this returns
-      // 'anthropic', which is correct behaviour).
+      // deterministic — otherwise the result depends on which keys happen to
+      // be in the dev .env.
       //
       // Two different sources have to be cleared. Most providers check the
       // config captured by config/automation.js at require time, so deleting

@@ -56,7 +56,6 @@ const PROVIDER_LATENCY_PROFILES = {
   gemini: { avgResponseMs: 600, tier: 'fast', latencyScore: 85 },
   mistral: { avgResponseMs: 800, tier: 'moderate', latencyScore: 75 },
   openai: { avgResponseMs: 1200, tier: 'moderate', latencyScore: 60 },
-  anthropic: { avgResponseMs: 1800, tier: 'slow', latencyScore: 40 },
   cohere: { avgResponseMs: 1000, tier: 'moderate', latencyScore: 55 },
 };
 

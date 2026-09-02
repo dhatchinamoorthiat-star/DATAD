@@ -1,7 +1,6 @@
 const cfg = require('../../config/automation');
 const NvidiaProvider = require('./nvidiaProvider');
 const OpenAICompatibleProvider = require('./openaiCompatible');
-const AnthropicProvider = require('./anthropicProvider');
 
 const providers = {};
 
@@ -12,8 +11,6 @@ function buildProvider(name) {
 
   if (name === 'nvidia') {
     providers[name] = new NvidiaProvider({ ...c, name });
-  } else if (name === 'anthropic') {
-    providers[name] = new AnthropicProvider({ ...c, name });
   } else {
     providers[name] = new OpenAICompatibleProvider({ ...c, name });
   }
@@ -41,7 +38,6 @@ const PROVIDER_ORDER = [
   'openrouter',
   'gemini',
   'openai',
-  'anthropic',
   'ollama',      // local last resort — may not be running at all
 ];
 
