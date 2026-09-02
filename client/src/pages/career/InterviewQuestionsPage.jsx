@@ -41,7 +41,7 @@ function CategorySection({ category, questions }) {
             <li key={i} className="flex items-start justify-between gap-4 px-5 py-3.5">
               <p className="text-sm">{q.question}</p>
               <Link
-                to={`/career/companies/${q.companySlug}`}
+                to={`/placement/companies/${q.companySlug}`}
                 className="flex shrink-0 items-center gap-1 text-xs text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
               >
                 {q.company} <ExternalLink className="h-3 w-3" />
@@ -126,7 +126,7 @@ export default function InterviewQuestionsPage() {
                 </div>
                 <p className="text-sm font-medium">{questionOfTheDay.question}</p>
                 <Link
-                  to={`/career/companies/${questionOfTheDay.companySlug}`}
+                  to={`/placement/companies/${questionOfTheDay.companySlug}`}
                   className="mt-1.5 inline-flex items-center gap-1 text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
                 >
                   Asked at {questionOfTheDay.company} <ExternalLink className="h-3 w-3" />

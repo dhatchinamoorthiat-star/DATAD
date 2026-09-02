@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { isPlacementPath } from '../utils/placementNav';
 import { searchAll, recordClick, getPinned, togglePin, getRecentSearches, getFrequentSearches } from '../api/search';
 
 const DEBOUNCE_MS = 200;
@@ -47,20 +49,39 @@ export default function useSearch(options = {}) {
   const mountedRef = useRef(true);
   const abortRef = useRef(null);
 
+  // Placement mode (see utils/placementNav.js) hides most of the app, but the
+  // search index still carries every page. Filtering here rather than in the
+  // search providers covers every consumer at once — the ⌘K palette and the
+  // /search page both read this hook — so nothing offers a student a link that
+  // would only bounce them back to /placement. Results with no url (Dax's
+  // open-chat command, say) are actions rather than navigation, so they stay.
+  // Read defensively — useSearch is a generic hook and AuthContext has no
+  // default value, so a caller mounted outside the provider would otherwise
+  // crash on the destructure.
+  const placementOnly = useAuth()?.user?.role !== 'admin';
+  const allowed = useCallback(
+    (item) => !placementOnly || !item?.url || isPlacementPath(item.url.split(/[?#]/)[0]),
+    [placementOnly],
+  );
+
   const grouped = useMemo(() => {
     const groups = {};
-    for (const r of results) {
+    for (const r of results.filter(allowed)) {
       const cat = r.category || r.providerLabel || 'Other';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(r);
     }
-    for (const c of commands) {
+    for (const c of commands.filter(allowed)) {
       const cat = c.category || 'Commands';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(c);
     }
     return groups;
-  }, [results, commands]);
+  }, [results, commands, allowed]);
+
+  // Pinned items are stored server-side and predate placement mode, so an
+  // older pin can point outside it.
+  const visiblePinned = useMemo(() => pinned.filter(allowed), [pinned, allowed]);
 
   const flatList = useMemo(() => {
     const all = [];
@@ -233,7 +254,7 @@ export default function useSearch(options = {}) {
     intent,
     providerStatus,
     latency,
-    pinned,
+    pinned: visiblePinned,
     recentSearches,
     frequentSearches,
     clear,

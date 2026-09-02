@@ -114,14 +114,14 @@ export default function OpportunitiesPage() {
               <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
                 <Briefcase className="h-4 w-4 text-indigo-500" /> Placement Drives
               </h2>
-              <Link to="/career/placements" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+              <Link to="/placement/placements" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                 Manage <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             {upcomingDrives.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
                 <p className="text-sm text-gray-400">No upcoming drives yet</p>
-                <Link to="/career/placements" className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                <Link to="/placement/placements" className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                   <Plus className="h-3 w-3" /> Add a drive
                 </Link>
               </div>
@@ -142,12 +142,12 @@ export default function OpportunitiesPage() {
                       days={days}
                       badge={badge}
                       badgeColor={badgeColor}
-                      href="/career/placements"
+                      href="/placement/placements"
                     />
                   );
                 })}
                 {upcomingDrives.length > 5 && (
-                  <Link to="/career/placements" className="flex items-center gap-1 justify-center py-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                  <Link to="/placement/placements" className="flex items-center gap-1 justify-center py-2 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                     View {upcomingDrives.length - 5} more drives <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
@@ -161,14 +161,14 @@ export default function OpportunitiesPage() {
               <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300">
                 <GraduationCap className="h-4 w-4 text-purple-500" /> Internships
               </h2>
-              <Link to="/career/internships" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+              <Link to="/placement/internships" className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                 Manage <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             {upcomingInternships.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-6 text-center">
                 <p className="text-sm text-gray-400">No upcoming internships yet</p>
-                <Link to="/career/internships" className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
+                <Link to="/placement/internships" className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400">
                   <Plus className="h-3 w-3" /> Add an internship
                 </Link>
               </div>
@@ -185,7 +185,7 @@ export default function OpportunitiesPage() {
                       days={days}
                       badge={i.type || 'Internship'}
                       badgeColor="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
-                      href="/career/internships"
+                      href="/placement/internships"
                     />
                   );
                 })}

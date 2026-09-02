@@ -150,7 +150,7 @@ export default function CompanyDetailPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center text-sm text-gray-400">
         Company not found.{' '}
-        <Link to="/career/companies" className="text-indigo-500 hover:underline">
+        <Link to="/placement/companies" className="text-indigo-500 hover:underline">
           Back to companies
         </Link>
       </div>
@@ -164,7 +164,7 @@ export default function CompanyDetailPage() {
   return (
     <div className="animate-in mx-auto w-full max-w-3xl px-4 py-6">
       <Link
-        to="/career/companies"
+        to="/placement/companies"
         className="mb-4 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
       >
         <ArrowLeft className="h-4 w-4" /> All companies

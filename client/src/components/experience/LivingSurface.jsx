@@ -312,7 +312,7 @@ function ContinueWorking({ latestNote }) {
     { icon: Bot, label: 'Dax AI', to: '/dax' },
     { icon: BookOpen, label: 'Notes', to: '/study/notes' },
     { icon: CalendarDays, label: 'Planner', to: '/me/planner' },
-    { icon: FileText, label: 'Resume', to: '/career/resume' },
+    { icon: FileText, label: 'Resume', to: '/placement/resume' },
     { icon: Wallet, label: 'Finance', to: '/finance' },
   ];
   return (
@@ -348,7 +348,7 @@ function Opportunities({ internships, loading }) {
     <section>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Opportunities for you</h2>
-        <Link to="/career/opportunities" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+        <Link to="/placement/opportunities" className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
           See all
         </Link>
       </div>

@@ -51,7 +51,7 @@ export const SECTIONS = [
     blurb:
       'Everything academic in one place: your notes, the work you owe, the resources your batch shares, and the focus tools for actually getting through it.',
     subs: [
-      // /study/notes/new and /career/resume/preview are actions inside these
+      // /study/notes/new and /placement/resume/preview are actions inside these
       // pages rather than destinations of their own, so they are aliases here
       // instead of separate entries in the map.
       { label: 'Notes', route: '/study/notes', aliases: ['note', 'new note', 'write a note'], blurb: 'Write and organise notes, and read the ones your batch has shared. I can summarise any of them.' },
@@ -64,16 +64,16 @@ export const SECTIONS = [
   {
     key: 'career',
     label: 'Career',
-    route: '/career',
+    route: '/placement',
     aliases: ['career', 'careers', 'placement', 'placements', 'job', 'jobs', 'recruitment', 'hiring', 'career hub'],
     blurb:
       'The placement core — the things you work on all the way to an offer: your resume, the companies hiring on campus, the roles open to you, and the questions you will be asked.',
     subs: [
-      { label: 'Companies', route: '/career/companies', aliases: ['recruiters', 'company database', 'company list'], blurb: 'The campus recruiter database — what each company does, the roles they hire for, their selection rounds and what they look for.' },
-      { label: 'Opportunities', route: '/career/opportunities', aliases: ['internships', 'openings', 'vacancies', 'apply'], blurb: 'Jobs and internships open to your batch.' },
-      { label: 'Resume', route: '/career/resume', aliases: ['cv', 'resume builder', 'resume preview', 'export my resume'], blurb: 'Build your resume section by section, preview it, export it — and have me review it against a real placement bar.' },
-      { label: 'LinkedIn', route: '/career/linkedin', blurb: 'Your LinkedIn profile against a target role, with what to change.' },
-      { label: 'Interview Qs', route: '/career/questions', aliases: ['interview questions', 'question bank', 'interview prep', 'interview'], blurb: 'The interview question bank — HR, technical and case, sorted by company and round.' },
+      { label: 'Companies', route: '/placement/companies', aliases: ['recruiters', 'company database', 'company list'], blurb: 'The campus recruiter database — what each company does, the roles they hire for, their selection rounds and what they look for.' },
+      { label: 'Opportunities', route: '/placement/opportunities', aliases: ['internships', 'openings', 'vacancies', 'apply'], blurb: 'Jobs and internships open to your batch.' },
+      { label: 'Resume', route: '/placement/resume', aliases: ['cv', 'resume builder', 'resume preview', 'export my resume'], blurb: 'Build your resume section by section, preview it, export it — and have me review it against a real placement bar.' },
+      { label: 'LinkedIn', route: '/placement/linkedin', blurb: 'Your LinkedIn profile against a target role, with what to change.' },
+      { label: 'Interview Qs', route: '/placement/questions', aliases: ['interview questions', 'question bank', 'interview prep', 'interview'], blurb: 'The interview question bank — HR, technical and case, sorted by company and round.' },
     ],
   },
   {
@@ -303,7 +303,7 @@ export function recommendPlan(query) {
  * Ordered most-specific first: "my resume" must beat the bare "my notes on X".
  */
 const PERSONAL_DATA = [
-  { test: /\bmy\s+(resume|cv)\b|\bresume\s+(review|feedback|score)\b/, thing: 'your resume', route: '/career/resume' },
+  { test: /\bmy\s+(resume|cv)\b|\bresume\s+(review|feedback|score)\b/, thing: 'your resume', route: '/placement/resume' },
   { test: /\bmy\s+(tasks?|deadlines?|to\s?dos?|assignments?|homework)\b|\bwhat.{0,12}\b(due|pending|overdue)\b|\bwhen\s+is\s+my\s+next\b/, thing: 'your tasks and deadlines', route: '/me/planner' },
   { test: /\bmy\s+(notes?)\b|\bsummaris[ez]\s+(my|this|the)\b/, thing: 'your notes', route: '/study/notes' },
   { test: /\bmy\s+(schedule|timetable|calendar)\b/, thing: 'your schedule', route: '/me/calendar' },

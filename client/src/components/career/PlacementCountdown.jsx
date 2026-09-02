@@ -69,7 +69,7 @@ export default function PlacementCountdown({ compact = false }) {
 
       {!compact && days <= 90 && (
         <Link
-          to="/career/readiness"
+          to="/placement/readiness"
           className={`mt-3 flex items-center justify-between rounded-xl bg-white/60 px-4 py-2.5 text-sm font-medium dark:bg-black/20 ${urgencyText(days)}`}
         >
           <span>Check your readiness score</span>

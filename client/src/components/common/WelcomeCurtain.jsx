@@ -51,7 +51,7 @@ export default function WelcomeCurtain() {
     const section = sectionOf(target);
 
     const stop = whenRouteSettled({
-      // Deep links (?next=/career/resume) land on a tab inside a section, so
+      // Deep links (?next=/placement/resume) land on a tab inside a section, so
       // match the section where there is one and fall back to the exact path.
       matches: (path) => (section ? sectionOf(path) === section : path === target),
       minMs: MIN_MS,

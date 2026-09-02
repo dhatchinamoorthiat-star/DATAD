@@ -19,27 +19,27 @@ const MESSAGES = {
   'career.application-submitted': {
     type: 'career_alert', title: 'Application submitted!',
     body: (d) => `You applied to ${d.companyName || 'a company'}`,
-    link: (d) => `/career/applications/${d.applicationId}`,
+    link: (d) => `/placement/applications/${d.applicationId}`,
   },
   'career.application-accepted': {
     type: 'career_alert', title: 'Application accepted! 🎉',
     body: (d) => `${d.companyName || 'A company'} accepted your application`,
-    link: (d) => `/career/applications/${d.applicationId}`,
+    link: (d) => `/placement/applications/${d.applicationId}`,
   },
   'career.application-rejected': {
     type: 'career_alert', title: 'Application update',
     body: (d) => `${d.companyName || 'A company'} has updated your application status`,
-    link: (d) => `/career/applications/${d.applicationId}`,
+    link: (d) => `/placement/applications/${d.applicationId}`,
   },
   'career.application-withdrawn': {
     type: 'career_alert', title: 'Application withdrawn',
     body: (d) => `You withdrew from ${d.companyName || 'a company'}`,
-    link: () => `/career/applications`,
+    link: () => `/placement/applications`,
   },
   'career.drive-added': {
     type: 'career_alert', title: 'New placement drive! 🚀',
     body: (d) => `${d.companyName || 'A company'} added a new drive`,
-    link: (d) => `/career/placements/${d.driveId}`,
+    link: (d) => `/placement/placements/${d.driveId}`,
   },
   'career.resume-analysis-complete': {
     type: 'ai_complete', title: 'Resume analysis complete',
@@ -280,27 +280,27 @@ const MESSAGES = {
   'engagement.started': {
     type: 'general', title: 'Engagement started',
     body: (d) => `A new engagement has begun${d.helperName ? ` with ${d.helperName}` : ''}`,
-    link: (d) => `/career/engagements/${d.engagementId}`,
+    link: (d) => `/placement/engagements/${d.engagementId}`,
   },
   'engagement.submitted': {
     type: 'general', title: 'Engagement submitted',
     body: () => 'Your engagement has been submitted for review',
-    link: (d) => `/career/engagements/${d.engagementId}`,
+    link: (d) => `/placement/engagements/${d.engagementId}`,
   },
   'engagement.completed': {
     type: 'milestone', title: 'Engagement completed! 🎉',
     body: () => 'Engagement completed successfully',
-    link: (d) => `/career/engagements/${d.engagementId}`,
+    link: (d) => `/placement/engagements/${d.engagementId}`,
   },
   'engagement.cancelled': {
     type: 'general', title: 'Engagement cancelled',
     body: () => 'An engagement has been cancelled',
-    link: () => `/career/engagements`,
+    link: () => `/placement/engagements`,
   },
   'review.created': {
     type: 'general', title: 'New review',
     body: (d) => `${d.reviewerName || 'Someone'} left a review`,
-    link: (d) => `/career/reviews/${d.reviewId}`,
+    link: (d) => `/placement/reviews/${d.reviewId}`,
   },
   'profile.refresh-needed': {
     type: 'system', title: 'Profile update needed',

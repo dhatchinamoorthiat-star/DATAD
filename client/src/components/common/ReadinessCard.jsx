@@ -5,8 +5,8 @@ import { getReadiness } from '../../api/readiness';
 import ScoreRing from './ScoreRing';
 
 const COMPONENT_LINKS = {
-  resume: '/career/resume',
-  companies: '/career/companies',
+  resume: '/placement/resume',
+  companies: '/placement/companies',
   market: '/briefing',
   planner: '/me/planner',
 };
@@ -44,7 +44,7 @@ function StartCard() {
           </p>
         </div>
         <Link
-          to="/career/resume"
+          to="/placement/resume"
           className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-700"
         >
           <Sparkles className="h-4 w-4" /> Start building your profile
@@ -99,7 +99,7 @@ export default function ReadinessCard({ data: provided }) {
         </div>
       </div>
 
-      <Link to={weakest ? COMPONENT_LINKS[weakest.key] : '/career/companies'}
+      <Link to={weakest ? COMPONENT_LINKS[weakest.key] : '/placement/companies'}
         className="mt-4 flex items-center justify-between rounded-xl bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-900/40 dark:text-indigo-300 dark:hover:bg-indigo-900/60">
         <span>{data.nextAction}</span>
         <ArrowRight className="h-4 w-4 shrink-0" />

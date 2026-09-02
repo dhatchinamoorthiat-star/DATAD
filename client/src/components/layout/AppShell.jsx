@@ -21,6 +21,7 @@ import { useSubscription } from '../../context/SubscriptionContext';
 import { TIER_RING, TIER_BADGE_STYLE } from '../../utils/tiers';
 import { useLocation } from 'react-router-dom';
 import { WORKSPACES, isWorkspaceActive } from '../../utils/workspaces';
+import { PLACEMENT_NAV } from '../../utils/placementNav';
 import CommandPalette from '../common/CommandPalette';
 import DaxPanel from '../chat/DaxPanel';
 import NotificationBell from '../notifications/NotificationBell';
@@ -97,12 +98,19 @@ function AvatarMenu() {
           <NavLink to="/me/settings" onClick={() => setOpen(false)} className={item}>
             <Settings className="h-4 w-4 text-primary-500" /> Settings
           </NavLink>
-          <NavLink to="/me/journal" onClick={() => setOpen(false)} className={item}>
-            <BookLock className="h-4 w-4 text-primary-500" /> Journal
-          </NavLink>
-          <NavLink to="/wellbeing" onClick={() => setOpen(false)} className={item}>
-            <HeartHandshake className="h-4 w-4 text-primary-500" /> Feeling stressed? Reach out
-          </NavLink>
+          {/* Journal and Wellbeing live outside placement mode, so they are
+              admin-only here — a student clicking them would just be bounced
+              back to /placement by the placement gate. */}
+          {isAdmin && (
+            <>
+              <NavLink to="/me/journal" onClick={() => setOpen(false)} className={item}>
+                <BookLock className="h-4 w-4 text-primary-500" /> Journal
+              </NavLink>
+              <NavLink to="/wellbeing" onClick={() => setOpen(false)} className={item}>
+                <HeartHandshake className="h-4 w-4 text-primary-500" /> Feeling stressed? Reach out
+              </NavLink>
+            </>
+          )}
           <NavLink to="/support" onClick={() => setOpen(false)} className={item}>
             <Sparkles className="h-4 w-4 text-primary-500" /> Back DATAD
           </NavLink>
@@ -133,8 +141,8 @@ function AvatarMenu() {
 function routeContext(pathname) {
   if (pathname.startsWith('/study/notes')) return 'notes';
   if (pathname.startsWith('/study')) return 'study';
-  if (pathname.startsWith('/career/resume')) return 'resume';
-  if (pathname.startsWith('/career')) return 'career';
+  if (pathname.startsWith('/placement/resume')) return 'resume';
+  if (pathname.startsWith('/placement')) return 'career';
   if (pathname.startsWith('/me/planner') || pathname.startsWith('/planner')) return 'planner';
   if (pathname.startsWith('/community')) return 'community';
   if (pathname.startsWith('/finance')) return 'finance';
@@ -147,6 +155,10 @@ export default function AppShell({ children }) {
   const isAdmin = user?.role === 'admin';
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Everyone but an admin gets the placement rail — the same list on the
+  // desktop rail and the mobile tab bar, so the two can't disagree.
+  const navItems = isAdmin ? WORKSPACES : PLACEMENT_NAV;
 
   // Global ⌘K / Ctrl+K.
   useEffect(() => {
@@ -165,7 +177,7 @@ export default function AppShell({ children }) {
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
 
       {/* Desktop sidebar — hover-reveal rail, pinnable via its hamburger */}
-      <RailSidebar isAdmin={isAdmin} onOpenPalette={() => setPaletteOpen(true)} />
+      <RailSidebar isAdmin={isAdmin} items={navItems} onOpenPalette={() => setPaletteOpen(true)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
@@ -217,7 +229,7 @@ export default function AppShell({ children }) {
 
       {/* Mobile bottom tab bar — sits above the iOS home indicator */}
       <nav className="glass scroll-ios fixed inset-x-0 bottom-0 z-40 flex items-stretch overflow-x-auto overscroll-x-contain border-t border-gray-100 pb-[max(env(safe-area-inset-bottom),8px)] dark:border-gray-800/70 lg:hidden print:hidden">
-        {WORKSPACES.map((w) => {
+        {navItems.map((w) => {
           const active = isWorkspaceActive(location.pathname, w);
           return (
             <NavLink

@@ -396,6 +396,6 @@ export function maintenanceReply(text, attachments = []) {
  */
 export function maintenanceReplyPlain(text, attachments = []) {
   // Backticks as well as bold: the app-knowledge answers quote routes as code
-  // spans, which would otherwise render as literal `/career` on these surfaces.
+  // spans, which would otherwise render as literal `/placement` on these surfaces.
   return maintenanceReply(text, attachments).replace(/\*\*/g, '').replace(/`/g, '');
 }

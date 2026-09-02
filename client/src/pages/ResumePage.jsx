@@ -533,7 +533,7 @@ export default function ResumePage() {
           <p className="text-sm text-gray-500">Build your placement profile</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link to="/career/resume/preview">
+          <Link to="/placement/resume/preview">
             <Button variant="ghost" size="sm" icon={Eye}>Preview</Button>
           </Link>
           <button onClick={handleSubmit(onSubmit)} disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">

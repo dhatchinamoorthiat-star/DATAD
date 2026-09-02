@@ -17,7 +17,7 @@ const ICON_ACCENT = {
   dashboard: '#3563E9',
   dax: '#8B5CF6',
   study: '#06B6D4',
-  career: '#F97316',
+  placement: '#F97316',
   growth: '#6366F1',
   community: '#0D9488',
   me: '#F59E0B',
@@ -60,8 +60,11 @@ function readPinned() {
  *
  * While floating and collapsed it also reacts to scroll: the nav drifts up
  * slightly and lifts off the page, and a progress line tracks the document.
+ *
+ * `items` defaults to the full workspace list; placement mode passes its own
+ * narrower rail instead (see utils/placementNav.js).
  */
-export default function RailSidebar({ isAdmin, onOpenPalette }) {
+export default function RailSidebar({ isAdmin, items = WORKSPACES, onOpenPalette }) {
   const [pinned, setPinned] = useState(readPinned);
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -202,11 +205,11 @@ export default function RailSidebar({ isAdmin, onOpenPalette }) {
           className={`scroll-ios flex flex-1 flex-col gap-1 overflow-y-auto transition-transform duration-300 ease-out ${pad}`}
           style={{ transform: `translateY(${-drift * 6}px)` }}
         >
-          {WORKSPACES.map((w) => (
+          {items.map((w) => (
             <NavLink key={w.key} to={w.to} end={w.end} title={w.label} className={link()}>
               {({ isActive }) => (
                 <>
-                  <IconTile accent={w.key} isActive={isActive} icon={w.icon} />
+                  <IconTile accent={w.accent || w.key} isActive={isActive} icon={w.icon} />
                   <span className={label}>{w.label}</span>
                 </>
               )}
@@ -219,7 +222,7 @@ export default function RailSidebar({ isAdmin, onOpenPalette }) {
               <NavLink to="/admin" title="Admin" className={link()}>
                 {({ isActive }) => (
                   <>
-                    <IconTile accent="career" isActive={isActive} icon={Crown} />
+                    <IconTile accent="placement" isActive={isActive} icon={Crown} />
                     <span className={label}>Admin</span>
                   </>
                 )}

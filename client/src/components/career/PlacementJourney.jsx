@@ -5,9 +5,9 @@ import { FileText, Building2, MessageSquare, Gauge, Trophy, ChevronRight } from 
 // Shows the 5-step placement pipeline with current progress derived from readiness components.
 
 const STEPS = [
-  { key: 'resume',    label: 'Resume',        icon: FileText,     to: '/career/resume',    hint: 'Build your placement resume' },
-  { key: 'companies', label: 'Companies',     icon: Building2,    to: '/career/companies', hint: 'Research & track target companies' },
-  { key: 'questions', label: 'Interview Prep', icon: MessageSquare, to: '/career/questions', hint: 'Practice HR, case & technical rounds' },
+  { key: 'resume',    label: 'Resume',        icon: FileText,     to: '/placement/resume',    hint: 'Build your placement resume' },
+  { key: 'companies', label: 'Companies',     icon: Building2,    to: '/placement/companies', hint: 'Research & track target companies' },
+  { key: 'questions', label: 'Interview Prep', icon: MessageSquare, to: '/placement/questions', hint: 'Practice HR, case & technical rounds' },
   { key: 'market',    label: 'Stay Current',  icon: Gauge,        to: '/briefing',         hint: 'Daily business news & intelligence' },
   { key: 'planner',   label: 'Plan & Track',  icon: Trophy,       to: '/me/planner',       hint: 'Schedule your preparation milestones' },
 ];
