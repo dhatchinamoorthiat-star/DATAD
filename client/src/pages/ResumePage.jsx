@@ -421,6 +421,7 @@ export default function ResumePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const { user } = useAuth();
 
@@ -518,6 +519,26 @@ export default function ResumePage() {
     setSubmitting(false);
   };
 
+  // Wipes every field and persists the empty resume, so "clear" survives a
+  // reload rather than reappearing on the next fetch. The photo lives outside
+  // the form, so it is removed on its own.
+  const onClear = async () => {
+    if (!window.confirm('Clear the whole resume? This deletes your saved details and cannot be undone.')) return;
+    setClearing(true);
+    try {
+      if (getValues('photo')) {
+        try { await deleteResumePhoto(); } catch { /* fall through — the save below still wipes the form */ }
+      }
+      await saveResume(EMPTY_RESUME);
+      reset(EMPTY_RESUME);
+      setSkillInput('');
+      toast.success('Resume cleared');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not clear the resume');
+    }
+    setClearing(false);
+  };
+
   if (loading) return <div className="mx-auto max-w-3xl px-4 py-10"><FeedSkeleton count={6} /></div>;
 
   return (
@@ -536,6 +557,9 @@ export default function ResumePage() {
           <Link to="/placement/resume/preview">
             <Button variant="ghost" size="sm" icon={Eye}>Preview</Button>
           </Link>
+          <button onClick={onClear} disabled={saving || submitting || clearing} className="flex items-center gap-1.5 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-rose-950/30">
+            <Trash2 className="h-4 w-4" /> {clearing ? 'Clearing…' : 'Clear'}
+          </button>
           <button onClick={handleSubmit(onSubmit)} disabled={saving} className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
             <Save className="h-4 w-4" /> {saving ? 'Saving…' : 'Save'}
           </button>
