@@ -33,7 +33,7 @@ export const PSW_FEATURES = [
   },
   {
     id: 'career',
-    route: '/career',
+    route: '/placement',
     icon: Briefcase,
     color: 'text-indigo-400',
     ring: 'border-indigo-500/30',

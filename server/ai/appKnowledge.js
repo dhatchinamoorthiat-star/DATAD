@@ -48,14 +48,14 @@ const APP_SECTIONS = [
     ],
   },
   {
-    label: 'Career', route: '/career',
+    label: 'Placement', route: '/placement',
     blurb: 'the placement core — the work that leads to an offer',
     subs: [
-      { label: 'Companies', route: '/career/companies' },
-      { label: 'Opportunities', route: '/career/opportunities' },
-      { label: 'Resume', route: '/career/resume' },
-      { label: 'LinkedIn', route: '/career/linkedin' },
-      { label: 'Interview Qs', route: '/career/questions' },
+      { label: 'Companies', route: '/placement/companies' },
+      { label: 'Opportunities', route: '/placement/opportunities' },
+      { label: 'Resume', route: '/placement/resume' },
+      { label: 'LinkedIn', route: '/placement/linkedin' },
+      { label: 'Interview Qs', route: '/placement/questions' },
     ],
   },
   {

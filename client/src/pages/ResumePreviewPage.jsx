@@ -82,7 +82,7 @@ export default function ResumePreviewPage() {
           title="No resume yet"
           subtitle="Fill in your details first"
           action={
-            <Link to="/career/resume" className="text-sm font-medium text-indigo-600 hover:underline">
+            <Link to="/placement/resume" className="text-sm font-medium text-indigo-600 hover:underline">
               Go to Resume Builder
             </Link>
           }
@@ -105,12 +105,12 @@ export default function ResumePreviewPage() {
       <style>{`@page { size: A4; margin: 14mm; } @media print { body { background: white; } }`}</style>
 
       <div className="mb-4 flex items-center justify-between print:hidden">
-        <Link to="/career/resume" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <Link to="/placement/resume" className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
           <ArrowLeft className="h-4 w-4" /> Back
         </Link>
         <div className="flex gap-2">
           <Link
-            to="/career/resume"
+            to="/placement/resume"
             className="flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
           >
             <Pencil className="h-4 w-4" /> Edit

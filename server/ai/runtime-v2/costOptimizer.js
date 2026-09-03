@@ -96,10 +96,6 @@ function estimateCost({ provider, model, promptTokens, completionTokens, estimat
       costPer1kPrompt = model?.includes('gpt-4') ? 0.03 : 0.01;
       costPer1kCompletion = model?.includes('gpt-4') ? 0.06 : 0.02;
       break;
-    case 'anthropic':
-      costPer1kPrompt = model?.includes('sonnet') ? 0.015 : 0.008;
-      costPer1kCompletion = model?.includes('sonnet') ? 0.075 : 0.024;
-      break;
     case 'groq':
       costPer1kPrompt = 0.001;
       costPer1kCompletion = 0.002;
@@ -142,8 +138,6 @@ function getCostProfile(provider, model) {
     case 'openai':
       if (model?.includes('gpt-4')) return { tier: 'premium', costPerRequest: 0.002, costScore: 20 };
       return { tier: 'moderate', costPerRequest: 0.0005, costScore: 60 };
-    case 'anthropic':
-      return { tier: 'premium', costPerRequest: 0.003, costScore: 15 };
     default: return { tier: 'moderate', costPerRequest: 0.0005, costScore: 50 };
   }
 }

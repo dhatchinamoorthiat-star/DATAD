@@ -52,7 +52,7 @@ module.exports = {
         id: `news-co-${c._id}`,
         title: c.name,
         subtitle: `${c.industry || 'Company'} · News available`,
-        url: `/career/companies/${c.slug}`,
+        url: `/placement/companies/${c.slug}`,
         icon: 'Building2',
         tags: [c.industry, 'company', 'news'].filter(Boolean),
         matchType: 'tag',

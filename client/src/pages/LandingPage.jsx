@@ -46,19 +46,19 @@ const FEATURES = [
     icon: Briefcase,
     title: 'Company prep cards',
     desc: 'What they do, what they ask, what they pay — one page per recruiter.',
-    to: '/career/companies',
+    to: '/placement/companies',
   },
   {
     icon: Gauge,
     title: 'Career readiness',
     desc: 'A live 0–100 score built from what you’ve actually done, with the next fix.',
-    to: '/career',
+    to: '/placement',
   },
   {
     icon: FileText,
     title: 'Resume builder',
     desc: 'Build it once, keep it sharp — Dax reviews it when you want a second pair of eyes.',
-    to: '/career/resume',
+    to: '/placement/resume',
   },
   {
     icon: CalendarDays,

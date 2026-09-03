@@ -279,7 +279,7 @@ exports.esc = esc;
  */
 exports.sendResumeSubmittedEmail = (user, completeness = {}, pdf = null) => {
   const { score = 0, missing = [], ready = false } = completeness;
-  const resumeUrl = `${primaryClientUrl()}/career/resume/preview`;
+  const resumeUrl = `${primaryClientUrl()}/placement/resume/preview`;
 
   // A full bar reads as "done" even at 60% on a narrow phone screen, so the
   // number is stated in text as well.

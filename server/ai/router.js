@@ -59,7 +59,6 @@ function estimateCost(provider, promptTokens = 0, completionTokens = 0) {
     ollama:  { input: 0,    output: 0    },
     groq:    { input: 0.59, output: 0.79 },
     openai:  { input: 0.15, output: 0.60 },
-    anthropic: { input: 0.25, output: 1.25 },
     gemini:  { input: 0.075, output: 0.30 },
     openrouter: { input: 0.59, output: 0.79 },
     // Cloudflare Workers AI bills in "neurons", not tokens — these are a

@@ -29,7 +29,7 @@ export default function NotFoundPage() {
           <BookOpen className="h-4 w-4" /> Study
         </Link>
         <Link
-          to="/career"
+          to="/placement"
           className="flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-800 dark:text-gray-300"
         >
           <Briefcase className="h-4 w-4" /> Career

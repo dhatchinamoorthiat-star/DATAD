@@ -20,7 +20,9 @@ export const WORKSPACES = [
   // leaves the bar behind — DaxApp's exitHref sends you back to /dashboard.
   { key: 'dax', label: 'Dax', to: '/dax?home', icon: Sparkles },
   { key: 'study', label: 'Study', to: '/study', icon: BookOpen },
-  { key: 'career', label: 'Career', to: '/career', icon: Briefcase },
+  // Renamed from Career: the whole product now orbits placement, so the
+  // section carries that name and /career/* redirects here.
+  { key: 'placement', label: 'Placement', to: '/placement', icon: Briefcase },
   // Roadmap/Pivot/STAR Stories split out of Career into their own primary
   // section — the Career tab row was carrying too many sub-categories.
   { key: 'growth', label: 'Growth', to: '/growth', icon: TrendingUp },
@@ -32,10 +34,12 @@ export const WORKSPACES = [
   { key: 'wellbeing', label: 'Wellbeing', to: '/wellbeing', icon: HeartPulse },
 ];
 
-// Extra path prefixes that should light up a primary nav item. Empty now that
-// Finance and Wellbeing own their own entries — kept because the matcher below
-// reads it and the next section to absorb a stray URL will want it.
-const WORKSPACE_ALIASES = {};
+// Extra path prefixes that should light up a primary nav item. Home points at
+// /dashboard, which sends an admin on to their own dashboard under /admin —
+// without the alias the Home tab would go dark on the page it just opened.
+const WORKSPACE_ALIASES = {
+  dashboard: ['/admin/dashboard'],
+};
 
 // Shared by the desktop rail and the mobile tab bar so the two can never
 // disagree about which section the user is in.
@@ -43,9 +47,14 @@ const WORKSPACE_ALIASES = {};
 // `to` may carry a query string (Dax uses `?home` to pick its opening mode).
 // That part is a destination detail, not part of the section's identity, so it
 // is stripped before matching — otherwise /dax would never light up its own tab.
+//
+// `end: true` narrows an item to an exact match. Sections don't need it, but
+// the flat placement rail (see placementNav.js) lists /placement alongside its own
+// children, and without it "Placement" would stay lit on every Resume screen.
 export function isWorkspaceActive(pathname, workspace) {
   const prefixes = [workspace.to, ...(WORKSPACE_ALIASES[workspace.key] || [])]
     .map((p) => p.split(/[?#]/)[0]);
+  if (workspace.end) return prefixes.includes(pathname);
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
@@ -68,13 +77,13 @@ export const WORKSPACE_TABS = {
     { to: '/study/resources', label: 'Resources' },
     { to: '/study/focus', label: 'Focus' },
   ],
-  career: [
-    { to: '/career', label: 'Overview', end: true },
-    { to: '/career/companies', label: 'Companies' },
-    { to: '/career/opportunities', label: 'Opportunities' },
-    { to: '/career/resume', label: 'Resume' },
-    { to: '/career/linkedin', label: 'LinkedIn' },
-    { to: '/career/questions', label: 'Interview Qs' },
+  placement: [
+    { to: '/placement', label: 'Overview', end: true },
+    { to: '/placement/companies', label: 'Companies' },
+    { to: '/placement/opportunities', label: 'Opportunities' },
+    { to: '/placement/resume', label: 'Resume' },
+    { to: '/placement/linkedin', label: 'LinkedIn' },
+    { to: '/placement/questions', label: 'Interview Qs' },
     // Roadmap, Pivot and STAR Stories moved to their own primary section
     // (Growth) — this row was carrying too many sub-categories for the
     // job-search core to read clearly. Briefing dropped entirely: it's a
@@ -124,8 +133,9 @@ export const LEGACY_REDIRECTS = {
   '/settings': '/me/settings',
   '/journal': '/me/journal',
   '/reflection': '/me/reflection',
-  '/resume': '/career/resume',
-  '/companies': '/career/companies',
+  '/career': '/placement',
+  '/resume': '/placement/resume',
+  '/companies': '/placement/companies',
   '/albums': '/community/memories',
   '/entertainment': '/community/archive',
 };

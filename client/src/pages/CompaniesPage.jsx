@@ -48,7 +48,7 @@ export default function CompaniesPage() {
           you need before the drive.
         </p>
         <Link
-          to="/career/questions"
+          to="/placement/questions"
           className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400"
         >
           <MessageCircleQuestion className="h-3.5 w-3.5" /> Browse the full interview question bank

@@ -12,6 +12,7 @@ import InstallPrompt from './components/pwa/InstallPrompt';
 import OfflineBanner from './components/pwa/OfflineBanner';
 import UpdateBanner from './components/pwa/UpdateBanner';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import { PLACEMENT_HOME, isPlacementPath } from './utils/placementNav';
 import AppShell from './components/layout/AppShell';
 import WorkspaceLayout from './components/layout/WorkspaceLayout';
 import Loader from './components/common/Loader';
@@ -112,8 +113,33 @@ const GrowthHubPage     = lazy(() => import('./pages/growth/GrowthHubPage'));
 const FinanceROIPage    = lazy(() => import('./pages/me/FinanceROIPage'));
 const ReflectionPage    = lazy(() => import('./pages/ReflectionPage'));
 const DaxPage           = lazy(() => import('./pages/DaxPage'));
+const PlacementDashboardPage = lazy(() => import('./pages/PlacementDashboardPage'));
 const PSWPage           = lazy(() => import('./pages/psw/PSWPage'));
 const PitchPage         = lazy(() => import('./pages/pitch/PitchPage'));
+
+/**
+ * Placement mode gate.
+ *
+ * Non-admins get a narrower app built around placement (see
+ * utils/placementNav.js); everything outside it redirects silently to the
+ * placement home rather than dead-ending. Presentation only — it hides
+ * clutter, it does not secure anything. Server-side checks still own that.
+ */
+function PlacementGate({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user?.role === 'admin') return children;
+  if (isPlacementPath(location.pathname)) return children;
+  return <Navigate to={PLACEMENT_HOME} replace />;
+}
+
+// Admins asking for /dashboard mean their own; sending them to the placement
+// one would hide the view they actually work from.
+function DashboardRoute() {
+  const { user } = useAuth();
+  if (user?.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+  return <PlacementDashboardPage />;
+}
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
@@ -130,7 +156,9 @@ function AppLayout() {
         <SubscriptionProvider>
           <AppShell>
             <ErrorBoundary>
-              <Outlet />
+              <PlacementGate>
+                <Outlet />
+              </PlacementGate>
             </ErrorBoundary>
           </AppShell>
         </SubscriptionProvider>
@@ -144,6 +172,7 @@ function AppLayout() {
 function HomeGate() {
   const { user } = useAuth();
   if (!user) return <LandingPage />;
+  // Both roles land on /dashboard; DashboardRoute decides which one that is.
   return <Navigate to="/dashboard" replace />;
 }
 
@@ -231,7 +260,12 @@ export default function App() {
                 }
               />
               <Route element={<AppLayout />}>
-                <Route path="/dashboard" element={<DashboardPage />} />
+                {/* Two dashboards, one door. The original — every section of
+                    the product assembled on one screen — is the operator's
+                    view and now lives under /admin. Everyone else gets the
+                    placement dashboard: the same day, narrowed to the job. */}
+                <Route path="/dashboard" element={<DashboardRoute />} />
+                <Route path="/admin/dashboard" element={<AdminRoute><DashboardPage /></AdminRoute>} />
                 <Route path="/roadmap" element={<Navigate to="/growth/roadmap" replace />} />
                 <Route path="/briefing" element={<IntelligencePage />} />
 
@@ -252,10 +286,10 @@ export default function App() {
                   <Route path="ai-tools" element={<Navigate to="/study/notes" replace />} />
                 </Route>
 
-                <Route path="/career" element={<WorkspaceLayout workspace="career" title="Career" />}>
+                <Route path="/placement" element={<WorkspaceLayout workspace="placement" title="Placement" />}>
                   {/* The hub is the overview: placement journey, countdown,
                       readiness score and its breakdown (absorbed from the old
-                      standalone ReadinessPage). /career/readiness still lands here. */}
+                      standalone ReadinessPage). /placement/readiness still lands here. */}
                   <Route index element={<CareerHubPage />} />
                   <Route path="resume" element={<ResumePage />} />
                   <Route path="resume/preview" element={<ResumePreviewPage />} />
@@ -265,9 +299,9 @@ export default function App() {
                   <Route path="questions" element={<InterviewQuestionsPage />} />
                   <Route path="opportunities" element={<OpportunitiesPage />} />
                   {/* Merged/moved tabs — old URLs keep working */}
-                  <Route path="readiness" element={<Navigate to="/career" replace />} />
-                  <Route path="placements" element={<Navigate to="/career/opportunities" replace />} />
-                  <Route path="internships" element={<Navigate to="/career/opportunities?view=internships" replace />} />
+                  <Route path="readiness" element={<Navigate to="/placement" replace />} />
+                  <Route path="placements" element={<Navigate to="/placement/opportunities" replace />} />
+                  <Route path="internships" element={<Navigate to="/placement/opportunities?view=internships" replace />} />
                   <Route path="skills" element={<Navigate to="/community/skills" replace />} />
                   {/* Roadmap/Pivot/STAR Stories moved out to their own Growth
                       sub-section (like Finance/Wellbeing under Life) — the
@@ -366,8 +400,12 @@ export default function App() {
                 <Route path="/journal" element={<Navigate to="/me/journal" replace />} />
                 <Route path="/reflection" element={<Navigate to="/me/reflection" replace />} />
                 <Route path="/news" element={<Navigate to="/briefing" replace />} />
-                <Route path="/resume/*" element={<LegacyRedirect from="/resume" to="/career/resume" />} />
-                <Route path="/companies/*" element={<LegacyRedirect from="/companies" to="/career/companies" />} />
+                {/* Career was renamed Placement — every old URL, including any
+                    already sent out in email or sitting in a bookmark, lands
+                    on its new home. */}
+                <Route path="/career/*" element={<LegacyRedirect from="/career" to="/placement" />} />
+                <Route path="/resume/*" element={<LegacyRedirect from="/resume" to="/placement/resume" />} />
+                <Route path="/companies/*" element={<LegacyRedirect from="/companies" to="/placement/companies" />} />
                 <Route path="/albums" element={<Navigate to="/community/gallery" replace />} />
                 <Route path="/entertainment/*" element={<LegacyRedirect from="/entertainment" to="/community/archive" />} />
                 <Route path="*" element={<NotFoundPage />} />

@@ -10,8 +10,8 @@ import { FEATURE } from '../../utils/planFeatures';
 import { RowSkeleton } from '../common/Skeleton';
 
 const COMPONENT_LINKS = {
-  resume: '/career/resume',
-  companies: '/career/companies',
+  resume: '/placement/resume',
+  companies: '/placement/companies',
   market: '/briefing',
   planner: '/me/planner',
 };

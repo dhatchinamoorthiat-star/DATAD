@@ -59,7 +59,6 @@ const PREFERRED = {
   deep: {
     nvidia: 'nvidia/nemotron-3-super-120b-a12b',
     openai: 'gpt-4o',
-    anthropic: 'claude-sonnet-4-20250514',
   },
   balanced: {
     nvidia: 'meta/llama-3.1-70b-instruct',
